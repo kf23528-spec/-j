@@ -1,1487 +1,340 @@
-<!-- Slot Ultimate v7.3.4 — v7.0 忠実復元版（修正: spin整合 / UI応答性 / betInput反映 / ガチャ全ボタン最下段横並び） -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Slot Ultimate v7.3.4</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>デイリーガチャ — 豪華演出版</title>
 <style>
-/* === v6.x/v7.x の CSS（変更無し） === */
-:root{
-  --bg1: linear-gradient(180deg,#041022 0%,#08172a 100%);
-  --accent: #ffd166;
-  --glass: rgba(255,255,255,0.05);
-  --card: rgba(255,255,255,0.06);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{
-  font-family:"Noto Sans JP",sans-serif;
-  color:#fff;
-  background:var(--bg1);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-}
+  :root{
+    --bg1:#051025; --bg2:#08122a;
+    --card:#071226; --accent:#ffb86b; --accent2:#ffd166;
+    --muted:#9fb0c8; --glass: rgba(255,255,255,0.03);
+    --gold: linear-gradient(90deg,#ffd76b,#ffb86b);
+  }
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    background: radial-gradient(1200px 600px at 10% 20%, rgba(124,92,255,0.08), transparent), linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#e6eef8; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    display:flex; align-items:center; justify-content:center; padding:18px;
+  }
+  .app{width:100%; max-width:460px; border-radius:18px; overflow:hidden; position:relative;}
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); box-shadow: 0 18px 60px rgba(2,6,23,0.6); border-radius:18px; overflow:hidden}
+  header{padding:18px; display:flex; gap:12px; align-items:center;}
+  .logo{width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,#ffd76b,#ff9f43);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#2b1a00;box-shadow:0 10px 30px rgba(255,167,38,0.14);transform:rotate(-8deg)}
+  header h1{margin:0;font-size:18px}
+  header p{margin:0;font-size:12px;color:var(--muted)}
 
-.panel{width:100%;max-width:1200px;background:var(--glass);border-radius:16px;padding:18px;box-shadow:0 14px 48px rgba(0,0,0,0.6)}
-.center{text-align:center}
-.hidden{display:none !important}
-.top-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.stat{background:var(--card);padding:10px;border-radius:10px;min-width:140px;text-align:center}
-.reels{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:8px;justify-items:center;align-items:center;background:rgba(0,0,0,0.18);border-radius:12px;padding:12px;height:380px;overflow:hidden;position:relative}
-.cell{width:126px;height:96px;display:flex;align-items:center;justify-content:center;font-size:52px;border-radius:12px;background:rgba(255,255,255,0.02);transition:transform 0.12s ease, box-shadow 0.12s ease}
-.cell.spin{animation:spinAnim 0.10s linear infinite}
-.cell.stop{transform:scale(1.12)}
-.cell.win{box-shadow:0 0 28px 10px gold;transform:scale(1.06)}
-@keyframes spinAnim{0%{transform:translateY(0)}50%{transform:translateY(6%)}100%{transform:translateY(0)}}
+  main{padding:12px 16px 20px}
+  .info{display:flex;gap:10px;margin-bottom:12px}
+  .card{flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+  .card h3{margin:0 0 6px 0;font-size:13px}
+  .card p{margin:0;font-size:12px;color:var(--muted)}
 
-/* coin */
-.coin{position:fixed;font-size:22px;pointer-events:none;animation:coinFall 1.4s linear forwards}
-@keyframes coinFall{0%{opacity:1;transform:translateY(0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(260px) scale(0.6)}}
+  .prob-table{display:flex;gap:8px;margin-bottom:12px;overflow:auto;padding-bottom:4px}
+  .prob{flex:0 0 auto;min-width:96px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.04));padding:10px;border-radius:12px;text-align:center;position:relative;border:1px solid rgba(255,255,255,0.03)}
+  .prob .money{font-weight:800;font-size:14px}
+  .prob .fakepct{font-size:12px;color:var(--muted);margin-top:6px}
+  .prob::after{content:'';position:absolute;left:50%;bottom:-6px;width:60%;height:6px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.0));transform:translateX(-50%);border-radius:6px}
 
-/* controls */
-.controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-button{flex:1;padding:12px;border-radius:10px;border:none;font-weight:800;cursor:pointer}
-#spinBtn{background:linear-gradient(180deg,var(--accent),#ffb700);color:#111}
-.muted{background:#444;color:white;opacity:0.65}
+  .gacha-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .stage{width:100%;border-radius:14px;padding:12px;background:linear-gradient(180deg, rgba(124,92,255,0.04), rgba(0,0,0,0.04));box-shadow:inset 0 -6px 24px rgba(0,0,0,0.3)}
 
-/* inputs */
-.input-row{margin-top:10px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
-input[type=text]{width:220px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);text-align:center;background:rgba(0,0,0,0.5);color:white;font-weight:700}
-.msg{margin-top:12px;text-align:center;color:var(--accent);font-weight:800;min-height:36px}
+  .reel{position:relative;width:100%;height:140px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.06));}
+  .reel::before{content:'';position:absolute;left:0;top:0;right:0;height:40%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));pointer-events:none}
+  .reel-inner{position:absolute;left:0;right:0;top:0;will-change:transform}
+  .reel-item{height:70px;display:flex;align-items:center;gap:12px;padding:10px 14px;box-sizing:border-box;border-bottom:1px dashed rgba(255,255,255,0.02)}
+  .icon{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow: 0 8px 26px rgba(2,6,23,0.6);}
+  .label{font-weight:900}
+  .sub{font-size:12px;color:var(--muted)}
 
-/* item/gacha card decoration by rarity */
-.item-card, .gacha-card {
-  display:inline-block;padding:10px;border-radius:12px;margin:6px;min-width:140px;text-align:center;color:#111;font-weight:800;
-  box-shadow:0 6px 18px rgba(0,0,0,0.4);
-}
-.r-common{background:linear-gradient(180deg,#f7f7f7,#e9e9e9);color:#111}
-.r-uncommon{background:linear-gradient(180deg,#ccffdd,#75e3a1);color:#064}
-.r-R{background:linear-gradient(180deg,#cfeffd,#6fd6ff);color:#024}
-.r-SR{background:linear-gradient(180deg,#e8eaff,#b2baff);color:#042}
-.r-SSR{background:linear-gradient(180deg,#ffdfe8,#ffb0cf);color:#400;box-shadow:0 8px 24px rgba(255,140,180,0.28)}
-.r-UR{background:linear-gradient(180deg,#fff4d1,#ffd166);color:#3d2b00;box-shadow:0 10px 28px rgba(255,200,80,0.28)}
-.r-UGR{background:linear-gradient(180deg,#fff5f5,#ffdfe0);color:#5a0;box-shadow:0 12px 36px rgba(255,120,120,0.32);animation:ulgShine 2.2s linear infinite}
-@keyframes ulgShine{0%{filter:brightness(1)}50%{filter:brightness(1.6)}100%{filter:brightness(1)}}
+  .center-marker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88%;height:0;border-top:36px solid rgba(255,255,255,0.02);border-left:14px solid transparent;border-right:14px solid transparent;pointer-events:none}
 
-/* ranking list */
-.ranking-list{max-height:360px;overflow:auto;margin-top:8px;padding:6px}
-.ranking-list li{list-style:none;padding:8px;border-radius:8px;margin-bottom:6px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));display:flex;justify-content:space-between;align-items:center}
+  .controls{display:flex;gap:10px;width:100%;margin-top:6px}
+  button{flex:1;padding:14px 16px;border-radius:12px;border:0;font-weight:900;font-size:15px;cursor:pointer;background:linear-gradient(90deg,#ffd76b,#ff9f43);color:#2b1a00;box-shadow:0 12px 40px rgba(255,155,50,0.12);}
+  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:700}
+  button[disabled]{opacity:0.5;cursor:not-allowed}
 
-/* gacha animation */
-.gacha-wrapper{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;justify-content:center}
-.gacha-card{opacity:0;transform:scale(0.6);transition:all 360ms cubic-bezier(.2,.9,.3,1)}
-.gacha-card.show{opacity:1;transform:scale(1);}
+  .result{margin-top:10px;padding:12px;border-radius:12px;min-height:70px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.04));display:flex;align-items:center;gap:12px;justify-content:center}
+  .result .big{font-size:26px}
+  .rarity-gold{box-shadow:0 8px 40px rgba(255,190,60,0.12);border:1px solid rgba(255,210,120,0.25);padding:10px;border-radius:12px;background:linear-gradient(90deg,#fff2d6,#fff0c4)}
 
-/* highroller */
-#highRollerOverlay{position:absolute;right:18px;top:18px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.04);font-weight:800;color:var(--accent);display:none}
-.highroller-visible{display:block;animation:pulse 1.4s infinite}
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+  /* shiny animation */
+  .shimmer{position:relative;overflow:hidden}
+  .shimmer::after{content:'';position:absolute;left:-120%;top:0;width:40%;height:200%;transform:skewX(-18deg);background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.18), rgba(255,255,255,0));animation:shine 2.6s linear infinite}
+  @keyframes shine{from{left:-120%}to{left:140%}}
 
-/* ensure selected slot visual */
-.slot-selected{outline:3px solid rgba(255,255,255,0.12);transform:translateY(-4px);}
+  /* confetti canvas on top */
+  #confettiCanvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60}
 
-/* buff summary display */
-#buffSummary{margin-top:8px;color:#ffd166;font-weight:700;font-size:14px}
+  footer{padding:10px 14px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;align-items:center}
 
-/* ensure gacha button clickable */
-#gacha10, #gacha1, #gacha100, #skipGachaBtn, #backFromGacha {
-  position: relative;
-  z-index: 2000;
-  pointer-events: auto;
-}
-
-/* layout for gacha buttons row */
-.gacha-controls-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px}
-
-/* keep gachaResult above other UI */
-#gachaResult { z-index: 1100 !important; }
-
-@media (max-width:840px){
-  .reels{height:320px}
-  .cell{width:88px;height:66px;font-size:28px}
-  .item-card, .gacha-card{min-width:100px}
-}
+  /* small screens */
+  @media (max-width:420px){
+    .reel{height:120px}
+    .reel-item{height:60px}
+    .icon{width:48px;height:48px;font-size:20px}
+  }
 </style>
 </head>
 <body>
+  <div class="app">
+    <canvas id="confettiCanvas"></canvas>
+    <div class="panel" role="application" aria-label="デイリーガチャ">
+      <header>
+        <div class="logo">G</div>
+        <div>
+          <h1>デイリーガチャ — 豪華演出</h1>
+          <p>1日1回だけ挑戦できます。実際の排出確率は表示していません。</p>
+        </div>
+      </header>
 
-<div class="panel">
-  <!-- LOGIN -->
-  <div id="loginScreen" class="center">
-    <h2>🎰 Slot Ultimate v7.3.4（v7.0ベース）</h2>
-    <div style="padding:10px;max-width:640px;margin:0 auto">
-      <input id="playerName" placeholder="プレイヤー名を入力">
-      <div style="margin-top:8px;display:flex;gap:8px">
-        <button id="startBtn" style="flex:1;padding:12px;border-radius:8px;border:none;background:linear-gradient(180deg,var(--accent),#ffb700);font-weight:900;">ゲーム開始</button>
-      </div>
+      <main>
+        <div class="info">
+          <div class="card">
+            <h3>今日の挑戦状況</h3>
+            <p id="statusText">読み込み中...</p>
+          </div>
+          <div class="card">
+            <h3>次の解放</h3>
+            <p id="nextText">—</p>
+          </div>
+        </div>
+
+        <div class="prob-table" aria-hidden="false" title="表示確率（偽の値）">
+          <div class="prob shimmer"><div class="money">10円</div><div class="fakepct">表示 50%</div></div>
+          <div class="prob shimmer"><div class="money">50円</div><div class="fakepct">表示 30%</div></div>
+          <div class="prob shimmer"><div class="money">100円</div><div class="fakepct">表示 10%</div></div>
+          <div class="prob"><div class="money">500円</div><div class="fakepct">表示 5%</div></div>
+          <div class="prob"><div class="money">1000円</div><div class="fakepct">表示 3%</div></div>
+          <div class="prob"><div class="money">5000円</div><div class="fakepct">表示 2%</div></div>
+          <div class="prob"><div class="money">10000円</div><div class="fakepct">表示 1%</div></div>
+        </div>
+
+        <div class="gacha-wrap">
+          <div class="stage">
+            <div class="reel" aria-hidden="false">
+              <div class="reel-inner" id="reelInner" style="transform: translateY(0px);"></div>
+              <div class="center-marker"></div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="spinBtn" aria-label="ガチャを回す">ガチャを回す</button>
+            <button id="historyBtn" class="secondary">履歴</button>
+          </div>
+
+          <div class="result" id="resultBox">
+            <div id="resultText" class="small">ようこそ — 豪華な演出で1日1回挑戦できます。</div>
+          </div>
+        </div>
+
+      </main>
+
+      <footer>
+        <div id="footNote">※ 実際の排出確率は表示していません。</div>
+        <div class="small">© デイリーガチャ</div>
+      </footer>
     </div>
   </div>
-
-  <!-- GAME -->
-  <div id="gameScreen" class="hidden">
-    <div class="top-row">
-      <div>
-        <div id="playerLabel" style="font-weight:900;font-size:18px;">-</div>
-        <div id="levelLabel">Level 1</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="stat">CREDIT<br><b id="credits">1000</b></div>
-        <div class="stat">BET<br><b id="bet">10</b></div>
-
-        <div id="highRollerOverlay">HighRoller</div>
-      </div>
-    </div>
-
-    <div class="reels" id="reels"></div>
-
-    <div class="controls">
-      <button id="itemsBtn" class="muted">📦 所持アイテム</button>
-      <button id="gachaBtn" class="muted">🎰 ガチャ</button>
-      <button id="rankBtn" class="muted">🏆 ランキング</button>
-      <button id="autoBtn" class="muted">Auto: Off</button>
-      <button id="spinBtn">SPIN</button>
-      <!-- レベル戻しボタンを追加（v7.0） -->
-      <button id="slotLevelBackBtn" class="muted">Lv戻す</button>
-    </div>
-
-    <div class="input-row">
-      ベット額：<input id="betInput" type="text" value="10" />
-      <div style="font-size:12px;color:#ddd">例: 1億, 2兆, 3澗, 1無量大数 など単位対応</div>
-    </div>
-
-    <div id="msg" class="msg"></div>
-  </div>
-
-  <!-- RANK -->
-  <div id="rankScreen" class="hidden">
-    <h3>🏆 ランキング</h3>
-    <ul id="rankList" class="ranking-list"></ul>
-    <button id="backFromRank" class="muted" style="margin-top:8px;">戻る</button>
-  </div>
-
-  <!-- ITEMS -->
-  <div id="itemsScreen" class="hidden">
-    <h3>📦 所持アイテム</h3>
-    <div>所持数：<span id="itemCount">0</span></div>
-    <div id="itemsGrid" style="margin-top:8px"></div>
-    <div id="equipPanel" class="hidden" style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px">
-      <div id="equipInfo"></div>
-      <div id="buffSummary">合計バフ：確率 +0%　報酬 +0%　スピン速度 +0%</div>
-      <div id="equipSlotsContainer" style="display:flex;gap:6px;margin-top:8px"></div>
-      <button id="applyEquipBtn" class="muted">装備反映</button>
-      <button id="clearEquipBtn" class="muted">全解除</button>
-    </div>
-    <div style="margin-top:8px">
-      <button id="openEquipBtn" class="muted">装備パネル開閉</button>
-      <button id="sellSelectedBtn" class="muted">選択売却</button>
-      <button id="sellExcessBtn" class="muted">超過分自動売却</button>
-      <button id="backFromItems" class="muted">戻る</button>
-    </div>
-  </div>
-
-  <!-- GACHA -->
-  <div id="gachaScreen" class="hidden">
-    <h3>🎰 ガチャ</h3>
-
-    <!-- すべてのボタンを最下段に横並び配置 -->
-    <div class="gacha-controls-row" style="margin-top:16px; justify-content:center; flex-wrap:wrap;">
-      <button id="gacha1" class="muted" style="min-width:120px;">1回</button>
-      <button id="gacha10" class="muted" style="min-width:120px;">10連</button>
-      <button id="gacha100" class="muted" style="min-width:120px;">100連</button>
-      <button id="skipGachaBtn" class="muted" style="min-width:120px;">演出スキップ</button>
-      <button id="backFromGacha" class="muted" style="min-width:120px;">戻る</button>
-    </div>
-
-    <div id="gachaResult" class="gacha-wrapper" style="margin-top:18px; z-index:1100;"></div>
-    <div id="gachaLog" style="margin-top:6px;color:var(--accent)"></div>
-  </div>
-
-</div>
 
 <script>
-/* Slot Ultimate v7.3.4 — v7.0 ベース（忠実復元 + 指定修正のみ） */
-(function(){
-  'use strict';
-
-  /* -----------------------
-     DOM helpers
-     ----------------------- */
-  const $ = id => document.getElementById(id) || null;
-  const playerNameInput = $('playerName');
-  const startBtn = $('startBtn');
-  const loginScreen = $('loginScreen');
-  const gameScreen = $('gameScreen');
-  const reelsEl = $('reels');
-  const msgEl = $('msg');
-  const playerLabel = $('playerLabel');
-  const creditsEl = $('credits');
-  const betEl = $('bet');
-  const betInput = $('betInput');
-  let spinBtn = $('spinBtn');
-
-  const autoBtn = $('autoBtn');
-  const itemsBtn = $('itemsBtn');
-  const gachaBtn = $('gachaBtn');
-  const rankBtn = $('rankBtn');
-  const gacha1 = $('gacha1');
-  const gacha10 = $('gacha10');
-  const gacha100 = $('gacha100');
-  const skipGachaBtn = $('skipGachaBtn');
-  const gachaResult = $('gachaResult');
-  const gachaLog = $('gachaLog');
-  const backFromGacha = $('backFromGacha');
-  const itemsScreen = $('itemsScreen');
-  const itemsGrid = $('itemsGrid');
-  const itemCountEl = $('itemCount');
-  const equipPanel = $('equipPanel');
-  const equipInfo = $('equipInfo');
-  const applyEquipBtn = $('applyEquipBtn');
-  const clearEquipBtn = $('clearEquipBtn');
-  const openEquipBtn = $('openEquipBtn');
-  const sellSelectedBtn = $('sellSelectedBtn');
-  const sellExcessBtn = $('sellExcessBtn');
-  const backFromItems = $('backFromItems');
-  const rankScreen = $('rankScreen');
-  const rankList = $('rankList');
-  const backFromRank = $('backFromRank');
-  const highRollerOverlay = $('highRollerOverlay');
-
-  const levelLabel = $('levelLabel');
-  const equipSlotsContainer = $('equipSlotsContainer');
-  const buffSummaryEl = $('buffSummary');
-  const slotLevelBackBtn = $('slotLevelBackBtn');
-
-  /* -----------------------
-     State
-     ----------------------- */
-  let player = '';
-  let credits = BigInt(1000);
-  let bet = BigInt(10);
-  let level = 1;
-  let spinning = false; // public spinning flag used by UI to block double-spins
-  let reelBusy = false; // internal flag to indicate reel animation running
-  let inventory = [];
-  let equipSlots = Array(10).fill(null);
-  let autoLoopActive = false;
-  let totalSpins = 0;
-  let consecutiveWins = 0;
-  let earnedAchievements = [];
-
-  /* -----------------------
-     Gacha control flags
-     ----------------------- */
-  let gachaRunning = false; // 重複ガチャ防止フラグ
-  let gachaSkip = false;    // 演出スキップフラグ
-
-  /* -----------------------
-     Units definition (BigInt)
-     ----------------------- */
-  const UNITS_FULL_EXPANDED = [
-    { label: '一', value: BigInt('1') },
-    { label: '十', value: BigInt('10') },
-    { label: '百', value: BigInt('100') },
-    { label: '千', value: BigInt('1000') },
-    { label: '万', value: BigInt('1' + '0'.repeat(4)) },
-    { label: '億', value: BigInt('1' + '0'.repeat(8)) },
-    { label: '兆', value: BigInt('1' + '0'.repeat(12)) },
-    { label: '京', value: BigInt('1' + '0'.repeat(16)) },
-    { label: '垓', value: BigInt('1' + '0'.repeat(20)) },
-    { label: '秭', value: BigInt('1' + '0'.repeat(24)) },
-    { label: '穣', value: BigInt('1' + '0'.repeat(28)) },
-    { label: '溝', value: BigInt('1' + '0'.repeat(32)) },
-    { label: '澗', value: BigInt('1' + '0'.repeat(36)) },
-    { label: '正', value: BigInt('1' + '0'.repeat(40)) },
-    { label: '載', value: BigInt('1' + '0'.repeat(44)) },
-    { label: '極', value: BigInt('1' + '0'.repeat(48)) },
-    { label: '恒河沙', value: BigInt('1' + '0'.repeat(52)) },
-    { label: '阿僧祇', value: BigInt('1' + '0'.repeat(56)) },
-    { label: '那由他', value: BigInt('1' + '0'.repeat(60)) },
-    { label: '不可思議', value: BigInt('1' + '0'.repeat(64)) },
-    { label: '無量大数', value: BigInt('1' + '0'.repeat(68)) },
-    { label: '洛叉', value: BigInt('1' + '0'.repeat(72)) },
-    { label: '倶胝', value: BigInt('1' + '0'.repeat(76)) },
-    { label: '多婆羅', value: BigInt('1' + '0'.repeat(80)) },
-    { label: '界分', value: BigInt('1' + '0'.repeat(84)) },
-    { label: '普摩', value: BigInt('1' + '0'.repeat(88)) },
-    { label: '禰摩', value: BigInt('1' + '0'.repeat(92)) },
-    { label: '阿婆鈐', value: BigInt('1' + '0'.repeat(96)) },
-    { label: '弥伽婆', value: BigInt('1' + '0'.repeat(100)) },
-    { label: '伺察', value: BigInt('1' + '0'.repeat(104)) },
-    { label: '周広', value: BigInt('1' + '0'.repeat(108)) },
-    { label: '高出', value: BigInt('1' + '0'.repeat(112)) },
-    { label: '最妙', value: BigInt('1' + '0'.repeat(116)) },
-    { label: '泥羅婆', value: BigInt('1' + '0'.repeat(120)) },
-    { label: '訶理婆', value: BigInt('1' + '0'.repeat(124)) },
-    { label: '一動', value: BigInt('1' + '0'.repeat(128)) },
-    { label: '調伏', value: BigInt('1' + '0'.repeat(132)) },
-    { label: '離憍慢', value: BigInt('1' + '0'.repeat(136)) },
-    { label: '不動', value: BigInt('1' + '0'.repeat(140)) },
-    { label: '極量', value: BigInt('1' + '0'.repeat(144)) },
-    { label: '阿麼怛羅', value: BigInt('1' + '0'.repeat(148)) },
-    { label: '勃麼怛羅', value: BigInt('1' + '0'.repeat(152)) }
-  ];
-  const UNIT_LABELS_SORTED = UNITS_FULL_EXPANDED.map(u=>u.label).sort((a,b)=>b.length - a.length);
-
-  /* -----------------------
-     Symbols / paytable / gacha
-     ----------------------- */
-  const baseSymbols = ["🍒","🍋","🍊","⭐","💎"];
-  const proSymbols = ["🍒","🍋","🍊","⭐","💎","🔥","👑","💰"];
-  const godSymbols = ["🍒","🍋","🍊","⭐","💎","🔥","👑","💰","🌈","💥","🦄"];
-  const level4Symbols = godSymbols.concat(["🌋","🐉","💫","👁"]);
-  const level5Symbols = level4Symbols.concat(["🪬","⚛","💠","🔱","🌌","🔮"]);
-  function getSymbolsForLevel(l){
-    if (l <= 1) return baseSymbols;
-    if (l === 2) return proSymbols;
-    if (l === 3) return godSymbols;
-    if (l === 4) return level4Symbols;
-    return level5Symbols;
-  }
-  const payTable = {
-    "🍒": BigInt(5), "🍋": BigInt(8), "🍊": BigInt(10),
-    "⭐": BigInt(20), "💎": BigInt(50), "🔥": BigInt(100),
-    "👑": BigInt(150), "💰": BigInt(300), "🌈": BigInt(800),
-    "💥": BigInt(1500), "🦄": BigInt(2500), "🌋": BigInt(3000),
-    "🐉": BigInt(5000), "💫": BigInt(8000), "👁": BigInt(12000),
-    "🪬": BigInt(50000), "⚛": BigInt(100000), "💠": BigInt(150000),
-    "🔱": BigInt(250000), "🌌": BigInt(1000000), "🔮": BigInt(2000000)
-  };
-
-  const gachaRates = [
-    { key: 'common', p: 70.999 },
-    { key: 'uncommon', p: 20.0 },
-    { key: 'R', p: 7.0 },
-    { key: 'SR', p: 1.0 },
-    { key: 'SSR', p: 0.99 },
-    { key: 'UR', p: 0.01 },
-    { key: 'UGR', p: 0.001 }
+(() => {
+  const PRIZES = [
+    { id: 'p10',   name: '10円',    emoji:'🪙', price:10,    chance:93.00 },
+    { id: 'p50',   name: '50円',    emoji:'💠', price:50,    chance:5.00 },
+    { id: 'p100',  name: '100円',   emoji:'🔹', price:100,   chance:1.00 },
+    { id: 'p500',  name: '500円',   emoji:'🏅', price:500,   chance:0.70 },
+    { id: 'p1000', name: '1000円',  emoji:'🎖️', price:1000,  chance:0.15 },
+    { id: 'p5000', name: '5000円',  emoji:'🏆', price:5000,  chance:0.10 },
+    { id: 'p10000',name: '10000円', emoji:'👑', price:10000, chance:0.05 },
   ];
 
-  const rarityEffect = {
-    common: { chanceAdd: 0.7, payoutPct: 1, perSpinBonusPct: 0 },
-    uncommon: { chanceAdd: 1.0, payoutPct: 3, perSpinBonusPct: 0 },
-    R: { chanceAdd: 1.5, payoutPct: 5, perSpinBonusPct: 0 },
-    SR: { chanceAdd: 3.0, payoutPct: 10, perSpinBonusPct: 0.1 },
-    SSR: { chanceAdd: 10.0, payoutPct: 100, feverChancePct: 5, feverLength: 10, feverExtraPct: 300, spinSpeedPct: 3, ivMax: 150 },
-    UR: { chanceAdd: 50.0, payoutPct: 1000, perSpinHoldChancePct: 5, perSpinHoldPct: 1, spinSpeedPct: 10, rareRewardChancePct: 3, rareRewardMultiplierPct: 10000, ivMax: 150 },
-    UGR: { chanceAdd: 100.0, payoutPct: 3000, perSpinHoldChancePct: 20, perSpinHoldPct: 30, spinSpeedPct: 50, superFeverChancePct: 1, superFeverMultiplierPct: 10000, superFeverLength: 10, ivMax: 150 }
-  };
+  const DISPLAY_PCTS = ['50%','30%','10%','5%','3%','2%','1%'];
 
-  const UNLOCK_GACHA_ITEMS_CREDITS = BigInt("1000000000000"); // 1兆
+  const reelInner = document.getElementById('reelInner');
+  const spinBtn = document.getElementById('spinBtn');
+  const historyBtn = document.getElementById('historyBtn');
+  const statusText = document.getElementById('statusText');
+  const nextText = document.getElementById('nextText');
+  const resultBox = document.getElementById('resultBox');
+  const resultText = document.getElementById('resultText');
 
-  /* -----------------------
-     Utilities
-     ----------------------- */
-  function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+  const STORAGE_KEY = 'daily_gacha_last_spin_v2';
+  const HISTORY_KEY = 'daily_gacha_history_v2';
 
-  function formatNumWithUnit(val){
-    try{
-      if (typeof val === 'number') val = BigInt(Math.floor(val));
-    }catch(e){}
-    if (typeof val !== 'bigint') {
-      try{ val = BigInt(val); }catch(e){ return String(val); }
-    }
-    if (val < 10000n) return val.toString();
-    for (let i = UNITS_FULL_EXPANDED.length - 1; i >= 0; i--){
-      const unit = UNITS_FULL_EXPANDED[i];
-      if (val >= unit.value){
-        const integer = val / unit.value;
-        const remainder = val % unit.value;
-        const decimalDigit = Number((remainder * 10n) / unit.value);
-        let out = integer.toString();
-        if (decimalDigit > 0){
-          out += '.' + String(decimalDigit);
-        }
-        out += unit.label;
-        return out;
+  // Build reel items
+  function buildReelItems(repeat = 10) {
+    const frag = document.createDocumentFragment();
+    for (let r=0;r<repeat;r++){
+      for (let i=0;i<PRIZES.length;i++){
+        const p = PRIZES[i];
+        const div = document.createElement('div');
+        div.className = 'reel-item';
+        div.dataset.prize = p.id;
+        const isPremium = p.price >= 1000;
+        div.innerHTML = `
+          <div class="icon ${isPremium ? 'rarity-gold':''}" aria-hidden="true">${p.emoji}</div>
+          <div>
+            <div class="label">${p.name}</div>
+            <div class="sub">表示確率 ${DISPLAY_PCTS[i]}</div>
+          </div>
+        `;
+        frag.appendChild(div);
       }
     }
-    return val.toString();
+    reelInner.appendChild(frag);
   }
+  buildReelItems(12);
 
-  function parseNumWithUnit(str){
-    if (str === null || str === undefined) return BigInt(0);
-    if (typeof str === 'bigint') return str;
-    const raw = String(str).trim().replace(/,/g,'').replace(/\s+/g,'');
-    if (raw === '') return BigInt(0);
-    if (/^\d+$/.test(raw)) return BigInt(raw);
-    let remaining = raw;
+  // cumulative for selection
+  const cumulative = [];
+  let acc = 0;
+  for (const p of PRIZES){ acc += p.chance; cumulative.push({ id:p.id, upto:acc }); }
 
-    let total = 0n;
-    let foundAny = false;
-    const labels = UNIT_LABELS_SORTED;
-    for (const label of labels){
-      const regex = new RegExp('(\\d+(?:\\.\\d+)?)' + label);
-      const m = remaining.match(regex);
-      if (m){
-        const numStr = m[1];
-        const numFloat = parseFloat(numStr);
-        if (!isNaN(numFloat)){
-          const unitVal = UNITS_FULL_EXPANDED.find(u=>u.label===label).value;
-          // treat decimal part by multiplying
-          const whole = Math.floor(numFloat);
-          const part = BigInt(Math.floor(numFloat)) * unitVal;
-          total += part;
-          remaining = remaining.replace(m[0], '');
-          foundAny = true;
-        }
-      }
-    }
-    const leftoverMatch = remaining.match(/(\d+)/);
-    if (leftoverMatch){
-      total += BigInt(leftoverMatch[1]);
-      foundAny = true;
-    }
-    if (foundAny) return total;
-    const m2 = raw.match(/^([\d.]+)(.*)$/);
-    if (!m2) return BigInt(0);
-    const numPart = parseFloat(m2[1]);
-    if (isNaN(numPart)) return BigInt(0);
-    return BigInt(Math.floor(numPart));
-  }
-
-  /* -----------------------
-     Safe credit add/sub helpers
-     ----------------------- */
-  function safeAddCredits(v){
-    try{
-      if (typeof v === 'bigint') { credits += v; return; }
-      if (typeof v === 'number') { credits += BigInt(Math.floor(v)); return; }
-      const n = Number(v);
-      if (!Number.isNaN(n)) { credits += BigInt(Math.floor(n)); return; }
-      credits += BigInt(v);
-    }catch(e){
-      console.warn('safeAddCredits failed for value:', v, e);
-      try{ credits += BigInt(0); }catch(_){}
-    }
-  }
-  function safeSubCredits(v){
-    try{
-      if (typeof v === 'bigint') { credits -= v; return; }
-      if (typeof v === 'number') { credits -= BigInt(Math.floor(v)); return; }
-      const n = Number(v);
-      if (!Number.isNaN(n)) { credits -= BigInt(Math.floor(n)); return; }
-      credits -= BigInt(v);
-    }catch(e){
-      console.warn('safeSubCredits failed for value:', v, e);
-      try{ credits -= BigInt(0); }catch(_){}
-    }
-  }
-
-  /* -----------------------
-     Persistence helpers
-     ----------------------- */
-  function savePlayerMeta(){ if (!player) return; try{ localStorage.setItem('slotPlayer_'+player, JSON.stringify({credits: credits.toString(), level})); }catch(e){} }
-  function loadPlayerMeta(name){ try{ const raw = localStorage.getItem('slotPlayer_'+name); if(!raw) return null; const obj = JSON.parse(raw); if(obj && obj.credits) obj.credits = BigInt(obj.credits); return obj; }catch(e){return null;} }
-  function saveInventoryToStorage(){ if(!player) return; try{ localStorage.setItem('slotItems_'+player, JSON.stringify(inventory)); }catch(e){} }
-  function loadInventoryFromStorage(name){ try{ return JSON.parse(localStorage.getItem('slotItems_'+name) || "[]"); }catch(e){ return []; } }
-  function saveEquipToStorage(){ if(!player) return; try{ localStorage.setItem('slotEquip_'+player, JSON.stringify(equipSlots)); }catch(e){} }
-  function loadEquipFromStorage(name){ try{ return JSON.parse(localStorage.getItem('slotEquip_'+name) || "[]"); }catch(e){ return Array(10).fill(null); } }
-  function saveAchievementsToStorage(){ try{ if (!player) return; localStorage.setItem('slotAchievements_'+player, JSON.stringify({ totalSpins, consecutiveWins, earnedAchievements })); }catch(e){} }
-  function loadAchievementsFromStorageForPlayer(name){ try{ const raw = localStorage.getItem('slotAchievements_'+name); if(!raw) return null; return JSON.parse(raw); }catch(e){ return null; } }
-
-  /* -----------------------
-     Grid build
-     ----------------------- */
-  function buildGrid(){
-    if (!reelsEl) return;
-    reelsEl.innerHTML = '';
-    const syms = getSymbolsForLevel(level);
-    for (let i=0;i<9;i++){
-      const d = document.createElement('div');
-      d.className = 'cell';
-      d.textContent = syms[Math.floor(Math.random()*syms.length)];
-      reelsEl.appendChild(d);
-    }
-  }
-
-  /* -----------------------
-     Spin animation (Promise-based)
-     ----------------------- */
-  function animateCellSpin(cellEl, durationMs, intervalMs=50){
-    let stopped = false;
-    let tId = null;
-    const syms = getSymbolsForLevel(level);
-    return new Promise((resolve)=>{
-      const start = Date.now();
-      function step(){
-        if (stopped) return;
-        const now = Date.now();
-        if (now - start >= durationMs){
-          stopped = true;
-          clearInterval(tId);
-          resolve();
-          return;
-        }
-        try{
-          cellEl.textContent = syms[Math.floor(Math.random()*syms.length)];
-        }catch(e){}
-      }
-      tId = setInterval(step, intervalMs);
-      step();
-    });
-  }
-
-  async function spinColumnToFinal(colIndices, finalSymbols, baseDur){
-    if (!reelsEl) return;
-    const promises = colIndices.map((cellIndex, rowIdx) => {
-      const cellEl = reelsEl.children[cellIndex];
-      const cellDur = Math.max(160, baseDur + rowIdx * 120 + Math.floor(Math.random()*80));
-      return (async ()=>{
-        if (cellEl) cellEl.classList.add('spin');
-        try{ await animateCellSpin(cellEl, cellDur, 45); }catch(e){}
-        if (cellEl) {
-          cellEl.classList.remove('spin');
-          cellEl.classList.add('stop');
-          cellEl.textContent = finalSymbols[rowIdx];
-          await sleep(120);
-          cellEl.classList.remove('stop');
-        }
-      })();
-    });
-    await Promise.all(promises);
-  }
-
-  /* -----------------------
-     spinReelsAsync — 修正版:
-     - reelBusy: reel animation内部フラグを導入。これにより
-       UIからの複数同時起動や auto-loop と手動スピンの衝突で
-       「スピンが完了できませんでした」が出る問題を排除。
-     - 例外時でも必ず reelBusy を false に戻す（finally）して所持金が引かれたまま
-       何も起きない現象を防止。
-     ----------------------- */
-  async function spinReelsAsync(betVal){
-    if (reelBusy) return { success:false, reason:'already' };
-    reelBusy = true;
-    // Do not touch global spinning here except for UI convenience; caller controls 'spinning'
-    try{
-      if (!reelsEl) return { success:false, reason:'no_reels' };
-      const syms = getSymbolsForLevel(level);
-      const finalCols = [
-        [syms[Math.floor(Math.random()*syms.length)], syms[Math.floor(Math.random()*syms.length)], syms[Math.floor(Math.random()*syms.length)]],
-        [syms[Math.floor(Math.random()*syms.length)], syms[Math.floor(Math.random()*syms.length)], syms[Math.floor(Math.random()*syms.length)]],
-        [syms[Math.floor(Math.random()*syms.length)], syms[Math.floor(Math.random()*syms.length)], syms[Math.floor(Math.random()*syms.length)]]
-      ];
-      const baseDurations = [640 + Math.random()*160, 920 + Math.random()*160, 1180 + Math.random()*160];
-      const colIndicesList = [[0,3,6],[1,4,7],[2,5,8]];
-      // Run each column with slight stagger; but return success only after all done
-      const columnPromises = colIndicesList.map((colIdxs, colIdx) =>
-        spinColumnToFinal(colIdxs, finalCols[colIdx], Math.floor(baseDurations[colIdx])));
-      await Promise.all(columnPromises);
-      // final result row-major
-      const finalResult = [];
-      for (let r=0;r<3;r++){
-        for (let c=0;c<3;c++) finalResult.push(finalCols[c][r]);
-      }
-      return { success:true, result: finalResult };
-    }catch(err){
-      console.error('spinReelsAsync error', err);
-      return { success:false, reason:'exception' };
-    }finally{
-      reelBusy = false;
-    }
-  }
-
-  /* -----------------------
-     computeFormationBuff (existing)
-     ----------------------- */
-  function computeFormationBuff(formation){
-    const out = {
-      chanceBoostPercentTotal: 0,
-      rewardBoostPercentTotal: 0,
-      perSpinBetCurrency: 0,
-      feverChancePct: 0,
-      feverLength: 0,
-      feverExtraPct: 0,
-      superFeverChancePct: 0,
-      superFeverLength: 0,
-      perSpinHoldEffects: [],
-      rareRewardChancePct: 0,
-      rareRewardMultiplierPct: 0,
-      spinSpeedPctTotal: 0,
-      ugrInFormation: false
-    };
-
-    formation.forEach(it => {
-      if (!it || !it.rarity) return;
-      const r = it.rarity;
-      const eff = rarityEffect[r] || {};
-      const ivMul = 1 + (Number(it.ivPct || 0) / 100);
-      out.chanceBoostPercentTotal += (eff.chanceAdd || 0) * ivMul;
-      out.rewardBoostPercentTotal += (eff.payoutPct || 0) * ivMul;
-      if (eff.perSpinBonusPct) out.perSpinBetCurrency += eff.perSpinBonusPct * ivMul;
-      if (eff.feverChancePct) out.feverChancePct += eff.feverChancePct * ivMul;
-      if (eff.feverLength) out.feverLength = Math.max(out.feverLength, eff.feverLength);
-      if (eff.feverExtraPct) out.feverExtraPct = Math.max(out.feverExtraPct, eff.feverExtraPct);
-      if (eff.spinSpeedPct) out.spinSpeedPctTotal += eff.spinSpeedPct * ivMul;
-      if (eff.perSpinHoldChancePct) out.perSpinHoldEffects.push({ chancePct: eff.perSpinHoldChancePct * ivMul, holdPct: eff.perSpinHoldPct * ivMul });
-      if (eff.rareRewardChancePct) out.rareRewardChancePct = Math.max(out.rareRewardChancePct, eff.rareRewardChancePct * ivMul);
-      if (eff.rareRewardMultiplierPct) out.rareRewardMultiplierPct = Math.max(out.rareRewardMultiplierPct, eff.rareRewardMultiplierPct * ivMul);
-      if (eff.superFeverChancePct) {
-        out.superFeverChancePct += eff.superFeverChancePct * ivMul;
-        out.superFeverLength = Math.max(out.superFeverLength || 0, eff.superFeverLength || 0);
-      }
-      if (r === 'UGR') out.ugrInFormation = true;
-    });
-    return out;
-  }
-
-  /* -----------------------
-     Slot level penalties
-     ----------------------- */
-  const SLOT_LEVEL_PENALTIES = { 4: -300, 5: -500 };
-  function adjustedBuffChanceForLevel(buffPercent, lvl){
-    const penalty = SLOT_LEVEL_PENALTIES[lvl] || 0;
-    return buffPercent + penalty;
-  }
-
-  /* -----------------------
-     Achievements config & awarding
-     ----------------------- */
-  const ACHIEVEMENT_TOTAL = [100,1000,5000,10000,20000,30000,50000,100000];
-  const ACHIEVEMENT_CONSEC = [5,10,15,20,50];
-  function checkAndGrantAchievements(){
-    const newly = [];
-    ACHIEVEMENT_TOTAL.forEach(th => {
-      if (totalSpins >= th && !earnedAchievements.find(a=>a.type==='total' && a.th===th)){
-        earnedAchievements.push({ type:'total', th, at:Date.now() });
-        newly.push({ type:'total', th });
-      }
-    });
-    ACHIEVEMENT_CONSEC.forEach(th => {
-      if (consecutiveWins >= th && !earnedAchievements.find(a=>a.type==='consec' && a.th===th)){
-        earnedAchievements.push({ type:'consec', th, at:Date.now() });
-        newly.push({ type:'consec', th });
-      }
-    });
-    if (newly.length){
-      saveAchievementsToStorage();
-      newly.forEach(n => showMsg(`実績解除: ${n.type === 'total' ? '総スピン' : '連続勝利'} ${n.th}` , 4000));
-    }
-  }
-
-  /* -----------------------
-     handleSpinResult — preserved / integrated
-     ----------------------- */
-  const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  function payForSymbol(sym){ return payTable[sym] || BigInt(0); }
-
-  function spawnCoins(n){
-    for (let i=0;i<n;i++){
-      const c = document.createElement('div');
-      c.className = 'coin';
-      c.textContent = '🪙';
-      c.style.left = Math.random()*window.innerWidth + 'px';
-      c.style.top = (window.innerHeight * 0.12) + 'px';
-      document.body.appendChild(c);
-      setTimeout(()=> c.remove(), 1400);
-    }
-  }
-
-  function finalizeSpinAfterCalculations(total, betVal){
-    try{
-      if (typeof total === 'bigint'){
-        safeAddCredits(total);
-      } else {
-        safeAddCredits(BigInt(total));
-      }
-      if (total > 0n){
-        showMsg(`🎉 当たり！ +${formatNumWithUnit(total)}`, 3500);
-        spawnCoins(12);
-        consecutiveWins += 1;
-      } else {
-        showMsg('💨 はずれ...', 1800);
-        consecutiveWins = 0;
-      }
-      updateUI();
-      checkLevelUp();
-      savePlayerMeta();
-      saveRank();
-      saveInventoryToStorage();
-      saveEquipToStorage();
-      saveAchievementsToStorage();
-      checkAndGrantAchievements();
-    }catch(e){
-      console.error('finalizeSpinAfterCalculations error', e);
-      showMsg('結果処理でエラーが発生しました');
-    }
-  }
-
-  function handleSpinResult(result, betVal, formationBuff = {}, formation = []){
-    try{
-      totalSpins += 1;
-
-      let total = BigInt(0);
-      const cells = document.querySelectorAll('.cell');
-      if (!cells || cells.length < 9){
-        if (reelsEl) buildGrid();
-      }
-      const cellsArr = document.querySelectorAll('.cell');
-      cellsArr.forEach(n=> n.classList.remove('win'));
-      // natural matches
-      LINES.forEach((line)=>{
-        const [a,b,c] = line;
-        if (result[a] === result[b] && result[b] === result[c]){
-          let val = payForSymbol(result[a]) * betVal;
-          if (formationBuff && formationBuff.rewardBoostPercentTotal){
-            val = val * BigInt(Math.floor(100 + formationBuff.rewardBoostPercentTotal)) / BigInt(100);
-          }
-          if (window.playerState && window.playerState.inSuperFever){
-            const multPct = rarityEffect['UGR'] ? rarityEffect['UGR'].superFeverMultiplierPct || 10000 : 10000;
-            val = val * BigInt(Math.floor(1 + multPct/100));
-          } else if (window.playerState && window.playerState.inFever){
-            const extra = formationBuff.feverExtraPct || 0;
-            val = val * BigInt(Math.floor(1 + extra/100));
-          }
-          total += val;
-          line.forEach(i => { if (cellsArr[i]) cellsArr[i].classList.add('win'); });
-        }
-      });
-
-      // synthetic win via formation buff if no natural win
-      if (total === 0n && formationBuff && formationBuff.chanceBoostPercentTotal){
-        const adjustedBuffPercentSafe = (typeof adjustedBuffChanceForLevel === 'function') ? adjustedBuffChanceForLevel(formationBuff.chanceBoostPercentTotal, level) : formationBuff.chanceBoostPercentTotal;
-        const prob = Math.min(0.999, Math.max(0, adjustedBuffPercentSafe / 100));
-        if (Math.random() < prob){
-          const pickLineIndex = Math.floor(Math.random() * LINES.length);
-          const pickLine = LINES[pickLineIndex];
-          let chosenSymbol = result[pickLine[1]] || "💎";
-          pickLine.forEach(i=>{
-            const cellEl = cellsArr[i];
-            if (cellEl) {
-              try{ cellEl.textContent = chosenSymbol; }catch(e){}
-            }
-          });
-          pickLine.forEach(i => { if (cellsArr[i]) cellsArr[i].classList.add('win'); });
-          let val = payForSymbol(chosenSymbol) * betVal;
-          if (formationBuff && formationBuff.rewardBoostPercentTotal) val = val * BigInt(Math.floor(100 + formationBuff.rewardBoostPercentTotal)) / BigInt(100);
-          if (window.playerState && window.playerState.inSuperFever){
-            const multPct = rarityEffect['UGR'] ? rarityEffect['UGR'].superFeverMultiplierPct || 10000 : 10000;
-            val = val * BigInt(Math.floor(1 + multPct/100));
-          } else if (window.playerState && window.playerState.inFever){
-            const extra = formationBuff.feverExtraPct || 0;
-            val = val * BigInt(Math.floor(1 + extra/100));
-          }
-          total += val;
-        }
-      }
-
-      // UR/UGR per-spin hold effects
-      if (formationBuff && formationBuff.perSpinHoldEffects && formationBuff.perSpinHoldEffects.length){
-        formationBuff.perSpinHoldEffects.forEach(eff => {
-          if (Math.random() < (eff.chancePct / 100)){
-            const amt = credits * BigInt(Math.floor(eff.holdPct)) / BigInt(100);
-            if (amt > 0n){
-              safeAddCredits(amt);
-            }
-          }
-        });
-      }
-
-      // UR rare reward
-      if (formationBuff && formationBuff.rareRewardChancePct){
-        if (Math.random() < (formationBuff.rareRewardChancePct / 100)){
-          const m = formationBuff.rareRewardMultiplierPct || rarityEffect['UR'].rareRewardMultiplierPct || 10000;
-          const bonus = betVal * BigInt(Math.floor(1 + m/100));
-          total += bonus;
-        }
-      }
-
-      // decrease fever counters
-      if (window.playerState && window.playerState.inFever){
-        window.playerState.feverRemaining = Math.max(0, (window.playerState.feverRemaining || 0) - 1);
-        if (window.playerState.feverRemaining <= 0) window.playerState.inFever = false;
-      }
-      if (window.playerState && window.playerState.inSuperFever){
-        window.playerState.superFeverRemaining = Math.max(0, (window.playerState.superFeverRemaining || 0) - 1);
-        if (window.playerState.superFeverRemaining <= 0) window.playerState.inSuperFever = false;
-      }
-
-      finalizeSpinAfterCalculations(total, betVal);
-    }catch(e){
-      console.error('handleSpinResult error', e);
-      showMsg('結果処理でエラー');
-    }
-  }
-
-  /* -----------------------
-     UI helpers & level up
-     ----------------------- */
-  function showMsg(t, ms=3000){ if (!msgEl) return; msgEl.textContent = t; if (msgEl._timer) clearTimeout(msgEl._timer); msgEl._timer = setTimeout(()=> msgEl.textContent = '', ms); }
-
-  function updateUI(){
-    if (creditsEl) creditsEl.textContent = formatNumWithUnit(credits);
-    if (betEl) betEl.textContent = formatNumWithUnit(bet);
-    if (levelLabel) levelLabel.textContent = 'Level ' + level;
-    if (itemsBtn) itemsBtn.classList.toggle('muted', credits < UNLOCK_GACHA_ITEMS_CREDITS);
-    if (gachaBtn) gachaBtn.classList.toggle('muted', credits < UNLOCK_GACHA_ITEMS_CREDITS);
-    if (itemCountEl) itemCountEl.textContent = inventory.length;
-    updateBuffSummaryUI();
-  }
-
-  function checkLevelUp(){
-    try{
-      if (credits >= BigInt(1_000_000) && level < 2){ level = 2; showMsg('🎉 Lv2 到達！'); }
-      if (credits >= BigInt(1_000_000_000) && level < 3){ level = 3; showMsg('🎉 Lv3 到達！'); }
-
-      const valMizo = (UNITS_FULL_EXPANDED.find(u=>u.label==='溝')?.value) || BigInt('1' + '0'.repeat(32));
-      const valMizo10 = valMizo * BigInt(10);
-      const valMuryodaisu = (UNITS_FULL_EXPANDED.find(u=>u.label==='無量大数')?.value) || BigInt('1' + '0'.repeat(68));
-      const valMuryodaisu1 = valMuryodaisu * BigInt(1);
-      if (credits >= valMizo10 && level < 4){ level = 4; showMsg('🎉 Lv4 到達！'); }
-      if (credits >= valMuryodaisu1 && level < 5){ level = 5; showMsg('🎉 Lv5 到達！'); }
-    }catch(e){ console.error(e); }
-  }
-
-  /* -----------------------
-     Items / equip UI
-     ----------------------- */
-  const sellPriceByRarity = { common: BigInt(10000), uncommon: BigInt(30000), R: BigInt(100000), SR: BigInt(500000), SSR: BigInt(2000000), UR: BigInt(5000000), UGR: BigInt(10000000) };
-  const RARITY_ORDER = ['common','uncommon','R','SR','SSR','UR','UGR'];
-
-  if (itemsGrid){
-    if (!itemsGrid._delegationBound){
-      itemsGrid.addEventListener('click', function(e){
-        const card = e.target.closest('.item-card');
-        if (!card) return;
-        card.classList.toggle('selected');
-      });
-      itemsGrid._delegationBound = true;
-    }
-  }
-
-  function renderItemsGrid(){
-    if (!itemsGrid) return;
-    itemsGrid.innerHTML = '';
-    inventory.forEach(it=>{
-      const el = document.createElement('div');
-      el.className = 'item-card r-'+(it.rarity||'common');
-      el.dataset.id = it.id;
-      el.style.position = 'relative';
-      el.innerHTML = `<div style="font-weight:900">${it.name}</div><div style="font-size:12px;margin-top:6px">${it.rarity.toUpperCase()}</div><div style="font-size:12px;margin-top:6px">IV:${(it.ivPct||0)}%</div>`;
-      if (equipSlots.includes(it.id)){
-        const b = document.createElement('div'); b.className='equipped-badge'; b.textContent='EQUIP'; el.appendChild(b);
-      }
-      el.addEventListener('dblclick', ()=> showItemInfo(it));
-      itemsGrid.appendChild(el);
-    });
-    renderEquipSlotUI();
-    updateUI();
-  }
-
-  function renderEquipSlotUI(){
-    if (!equipSlotsContainer) return;
-    equipSlotsContainer.innerHTML = '';
-    for (let i=0;i<10;i++){
-      const s = document.createElement('div');
-      s.style.minWidth='40px'; s.style.minHeight='40px'; s.style.border='1px solid rgba(255,255,255,0.06)';
-      s.style.borderRadius='6px'; s.style.display='flex'; s.style.alignItems='center';
-      s.style.justifyContent='center'; s.style.cursor='pointer';
-      s.dataset.index = i;
-      s.textContent = equipSlots[i] ? 'E' : (i+1);
-      if (equipSlots[i]) s.style.background='rgba(255,215,0,0.08)';
-      s.addEventListener('click', ()=>{
-        const already = s.classList.contains('slot-selected');
-        document.querySelectorAll('#equipSlotsContainer .slot-selected').forEach(x=> x.classList.remove('slot-selected'));
-        if (!already) s.classList.add('slot-selected');
-      });
-      equipSlotsContainer.appendChild(s);
-    }
-    updateBuffSummaryUI();
-  }
-
-  function showItemInfo(it){ const eff = rarityEffect[it.rarity] || {}; alert(`${it.name}\nレアリティ: ${it.rarity}\nIV: ${it.ivPct || 0}%\n確率補正: ${eff.chanceAdd||0}%\n獲得ボーナス: ${eff.payoutPct||0}%`); }
-
-  if (applyEquipBtn) applyEquipBtn.addEventListener('click', ()=>{
-    const selectedItems = Array.from(itemsGrid.querySelectorAll('.item-card.selected'));
-    if (selectedItems.length === 0){ showMsg('装備するアイテムを選択してください'); return; }
-    const slotEl = equipSlotsContainer && equipSlotsContainer.querySelector('.slot-selected');
-    if (!slotEl){ showMsg('装備するスロットを選択してください'); return; }
-    const slotIdx = Number(slotEl.dataset.index);
-    const itemId = selectedItems[0].dataset.id;
-    const idx = inventory.findIndex(x=> x.id === itemId);
-    if (idx < 0){ showMsg('選択アイテムが見つかりません'); return; }
-    equipSlots[slotIdx] = itemId;
-    saveEquipToStorage();
-    renderItemsGrid();
-    renderEquipSlotUI();
-    updateBuffSummaryUI();
-    showMsg('装備反映しました');
-  });
-
-  if (clearEquipBtn) clearEquipBtn.addEventListener('click', ()=>{
-    equipSlots = Array(10).fill(null);
-    saveEquipToStorage();
-    renderItemsGrid();
-    renderEquipSlotUI();
-    updateBuffSummaryUI();
-    showMsg('装備を全解除しました');
-  });
-
-  if (openEquipBtn) openEquipBtn.addEventListener('click', ()=>{
-    if (!equipPanel) return;
-    equipPanel.classList.toggle('hidden');
-    if (!equipPanel.classList.contains('hidden')) renderEquipSlotUI();
-  });
-
-  if (sellSelectedBtn) sellSelectedBtn.addEventListener('click', ()=>{
-    const selectedEls = Array.from(itemsGrid.querySelectorAll('.item-card.selected'));
-    if (selectedEls.length === 0){ showMsg('売却するアイテムを選択してください'); return; }
-    let gained = BigInt(0);
-    selectedEls.forEach(el=>{
-      const id = el.dataset.id;
-      const idx = inventory.findIndex(x=> x.id === id);
-      if (idx>=0){
-        const it = inventory[idx];
-        const price = sellPriceByRarity[it.rarity] || BigInt(0);
-        gained += price;
-        inventory.splice(idx,1);
-        equipSlots = equipSlots.map(sid => sid === id ? null : sid);
-      }
-    });
-    safeAddCredits(gained);
-    saveInventoryToStorage();
-    saveEquipToStorage();
-    renderItemsGrid();
-    updateUI();
-    showMsg(`売却完了 +${formatNumWithUnit(gained)}`);
-  });
-
-  if (sellExcessBtn) sellExcessBtn.addEventListener('click', ()=>{
-    const threshold = 5;
-    const byR = {};
-    inventory.forEach(it => { (byR[it.rarity] = byR[it.rarity]||[]).push(it); });
-    let totalGain = BigInt(0);
-    for (const r of RARITY_ORDER){
-      const arr = byR[r] || [];
-      if (arr.length > threshold){
-        const extras = arr.slice(threshold);
-        extras.forEach(it=>{
-          const idx = inventory.findIndex(x=> x.id === it.id);
-          if (idx>=0){
-            const price = sellPriceByRarity[it.rarity] || BigInt(0);
-            totalGain += price;
-            inventory.splice(idx,1);
-            equipSlots = equipSlots.map(sid => sid === it.id ? null : sid);
-          }
-        });
-      }
-    }
-    if (totalGain > 0n){
-      safeAddCredits(totalGain);
-      saveInventoryToStorage();
-      saveEquipToStorage();
-      renderItemsGrid();
-      updateUI();
-      showMsg(`超過分自動売却 +${formatNumWithUnit(totalGain)}`);
-    } else showMsg('超過分はありません');
-  });
-
-  function updateBuffSummaryUI(){
-    if (!buffSummaryEl) return;
-    const formation = equipSlots.map(id => inventory.find(it => it && it.id === id)).filter(Boolean);
-    const buff = computeFormationBuff(formation);
-    buffSummaryEl.textContent = `合計バフ：確率 +${Number(buff.chanceBoostPercentTotal).toFixed(2).replace(/\.00$/,'')}%　報酬 +${Number(buff.rewardBoostPercentTotal).toFixed(2).replace(/\.00$/,'')}%　スピン速度 +${Number(buff.spinSpeedPctTotal).toFixed(2).replace(/\.00$/,'')}%`;
-  }
-
-  /* -----------------------
-     Gacha / visual
-     ----------------------- */
-  function ugrInEquip(){
-    return equipSlots.some(id=>{
-      const it = inventory.find(x=> x.id === id);
-      return it && it.rarity === 'UGR';
-    });
-  }
-
-  function randomIVForRarity(rarity, biasPercent = 0){
-    const eff = rarityEffect[rarity] || {};
-    const max = eff.ivMax || 150;
-    let iv = Math.random() * max;
-    if (rarity === 'SR') iv = iv * 0.9 + max * 0.1;
-    if (rarity === 'SSR') iv = iv * 0.85 + max * 0.15;
-    if (rarity === 'UR') iv = iv * 0.8 + max * 0.2;
-    if (rarity === 'UGR') iv = iv * 0.7 + max * 0.3;
-    iv += biasPercent;
-    iv = Math.min(iv, max);
-    return Math.floor(iv * 100) / 100;
-  }
-
-  function generateItem(rarity, options = {}){
-    const id = 'it_' + Date.now().toString(36) + '_' + Math.floor(Math.random()*99999);
-    const name = rarity.toUpperCase() + ' ITEM';
-    const bias = (options.ugrBiasPercent || 0);
-    return { id, rarity, name, ivPct: randomIVForRarity(rarity, bias), createdAt: Date.now() };
-  }
-
-  function addItemToInventory(rarity, options = {}){
-    const it = generateItem(rarity, options);
-    inventory.push(it);
-    saveInventoryToStorage();
-    renderItemsGrid();
-    return it;
-  }
-
-  function drawGachaRarity(){
+  function choosePrizeRandom(){
     const r = Math.random() * 100;
-    let cum = 0;
-    for (const g of gachaRates){
-      cum += g.p;
-      if (r <= cum) return g.key;
-    }
-    return 'common';
+    for (const c of cumulative){ if (r <= c.upto) return PRIZES.find(p => p.id === c.id); }
+    return PRIZES[0];
   }
 
-  function calcCostByPercent(percent){
-    try{
-      const p = BigInt(Math.floor(percent));
-      return (credits * p) / 100n;
-    }catch(e){ return 0n; }
-  }
+  function getTodayKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+  function hasSpunToday(){ try{ const v=localStorage.getItem(STORAGE_KEY); return v===getTodayKey(); }catch(e){return false} }
+  function recordSpin(){ try{ localStorage.setItem(STORAGE_KEY,getTodayKey()) }catch(e){} }
+  function addHistory(entry){ try{ const raw=localStorage.getItem(HISTORY_KEY); const arr=raw?JSON.parse(raw):[]; arr.unshift(entry); localStorage.setItem(HISTORY_KEY,JSON.stringify(arr.slice(0,30))) }catch(e){} }
+  function getHistory(){ try{ const raw=localStorage.getItem(HISTORY_KEY); return raw?JSON.parse(raw):[] }catch(e){return []} }
 
-  async function showGachaResultsSequential(items, perCardDelay = 300){
-    if (!gachaResult) return;
-    gachaResult.innerHTML = '';
-    gachaSkip = false;
-    for (let i=0;i<items.length;i++){
-      const it = items[i];
-      const card = document.createElement('div');
-      card.className = 'gacha-card r-' + (it.rarity || 'common');
-      card.innerHTML = `<div style="font-size:20px;">🎁</div><div style="font-weight:900;margin-top:6px">${it.name}</div><div style="font-size:12px;margin-top:6px">${it.rarity.toUpperCase()}</div><div style="font-size:12px">IV:${it.ivPct}%</div>`;
-      gachaResult.appendChild(card);
-      void card.offsetWidth;
-      card.classList.add('show');
-      if (gachaSkip){
-        for (let j = i+1; j < items.length; j++){
-          const it2 = items[j];
-          const card2 = document.createElement('div');
-          card2.className = 'gacha-card r-' + (it2.rarity || 'common');
-          card2.innerHTML = `<div style="font-size:20px;">🎁</div><div style="font-weight:900;margin-top:6px">${it2.name}</div><div style="font-size:12px;margin-top:6px">${it2.rarity.toUpperCase()}</div><div style="font-size:12px">IV:${it2.ivPct}%</div>`;
-          gachaResult.appendChild(card2);
-          void card2.offsetWidth;
-          card2.classList.add('show');
-        }
-        break;
-      }
-      await sleep(perCardDelay + (i* (perCardDelay>60 ? 20 : 2)));
-    }
-    gachaSkip = false;
-  }
-
-  // gacha1
-  if (gacha1) gacha1.addEventListener('click', async ()=>{
-    if (gachaRunning) return;
-    if (credits < UNLOCK_GACHA_ITEMS_CREDITS){ showMsg('未解放です'); return; }
-    gachaRunning = true;
-    gacha1.disabled = true; gacha10.disabled = true; if (gacha100) gacha100.disabled = true; if (skipGachaBtn) skipGachaBtn.disabled = false;
-    try{
-      const rarity = drawGachaRarity();
-      const bias = ugrInEquip() ? 20 : 0;
-      const it = addItemToInventory(rarity, { ugrBiasPercent: bias });
-      await showGachaResultsSequential([it], 300);
-      if (gachaLog) gachaLog.textContent = `${rarity.toUpperCase()} を獲得！`;
-    }finally{
-      gachaRunning = false;
-      gacha1.disabled = false; gacha10.disabled = false; if (gacha100) gacha100.disabled = false; if (skipGachaBtn) skipGachaBtn.disabled = true;
-    }
-  });
-
-  // gacha10
-  if (gacha10){
-    gacha10.addEventListener('click', async ()=>{
-      if (gachaRunning) return;
-      if (credits < UNLOCK_GACHA_ITEMS_CREDITS){ showMsg('未解放です'); return; }
-      const cost = calcCostByPercent(1); // 1%
-      if (credits < cost){ showMsg('所持金が足りません'); return; }
-      // charge cost
-      safeSubCredits(cost);
-      updateUI();
-      gachaRunning = true;
-      gacha1.disabled = true; gacha10.disabled = true; if (gacha100) gacha100.disabled = true; if (skipGachaBtn) skipGachaBtn.disabled = false;
-      try{
-        const results = [];
-        const bias = ugrInEquip() ? 20 : 0;
-        for (let i=0;i<10;i++){
-          let attempts = 0;
-          const maxAttempts = 8;
-          let rarity;
-          do {
-            rarity = drawGachaRarity();
-            attempts++;
-            const sameCount = results.filter(r=>r && r.rarity === rarity).length;
-            if (attempts >= maxAttempts) break;
-            if (sameCount >= 5) continue;
-            break;
-          } while(true);
-          const it = addItemToInventory(rarity, { ugrBiasPercent: bias });
-          results.push(it);
-        }
-        await showGachaResultsSequential(results, 220);
-        if (gachaLog) gachaLog.textContent = '10連完了！';
-      }finally{
-        gachaRunning = false;
-        gacha1.disabled = false; gacha10.disabled = false; if (gacha100) gacha100.disabled = false; if (skipGachaBtn) skipGachaBtn.disabled = true;
-      }
-    });
-  }
-
-  // gacha100
-  if (gacha100){
-    gacha100.addEventListener('click', async ()=>{
-      if (gachaRunning) return;
-      if (credits < UNLOCK_GACHA_ITEMS_CREDITS){ showMsg('未解放です'); return; }
-      const cost = calcCostByPercent(7); // 7%
-      if (credits < cost){ showMsg('所持金が足りません'); return; }
-      safeSubCredits(cost);
-      updateUI();
-      gachaRunning = true;
-      gacha1.disabled = true; gacha10.disabled = true; gacha100.disabled = true; if (skipGachaBtn) skipGachaBtn.disabled = false;
-      try{
-        const results = [];
-        const bias = ugrInEquip() ? 20 : 0;
-        for (let i=0;i<100;i++){
-          let attempts = 0;
-          const maxAttempts = 8;
-          let rarity;
-          do {
-            rarity = drawGachaRarity();
-            attempts++;
-            const sameCount = results.filter(r=>r && r.rarity === rarity).length;
-            if (attempts >= maxAttempts) break;
-            if (sameCount >= 20) continue; // avoid same rarity too many times
-            break;
-          } while(true);
-          const it = addItemToInventory(rarity, { ugrBiasPercent: bias });
-          results.push(it);
-        }
-        await showGachaResultsSequential(results, 100);
-        if (gachaLog) gachaLog.textContent = '100連完了！';
-      }finally{
-        gachaRunning = false;
-        gacha1.disabled = false; gacha10.disabled = false; gacha100.disabled = false; if (skipGachaBtn) skipGachaBtn.disabled = true;
-      }
-    });
-  }
-
-  if (skipGachaBtn) skipGachaBtn.addEventListener('click', ()=>{
-    if (!gachaRunning) return;
-    gachaSkip = true;
-  });
-
-  if (gachaBtn) gachaBtn.addEventListener('click', ()=> {
-    if (credits < UNLOCK_GACHA_ITEMS_CREDITS) { showMsg('ガチャは未解放です'); return; }
-    if (gameScreen) gameScreen.classList.add('hidden');
-    if ($('gachaScreen')) $('gachaScreen').classList.remove('hidden');
-  });
-
-  if (backFromGacha) backFromGacha.addEventListener('click', ()=> {
-    if ($('gachaScreen')) $('gachaScreen').classList.add('hidden');
-    if (gameScreen) gameScreen.classList.remove('hidden');
-    updateUI();
-  });
-
-  /* -----------------------
-     Ranking / persistence loops
-     ----------------------- */
-  function saveRank(){ if (!player) return; try{ const data = JSON.parse(localStorage.getItem('slotRanks') || '[]'); const idx = data.findIndex(x=> x.name===player); const rec = { name: player, credits: credits.toString() }; if (idx>=0) data[idx]=rec; else data.push(rec); data.sort((a,b)=> (BigInt(b.credits) > BigInt(a.credits)) ? 1 : -1); localStorage.setItem('slotRanks', JSON.stringify(data.slice(0,100))); }catch(e){ console.error(e);} }
-
-  function loadRanks(){
-    try{
-      const data = JSON.parse(localStorage.getItem('slotRanks') || '[]');
-      return data;
-    }catch(e){ return []; }
-  }
-
-  function renderRankList(){
-    if (!rankList) return;
-    rankList.innerHTML = '';
-    const data = loadRanks();
-    if (!data || !data.length){ rankList.innerHTML = '<li>ランキングデータがありません</li>'; return; }
-    data.forEach((r, idx) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<div>${idx+1}. ${r.name}</div><div>${formatNumWithUnit(BigInt(r.credits))}</div>`;
-      rankList.appendChild(li);
-    });
-  }
-
-  /* -----------------------
-     Start flow & binding (stabilized)
-     - ensure startBtn event bound only once
-     - prevent UI replacement patterns that caused lost listeners
-     ----------------------- */
-  let startBound = false;
-  async function startGameFlow(){
-    // find a name value from candidate inputs (prioritize the visible playerName)
-    const candidates = [];
-    if (playerNameInput) candidates.push(playerNameInput);
-    const allInputs = Array.from(document.querySelectorAll('input[type="text"], input'));
-    for (let i=0;i<allInputs.length && i<200;i++){
-      const el = allInputs[i];
-      const meta = (el.placeholder||'') + ' ' + (el.name||'') + ' ' + (el.id||'') + ' ' + (el.getAttribute('aria-label')||'');
-      if (/name|名前|player/i.test(meta)) candidates.push(el);
-    }
-    const uniq = Array.from(new Set(candidates.filter(Boolean)));
-    let name = '';
-    for (const el of uniq){
-      try{
-        const v = (el.value||'').toString().trim();
-        if (v){ name = v; break; }
-      }catch(e){}
-    }
-    if (!name){ showMsg('名前を入力してください'); return; }
-    player = name;
-    window.player = player;
-    playerLabel.textContent = player;
-    if (loginScreen) loginScreen.classList.add('hidden');
-    if (gameScreen) gameScreen.classList.remove('hidden');
-
-    // load profile if exists
-    const meta = loadPlayerMeta(player);
-    if (meta){
-      if (meta.credits !== undefined) credits = BigInt(meta.credits);
-      if (meta.level !== undefined) level = meta.level;
+  function updateStatus(){
+    if (hasSpunToday()){
+      statusText.textContent = '今日の挑戦は済みです。次は明日また挑戦できます。';
+      spinBtn.textContent = '今日の挑戦済み'; spinBtn.disabled=true;
+      const t=new Date(); t.setDate(t.getDate()+1);
+      nextText.textContent = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} 00:00`;
     } else {
-      credits = BigInt(1000);
-      level = 1;
-    }
-    // load inventory / equip / achievements
-    inventory = loadInventoryFromStorage(player) || [];
-    equipSlots = loadEquipFromStorage(player) || Array(10).fill(null);
-    const ach = loadAchievementsFromStorageForPlayer(player);
-    if (ach){
-      totalSpins = ach.totalSpins || totalSpins;
-      consecutiveWins = ach.consecutiveWins || consecutiveWins;
-      earnedAchievements = ach.earnedAchievements || earnedAchievements;
-    }
-    buildGrid();
-    renderItemsGrid();
-    updateUI();
-    savePlayerMeta();
-    saveInventoryToStorage();
-    saveEquipToStorage();
-
-    // playerState container for fever flags, etc.
-    window.playerState = window.playerState || { inFever:false, feverRemaining:0, inSuperFever:false, superFeverRemaining:0 };
-
-    // ensure rank rendering updated
-    saveRank();
-
-    // ensure spin button enabled
-    if (spinBtn) spinBtn.disabled = false;
-  }
-
-  // bind startBtn only once
-  if (startBtn && !startBound){
-    startBtn.addEventListener('click', ()=>{
-      // prevent double-click spamming (temporary UI-level block)
-      if (startBtn._starting) return;
-      startBtn._starting = true;
-      try{
-        startGameFlow();
-      }finally{
-        // allow small delay before enabling again to avoid accidental duplicates
-        setTimeout(()=> { startBtn._starting = false; }, 300);
-      }
-    });
-    startBound = true;
-  }
-
-  /* -----------------------
-     Spin controller (manual spin + auto)
-     - This function handles bet subtraction *only if* spinReelsAsync returns success.
-     - Protects against situation where credits are reduced but spin animation never runs.
-     ----------------------- */
-  async function attemptSpinFromUI(){
-    // prevent multiple simultaneous manual calls
-    if (spinning) { showMsg('既にスピン中です'); return; }
-
-    // compute bet value from input
-    const parsed = parseNumWithUnit(betInput && betInput.value ? betInput.value : bet.toString());
-    const betVal = parsed > 0n ? parsed : bet;
-    // ensure betVal is not zero and user has funds
-    if (betVal <= 0n){ showMsg('正しいベット額を入力してください'); return; }
-    if (credits < betVal){ showMsg('所持金が足りません'); return; }
-
-    // prepare formation buff
-    const formation = equipSlots.map(id => inventory.find(it => it && it.id === id)).filter(Boolean);
-    const formationBuff = computeFormationBuff(formation);
-
-    // set UI-level spinning flag and disable spin button
-    spinning = true;
-    if (spinBtn) spinBtn.disabled = true;
-
-    // now call spinReelsAsync which uses internal reelBusy flag
-    let spinResult;
-    try{
-      // attempt the animation
-      spinResult = await spinReelsAsync(betVal);
-      if (!spinResult || !spinResult.success){
-        // animation didn't proceed (reelBusy or exception)
-        // Do not consume player's bet in this case — inform user and return.
-        showMsg('スピンが完了できませんでした。もう一度お試しください。');
-        return;
-      }
-      // If animation completed successfully, now safely deduct bet amount
-      // Deduct bet AFTER successful animation start/completion to avoid losing credits when animation failed.
-      safeSubCredits(betVal);
-      updateUI();
-      // process result
-      handleSpinResult(spinResult.result, betVal, formationBuff, formation);
-    }catch(err){
-      console.error('attemptSpinFromUI error', err);
-      showMsg('スピン中にエラーが発生しました');
-    }finally{
-      // always clear spinning UI flag and re-enable
-      spinning = false;
-      if (spinBtn) spinBtn.disabled = false;
+      statusText.textContent = '今日の挑戦はまだです。1日1回回せます。';
+      spinBtn.textContent = 'ガチャを回す'; spinBtn.disabled=false; nextText.textContent='—';
     }
   }
 
-  // bind spin button
-  if (spinBtn){
-    // ensure only one binding
-    if (!spinBtn._bound){
-      spinBtn.addEventListener('click', ()=> {
-        attemptSpinFromUI();
-      });
-      spinBtn._bound = true;
+  // Reel animation with fancy easing and zoom
+  function animateToPrize(prizeId){
+    const items = Array.from(reelInner.children);
+    if (!items.length) return Promise.resolve();
+    const totalItems = items.length;
+    const middleStart = Math.floor(totalItems * 0.45);
+    const middleEnd = Math.floor(totalItems * 0.75);
+    let targetIndex = -1;
+    for (let i=middleStart;i<=middleEnd;i++){ if (items[i].dataset.prize===prizeId){ targetIndex=i; break; } }
+    if (targetIndex===-1){ for (let i=0;i<totalItems;i++){ if (items[i].dataset.prize===prizeId){ targetIndex=i; break; } } }
+    if (targetIndex===-1) targetIndex=0;
+
+    const itemHeight = items[0].offsetHeight || 70;
+    const reelHeight = document.querySelector('.reel').offsetHeight;
+    const centerOffset = (reelHeight/2)-(itemHeight/2);
+    const destY = - (targetIndex * itemHeight) + centerOffset;
+    const extra = - (totalItems * itemHeight * 4); // more spins
+    const finalY = destY + extra;
+
+    return new Promise(resolve=>{
+      // add scale animation
+      reelInner.style.transition = 'transform 3600ms cubic-bezier(.22,.9,.16,1)';
+      reelInner.style.transform = `translateY(${finalY}px) scale(1.02)`;
+      const onEnd = ()=>{
+        reelInner.removeEventListener('transitionend', onEnd);
+        reelInner.style.transition = '';
+        const normalizedIndex = targetIndex % PRIZES.length;
+        const normalizedY = - (normalizedIndex * itemHeight) + centerOffset;
+        // snap and small pop
+        reelInner.style.transform = `translateY(${normalizedY}px) scale(1)`;
+        setTimeout(()=>{ resolve(); }, 140);
+      };
+      reelInner.addEventListener('transitionend', onEnd);
+    });
+  }
+
+  // confetti system
+  const confettiCanvas = document.getElementById('confettiCanvas');
+  const ctx = confettiCanvas.getContext('2d');
+  let confettiPieces = [];
+  function resizeCanvas(){ confettiCanvas.width = confettiCanvas.clientWidth; confettiCanvas.height = confettiCanvas.clientHeight; }
+  window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+  function spawnConfetti(xFrac, yFrac, count=40){
+    const w = confettiCanvas.width; const h = confettiCanvas.height;
+    const x0 = w * xFrac; const y0 = h * yFrac;
+    for (let i=0;i<count;i++){
+      confettiPieces.push({ x:x0, y:y0, vx:(Math.random()-0.5)*8, vy:(Math.random()*-6)-2, ang:Math.random()*Math.PI*2, va:(Math.random()-0.5)*0.2, size:6+Math.random()*8, color: `hsl(${Math.floor(Math.random()*360)},80%,60%)`, life:120+Math.floor(Math.random()*60) });
     }
   }
-
-  /* -----------------------
-     Auto spin loop (uses attemptSpinFromUI safely)
-     - Guarded to prevent parallel loops
-     - Respects reelBusy internal flag because attemptSpinFromUI awaits reel animation
-     ----------------------- */
-  async function startAutoLoop(){
-    if (autoLoopActive) return;
-    autoLoopActive = true;
-    autoBtn && (autoBtn.textContent = 'Auto: On');
-    try{
-      while(autoLoopActive){
-        // if insufficient funds - stop
-        const parsed = parseNumWithUnit(betInput && betInput.value ? betInput.value : bet.toString());
-        const betVal = parsed > 0n ? parsed : bet;
-        if (credits < betVal){ showMsg('所持金が足りません（自動停止）'); break; }
-        // attempt a spin and wait for it to finish
-        await attemptSpinFromUI();
-        // small pause between auto spins (respect spin speed buffs if any)
-        await sleep(220);
-        // continue loop automatically
-      }
-    }catch(e){
-      console.error('startAutoLoop error', e);
-      showMsg('自動スピンでエラーが発生しました');
-    }finally{
-      autoLoopActive = false;
-      autoBtn && (autoBtn.textContent = 'Auto: Off');
+  function updateConfetti(){
+    ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    for (let i=confettiPieces.length-1;i>=0;i--){
+      const p = confettiPieces[i];
+      p.vy += 0.28; p.x += p.vx; p.y += p.vy; p.ang += p.va; p.life--;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.ang);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      ctx.restore();
+      if (p.y > confettiCanvas.height+50 || p.life<=0) confettiPieces.splice(i,1);
     }
+    requestAnimationFrame(updateConfetti);
+  }
+  requestAnimationFrame(updateConfetti);
+
+  // sound using WebAudio
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const audioCtx = AudioCtx ? new AudioCtx() : null;
+  function playTone(freq, duration=0.12, type='sine'){ if (!audioCtx) return; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=0.0001; o.connect(g); g.connect(audioCtx.destination); const now=audioCtx.currentTime; g.gain.linearRampToValueAtTime(0.18, now+0.01); o.start(now); g.gain.exponentialRampToValueAtTime(0.0001, now+duration); o.stop(now+duration+0.02); }
+
+  async function doSpin(){
+    if (hasSpunToday()){ updateStatus(); return; }
+    spinBtn.disabled=true; spinBtn.textContent='回してます…'; resultText.textContent='抽選中…運命を楽しんでください';
+
+    // small audio flourish
+    playTone(420,0.08,'sine'); setTimeout(()=>playTone(520,0.08,'sine'),80);
+
+    const prize = choosePrizeRandom();
+    await animateToPrize(prize.id);
+
+    recordSpin(); addHistory({ when:new Date().toISOString(), prize:prize.name, price:prize.price });
+
+    // result display: no actual probability shown
+    const rare = prize.price >= 1000; // treat >=1000 as special
+    resultText.innerHTML = `\n      <div style="display:flex;align-items:center;gap:12px">\n        <div style="font-size:34px">${prize.emoji}</div>\n        <div style="text-align:left">\n          <div style="font-weight:900;font-size:18px">${prize.name} を獲得！</div>\n          <div class="small" style="color:var(--muted)">運命の一回です — おめでとう！</div>\n        </div>\n      </div>\n    `;
+
+    // fancy effects for rare
+    if (prize.price >= 1000){
+      // confetti burst center-top
+      spawnConfetti(0.5, 0.25, 80);
+      // golden sparkle animation on result box
+      resultBox.classList.add('shimmer');
+      setTimeout(()=> resultBox.classList.remove('shimmer'), 4200);
+      // sound
+      playTone(720,0.18,'sawtooth'); setTimeout(()=>playTone(980,0.24,'sine'),140);
+    } else {
+      // small sparkle & coin jingle
+      spawnConfetti(0.5, 0.35, 18);
+      playTone(520,0.12,'triangle');
+    }
+
+    updateStatus();
   }
 
-  if (autoBtn && !autoBtn._bound){
-    autoBtn.addEventListener('click', ()=>{
-      if (!autoLoopActive) startAutoLoop();
-      else { autoLoopActive = false; /* loop will exit */ }
-    });
-    autoBtn._bound = true;
-  }
-
-  /* -----------------------
-     Ranking button behaviors — ensure clickable (fixed)
-     ----------------------- */
-  if (rankBtn && !rankBtn._bound){
-    rankBtn.addEventListener('click', ()=> {
-      // show rank screen
-      if (gameScreen) gameScreen.classList.add('hidden');
-      if (rankScreen) rankScreen.classList.remove('hidden');
-      renderRankList();
-    });
-    rankBtn._bound = true;
-  }
-  if (backFromRank && !backFromRank._bound){
-    backFromRank.addEventListener('click', ()=>{
-      if (rankScreen) rankScreen.classList.add('hidden');
-      if (gameScreen) gameScreen.classList.remove('hidden');
-    });
-    backFromRank._bound = true;
-  }
-
-  /* -----------------------
-     Items / Gacha navigation (ensure always clickable)
-     ----------------------- */
-  if (itemsBtn && !itemsBtn._bound){
-    itemsBtn.addEventListener('click', ()=> {
-      if (gameScreen) gameScreen.classList.add('hidden');
-      if (itemsScreen) itemsScreen.classList.remove('hidden');
-      renderItemsGrid();
-    });
-    itemsBtn._bound = true;
-  }
-  if (backFromItems && !backFromItems._bound){
-    backFromItems.addEventListener('click', ()=> {
-      if (itemsScreen) itemsScreen.classList.add('hidden');
-      if (gameScreen) gameScreen.classList.remove('hidden');
-      updateUI();
-    });
-    backFromItems._bound = true;
-  }
-
-  /* -----------------------
-     Misc: slot level back button (kept)
-     ----------------------- */
-  if (slotLevelBackBtn && !slotLevelBackBtn._bound){
-    slotLevelBackBtn.addEventListener('click', ()=>{
-      level = Math.max(1, level-1);
-      savePlayerMeta();
-      updateUI();
-      showMsg('レベルを1下げました');
-    });
-    slotLevelBackBtn._bound = true;
-  }
-
-  /* -----------------------
-     Utilities: ensure UI initial state
-     ----------------------- */
-  // initialize grid on load
-  document.addEventListener('DOMContentLoaded', ()=>{
-    try{
-      buildGrid();
-      updateUI();
-      // ensure buttons are enabled by default (fix for blocked buttons)
-      [rankBtn, gachaBtn, itemsBtn, spinBtn, autoBtn].forEach(b => { if (b) b.disabled = false; });
-    }catch(e){ console.error(e); }
+  spinBtn.addEventListener('click', async ()=>{ if (spinBtn.disabled) return; // resume audio context on gesture
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); await doSpin(); });
+  historyBtn.addEventListener('click', ()=>{
+    const hist = getHistory(); if (!hist.length) return alert('まだ引いた履歴はありません。');
+    const lines = hist.map(h=>{ const d=new Date(h.when); return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${h.prize}`; });
+    alert('直近の履歴（最大30件）:\n\n' + lines.join('\n'));
   });
 
-  // Expose some debug helpers on window for convenience (preserve)
-  window.slotDebug = {
-    getCredits: ()=> credits,
-    setCredits: (v)=> { credits = BigInt(v); updateUI(); },
-    forceSpinComplete: ()=> { reelBusy = false; spinning = false; if (spinBtn) spinBtn.disabled = false; }
-  };
+  function initReelPosition(){ const items = Array.from(reelInner.children); if (!items.length) return; const itemHeight = items[0].offsetHeight || 70; const startIndex = Math.floor(items.length*0.5); const reelHeight=document.querySelector('.reel').offsetHeight; const centerOffset=(reelHeight/2)-(itemHeight/2); const y = - (startIndex*itemHeight) + centerOffset; reelInner.style.transform = `translateY(${y}px)`; }
+  window.addEventListener('load', ()=>{ setTimeout(()=>{ initReelPosition(); updateStatus(); const hist = getHistory(); if (hist && hist.length>0){ const last = hist[0]; const d = new Date(last.when); if (d.toISOString().slice(0,10) === new Date().toISOString().slice(0,10)){ resultText.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:28px">${PRIZES.find(p=>p.name===last.prize)?.emoji || '🪙'}</div><div style="text-align:left"><div style="font-weight:900">${last.prize} を獲得済み（本日）</div><div class="small" style="color:var(--muted)">取得日時: ${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</div></div></div>`; } } },120); });
 
-  /* -----------------------
-     ベット入力欄の動作修正（v7.3.1〜v7.3.4）
-     ----------------------- */
-  if (betInput) {
-    betInput.addEventListener('input', () => {
-      try {
-        const newVal = parseNumWithUnit(betInput.value);
-        if (newVal > 0n) {
-          bet = newVal;
-          if (betEl) betEl.textContent = formatNumWithUnit(bet);
-        }
-      } catch(e) {
-        console.error('bet input parse error', e);
-      }
-    });
-  }
+  // start confetti loop
+  requestAnimationFrame(updateConfetti);
 
-  // End of main IIFE
+  // note: uses local time — users can change device clock to bypass; server checks are recommended for production
 })();
 </script>
-
 </body>
 </html>
