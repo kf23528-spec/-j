@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>3D Model Animation Viewer - Three.js</title>
-
+  <title>Meshy GLB Animation Viewer</title>
   <style>
     html, body {
       width: 100%;
@@ -14,44 +13,38 @@
       background: #eef2f7;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-
-    canvas {
-      display: block;
-    }
-
+    canvas { display: block; }
     #ui {
       position: fixed;
       left: 12px;
       top: 12px;
       z-index: 10;
-      min-width: 280px;
+      min-width: 320px;
       padding: 12px 14px;
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.82);
+      background: rgba(255,255,255,0.84);
       backdrop-filter: blur(8px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
       color: #222;
-      line-height: 1.55;
+      line-height: 1.5;
       font-size: 14px;
       user-select: none;
     }
-
     #status {
       display: block;
       margin-top: 6px;
       font-size: 12px;
       opacity: 0.78;
-      word-break: break-all;
+      word-break: break-word;
     }
-
-    #clipList {
-      margin-top: 10px;
+    #clips {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+      margin-top: 10px;
     }
-
     .clipBtn {
+      appearance: none;
       border: 0;
       border-radius: 10px;
       padding: 8px 10px;
@@ -61,11 +54,9 @@
       font-weight: 700;
       cursor: pointer;
     }
-
     .clipBtn.active {
       background: #1e5fbf;
     }
-
     #hint {
       position: fixed;
       right: 12px;
@@ -73,16 +64,30 @@
       z-index: 10;
       padding: 10px 12px;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.72);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.10);
+      background: rgba(255,255,255,0.72);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.10);
       color: #222;
       font-size: 12px;
       line-height: 1.45;
       user-select: none;
       pointer-events: none;
     }
+    #loading {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(238,242,247,0.68);
+      backdrop-filter: blur(6px);
+      color: #222;
+      font-size: 16px;
+      font-weight: 700;
+      transition: opacity 0.25s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
   </style>
-
   <script type="importmap">
     {
       "imports": {
@@ -93,49 +98,35 @@
   </script>
 </head>
 <body>
+  <div id="loading">Meshy_AI_biped_Animation_Run_03_withSkin.glb を読み込み中…</div>
+
   <div id="ui">
-    <div><strong>3Dアニメーションビューア</strong></div>
-    <div>モデル: <span id="modelName">読み込み中...</span></div>
+    <div><strong>Meshy アニメーション再生</strong></div>
+    <div>ファイル: <span id="fileName">Meshy_AI_biped_Animation_Run_03_withSkin.glb</span></div>
     <span id="status">待機中</span>
-    <div id="clipList"></div>
+    <div id="clips"></div>
   </div>
 
   <div id="hint">
     マウスドラッグで回転 / ホイールでズーム<br>
-    埋め込みアニメーションを自動再生
+    埋め込みアニメーションは自動再生
   </div>
 
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-    import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 
-    // =========================
-    // 設定
-    // =========================
-    // ここを書き換えて使ってください
-    const MODEL_URL = "./model.glb"; // 例: "./character.glb" / "./animation.fbx"
+    const MODEL_URL = "./Meshy_AI_biped_Animation_Run_03_withSkin.glb";
 
-    // =========================
-    // 基本セットアップ
-    // =========================
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xEEF2F7);
     scene.fog = new THREE.Fog(0xEEF2F7, 20, 100);
 
-    const camera = new THREE.PerspectiveCamera(
-      55,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      500
-    );
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
     camera.position.set(0, 1.8, 5);
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: false
-    });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -147,9 +138,6 @@
     controls.enableDamping = true;
     controls.target.set(0, 1.2, 0);
 
-    // =========================
-    // ライティング
-    // =========================
     scene.add(new THREE.AmbientLight(0xffffff, 1.3));
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
@@ -165,16 +153,9 @@
     dirLight.shadow.camera.bottom = -20;
     scene.add(dirLight);
 
-    // =========================
-    // 地面
-    // =========================
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        roughness: 1.0,
-        metalness: 0.0
-      })
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1.0, metalness: 0.0 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -185,44 +166,32 @@
     grid.material.opacity = 0.35;
     scene.add(grid);
 
-    // =========================
-    // DOM
-    // =========================
-    const statusEl = document.getElementById("status");
-    const modelNameEl = document.getElementById("modelName");
-    const clipListEl = document.getElementById("clipList");
+    const uiStatus = document.getElementById("status");
+    const loading = document.getElementById("loading");
+    const clipsEl = document.getElementById("clips");
 
-    modelNameEl.textContent = MODEL_URL.split("/").pop() || MODEL_URL;
-
-    // =========================
-    // モデル/アニメ管理
-    // =========================
     const root = new THREE.Group();
     scene.add(root);
 
-    let currentModel = null;
     let mixer = null;
-    let clips = [];
     let actions = [];
     let activeAction = null;
-
-    function clearModel() {
-      while (root.children.length > 0) {
-        root.remove(root.children[0]);
-      }
-      currentModel = null;
-      mixer = null;
-      clips = [];
-      actions = [];
-      activeAction = null;
-      clipListEl.innerHTML = "";
-    }
+    let activeModel = null;
 
     function setStatus(text) {
-      statusEl.textContent = text;
+      uiStatus.textContent = text;
     }
 
-    function applyShadowFlags(object3D) {
+    function clearRoot() {
+      while (root.children.length > 0) root.remove(root.children[0]);
+      mixer = null;
+      actions = [];
+      activeAction = null;
+      activeModel = null;
+      clipsEl.innerHTML = "";
+    }
+
+    function applyShadows(object3D) {
       object3D.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
@@ -231,23 +200,19 @@
       });
     }
 
-    function fitModel(model) {
-      applyShadowFlags(model);
+    function fitAndGround(model) {
+      applyShadows(model);
 
-      // 中心を取る
       const box1 = new THREE.Box3().setFromObject(model);
       const center1 = box1.getCenter(new THREE.Vector3());
       model.position.x -= center1.x;
       model.position.z -= center1.z;
 
-      // 大きさを合わせる
       const box2 = new THREE.Box3().setFromObject(model);
       const size2 = box2.getSize(new THREE.Vector3());
-      const targetHeight = 2.4;
-      const scale = targetHeight / (size2.y || 1);
+      const scale = 2.4 / (size2.y || 1);
       model.scale.setScalar(scale);
 
-      // 接地位置を合わせる
       const box3 = new THREE.Box3().setFromObject(model);
       const center3 = box3.getCenter(new THREE.Vector3());
       const minY = box3.min.y;
@@ -256,142 +221,99 @@
       model.position.z -= center3.z;
       model.position.y -= minY;
 
-      // Meshy.ai/Blender系で前向きがズレる場合の補正
       model.rotation.y = Math.PI;
-
       return model;
     }
 
-    function buildClipButtons(clipNames) {
-      clipListEl.innerHTML = "";
-
-      clipNames.forEach((name, index) => {
+    function buildClipButtons(names) {
+      clipsEl.innerHTML = "";
+      names.forEach((name, i) => {
         const btn = document.createElement("button");
         btn.className = "clipBtn";
-        btn.textContent = name || `Animation ${index + 1}`;
-        btn.addEventListener("click", () => {
-          playClip(index);
-        });
-        clipListEl.appendChild(btn);
+        btn.textContent = name || `Animation ${i + 1}`;
+        btn.addEventListener("click", () => playClip(i));
+        clipsEl.appendChild(btn);
       });
     }
 
-    function updateActiveButton(index) {
-      const buttons = clipListEl.querySelectorAll(".clipBtn");
-      buttons.forEach((btn, i) => {
-        btn.classList.toggle("active", i === index);
-      });
+    function setActiveButton(index) {
+      const buttons = clipsEl.querySelectorAll(".clipBtn");
+      buttons.forEach((btn, i) => btn.classList.toggle("active", i === index));
     }
 
     function playClip(index) {
       if (!mixer || !actions[index]) return;
-
-      if (activeAction) {
-        activeAction.fadeOut(0.2);
-      }
-
-      const next = actions[index];
-      next.reset();
-      next.fadeIn(0.2);
-      next.play();
-      activeAction = next;
-
-      updateActiveButton(index);
-      setStatus(`再生中: ${clips[index]?.name || `Animation ${index + 1}`}`);
+      if (activeAction) activeAction.fadeOut(0.2);
+      activeAction = actions[index];
+      activeAction.reset().fadeIn(0.2).play();
+      setActiveButton(index);
+      setStatus(`再生中: ${actions[index].getClip().name || `Animation ${index + 1}`}`);
     }
 
-    function loadModel(url) {
-      clearModel();
+    function createFallbackCube() {
+      clearRoot();
+      const cube = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 2, 1),
+        new THREE.MeshStandardMaterial({ color: 0xff3b3b, roughness: 0.6, metalness: 0.1 })
+      );
+      cube.position.y = 1;
+      cube.castShadow = true;
+      cube.receiveShadow = true;
+      root.add(cube);
+      activeModel = cube;
+      setStatus("読み込み失敗: 赤い立方体を表示しています");
+      loading.classList.add("hidden");
+    }
 
-      const ext = url.split("?")[0].split(".").pop().toLowerCase();
+    function loadModel() {
+      const loader = new GLTFLoader();
+      loader.load(
+        MODEL_URL,
+        (gltf) => {
+          clearRoot();
 
-      const onLoaded = (sceneOrObject, animationClips = []) => {
-        clearModel();
+          const model = fitAndGround(gltf.scene);
+          root.add(model);
+          activeModel = model;
 
-        const model = fitModel(sceneOrObject);
-        root.add(model);
-        currentModel = model;
+          const animationClips = gltf.animations || [];
+          if (animationClips.length > 0) {
+            mixer = new THREE.AnimationMixer(model);
+            actions = animationClips.map((clip) => {
+              const action = mixer.clipAction(clip);
+              action.setLoop(THREE.LoopRepeat);
+              action.clampWhenFinished = false;
+              return action;
+            });
+            buildClipButtons(animationClips.map((c) => c.name));
+            playClip(0);
+            setStatus(`読み込み完了: アニメーション ${animationClips.length} 個`);
+          } else {
+            setStatus("読み込み完了: 埋め込みアニメーションは見つかりませんでした");
+          }
 
-        clips = animationClips || [];
-
-        if (clips.length > 0) {
-          mixer = new THREE.AnimationMixer(model);
-          actions = clips.map((clip) => {
-            const action = mixer.clipAction(clip);
-            action.setLoop(THREE.LoopRepeat);
-            action.clampWhenFinished = false;
-            return action;
-          });
-
-          buildClipButtons(clips.map(c => c.name));
-          playClip(0);
-          setStatus(`読み込み完了。アニメーション ${clips.length} 個を再生できます`);
-        } else {
-          mixer = null;
-          actions = [];
-          setStatus("読み込み完了。ただし埋め込みアニメーションは見つかりませんでした");
+          loading.classList.add("hidden");
+        },
+        undefined,
+        (err) => {
+          console.error("GLB load failed", err);
+          createFallbackCube();
         }
-      };
-
-      if (ext === "glb" || ext === "gltf") {
-        const loader = new GLTFLoader();
-        loader.load(
-          url,
-          (gltf) => {
-            onLoaded(gltf.scene, gltf.animations || []);
-          },
-          undefined,
-          (err) => {
-            console.error(err);
-            setStatus("GLB/GLTFの読み込みに失敗しました");
-          }
-        );
-      } else if (ext === "fbx") {
-        const loader = new FBXLoader();
-        loader.load(
-          url,
-          (fbx) => {
-            onLoaded(fbx, fbx.animations || []);
-          },
-          undefined,
-          (err) => {
-            console.error(err);
-            setStatus("FBXの読み込みに失敗しました");
-          }
-        );
-      } else {
-        setStatus("未対応の拡張子です。.glb / .gltf / .fbx を使ってください");
-      }
+      );
     }
 
-    // =========================
-    // 起動
-    // =========================
-    loadModel(MODEL_URL);
-
-    // =========================
-    // ループ
-    // =========================
     const clock = new THREE.Clock();
-
     function animate() {
       requestAnimationFrame(animate);
-
       const delta = clock.getDelta();
-
-      if (mixer) {
-        mixer.update(delta);
-      }
-
+      if (mixer) mixer.update(delta);
       controls.update();
       renderer.render(scene, camera);
     }
 
+    loadModel();
     animate();
 
-    // =========================
-    // リサイズ
-    // =========================
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
