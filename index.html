@@ -133,7 +133,9 @@
       -webkit-user-select: none;
       z-index: 25;
     }
-    #jumpBtn:active { transform: scale(0.97); }
+    #jumpBtn:active {
+      transform: scale(0.97);
+    }
 
     @media (max-width: 700px) {
       #ui {
@@ -172,10 +174,10 @@
   <div id="loading">読み込み中…</div>
 
   <div id="ui">
-    <div id="title">Meshy / character.glb 操作ビューア</div>
+    <div id="title">Meshy / character 操作ビューア</div>
     <div id="meta">
-      見た目: <span id="fileName">character.glb</span><br>
-      走りアニメ: <span id="animName">Meshy_AI_biped_Animation_Run_03_withSkin.glb</span>
+      表示モデル: <span id="fileName">Meshy_AI_biped_Animation_Run_03_withSkin.glb</span><br>
+      アニメ: <span id="animName">Armature|Run_03|baselayer</span>
     </div>
     <div id="status">待機中</div>
     <div id="help">
@@ -193,9 +195,8 @@
     import * as THREE from "three";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-    const CHARACTER_URL = "./character.glb";
-    const ANIMATION_URL = "./Meshy_AI_biped_Animation_Run_03_withSkin.glb";
-    const RUN_CLIP_PART = "Run_03";
+    const MODEL_URL = "./Meshy_AI_biped_Animation_Run_03_withSkin.glb";
+    const TARGET_CLIP_NAME = "Armature|Run_03|baselayer";
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xEEF2F7);
@@ -212,6 +213,7 @@
     renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.domElement.style.touchAction = "none";
     document.body.appendChild(renderer.domElement);
 
     scene.add(new THREE.AmbientLight(0xffffff, 1.25));
@@ -252,8 +254,8 @@
     const joyKnob = document.getElementById("joyKnob");
     const jumpBtn = document.getElementById("jumpBtn");
 
-    fileName.textContent = "character.glb";
-    animName.textContent = "Meshy_AI_biped_Animation_Run_03_withSkin.glb";
+    fileName.textContent = "Meshy_AI_biped_Animation_Run_03_withSkin.glb";
+    animName.textContent = TARGET_CLIP_NAME;
 
     const player = new THREE.Group();
     scene.add(player);
@@ -263,14 +265,7 @@
     let action = null;
     let wasMoving = false;
 
-    const clock = new THREE.Clock();
-
     const keys = new Set();
-    const physics = {
-      y: 0,
-      vy: 0,
-      onGround: true
-    };
 
     const stick = {
       active: false,
@@ -278,6 +273,11 @@
       x: 0,
       y: 0,
       radius: 40
+    };
+
+    const physics = {
+      vy: 0,
+      onGround: true
     };
 
     const config = {
@@ -292,8 +292,14 @@
       modelHeight: 2.45
     };
 
+    const clock = new THREE.Clock();
+
     function setStatus(text) {
       uiStatus.textContent = text;
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
     }
 
     function applyShadows(object3D) {
@@ -330,10 +336,6 @@
       return model;
     }
 
-    function clamp(v, min, max) {
-      return Math.max(min, Math.min(max, v));
-    }
-
     function updateJoystickVisual() {
       const px = stick.x * stick.radius;
       const py = stick.y * stick.radius;
@@ -358,7 +360,6 @@
         (keys.has("KeyD") || keys.has("ArrowRight") ? -1 : 0);
 
       const jump = keys.has("Space");
-
       return { forward, turn, jump };
     }
 
@@ -391,38 +392,17 @@
       action.reset();
     }
 
-    async function loadGameAssets() {
+    async function loadModel() {
       try {
         setStatus("モデルを読み込み中…");
 
-        const [characterResult, animResult] = await Promise.allSettled([
-          loader.loadAsync(CHARACTER_URL),
-          loader.loadAsync(ANIMATION_URL)
-        ]);
+        const gltf = await loader.loadAsync(MODEL_URL);
 
-        const characterGLTF = characterResult.status === "fulfilled" ? characterResult.value : null;
-        const animGLTF = animResult.status === "fulfilled" ? animResult.value : null;
-
-        let visibleScene = null;
-        if (characterGLTF?.scene) {
-          visibleScene = characterGLTF.scene;
-        } else if (animGLTF?.scene) {
-          visibleScene = animGLTF.scene;
-        }
-
-        if (!visibleScene) {
-          throw new Error("GLB scene not found.");
-        }
-
-        modelRoot = visibleScene;
+        modelRoot = gltf.scene;
         fitAndGround(modelRoot);
         player.add(modelRoot);
 
-        const clips = [];
-        if (characterGLTF?.animations?.length) clips.push(...characterGLTF.animations);
-        if (animGLTF?.animations?.length) clips.push(...animGLTF.animations);
-
-        const clip = clips.find((c) => c.name && c.name.includes(RUN_CLIP_PART));
+        const clip = gltf.animations.find((c) => c.name && c.name.includes("Run_03"));
 
         if (clip) {
           mixer = new THREE.AnimationMixer(modelRoot);
@@ -430,13 +410,12 @@
           action.setLoop(THREE.LoopRepeat, Infinity);
           action.clampWhenFinished = false;
           action.enabled = true;
-
-          // 初期状態は停止
           action.reset();
           action.stop();
           wasMoving = false;
+          console.log("Animation found:", clip.name);
         } else {
-          console.warn("Run_03 clip not found in loaded animations.");
+          console.error("Run_03 animation not found. Available clips:", gltf.animations.map(a => a.name));
         }
 
         loading.classList.add("hidden");
@@ -446,23 +425,6 @@
         loading.classList.add("hidden");
         setStatus("読み込み失敗");
       }
-    }
-
-    function updateCamera(delta) {
-      const facingYaw = player.rotation.y + Math.PI;
-      const offset = new THREE.Vector3(0, config.cameraHeight, config.cameraDistance);
-      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), facingYaw);
-
-      const desiredCameraPos = new THREE.Vector3().copy(player.position).add(offset);
-      const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
-      camera.position.lerp(desiredCameraPos, lerpAlpha);
-
-      const lookTarget = new THREE.Vector3(
-        player.position.x,
-        player.position.y + config.targetHeight,
-        player.position.z
-      );
-      camera.lookAt(lookTarget);
     }
 
     function updateMovement(delta) {
@@ -477,6 +439,7 @@
       }
 
       const facingYaw = player.rotation.y + Math.PI;
+
       if (Math.abs(input.forward) > 0.001) {
         player.position.x += Math.sin(facingYaw) * input.forward * config.moveSpeed * delta;
         player.position.z += Math.cos(facingYaw) * input.forward * config.moveSpeed * delta;
@@ -493,7 +456,6 @@
 
       const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
 
-      // 移動状態に応じて play / stop を確実に連動
       if (isMoving && !wasMoving) {
         playRunAnimation();
       } else if (!isMoving && wasMoving) {
@@ -505,6 +467,22 @@
         physics.onGround
           ? (isMoving ? "移動中" : "待機中")
           : (isMoving ? "移動中 / ジャンプ中" : "ジャンプ中")
+      );
+    }
+
+    function updateCamera(delta) {
+      const facingYaw = player.rotation.y + Math.PI;
+      const offset = new THREE.Vector3(0, config.cameraHeight, config.cameraDistance);
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), facingYaw);
+
+      const desiredCameraPos = new THREE.Vector3().copy(player.position).add(offset);
+      const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
+      camera.position.lerp(desiredCameraPos, lerpAlpha);
+
+      camera.lookAt(
+        player.position.x,
+        player.position.y + config.targetHeight,
+        player.position.z
       );
     }
 
@@ -588,16 +566,14 @@
       keys.delete(e.code);
     });
 
-    const frameClock = new THREE.Clock();
-
     function animate() {
       requestAnimationFrame(animate);
 
-      // 1) 毎フレーム mixer.update() を実行
-      const delta = Math.min(frameClock.getDelta(), 0.033);
+      const delta = Math.min(clock.getDelta(), 0.033);
 
       updateMovement(delta);
 
+      // 毎フレーム必ず更新
       if (mixer) {
         mixer.update(delta);
       }
@@ -613,7 +589,7 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
 
-    loadGameAssets();
+    loadModel();
     animate();
   </script>
 </body>
