@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Meshy GLB Animation Viewer</title>
+  <title>Meshy GLB Game Viewer</title>
   <style>
     html, body {
       width: 100%;
@@ -12,82 +12,176 @@
       overflow: hidden;
       background: #eef2f7;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      touch-action: none;
     }
+
     canvas { display: block; }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(238, 242, 247, 0.76);
+      backdrop-filter: blur(8px);
+      color: #222;
+      font-size: 16px;
+      font-weight: 800;
+      transition: opacity 0.25s ease;
+    }
+    #loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
     #ui {
       position: fixed;
       left: 12px;
       top: 12px;
-      z-index: 10;
-      min-width: 320px;
+      z-index: 20;
+      min-width: 280px;
+      max-width: min(92vw, 420px);
       padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.84);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
       color: #222;
       line-height: 1.5;
       font-size: 14px;
       user-select: none;
     }
-    #status {
-      display: block;
-      margin-top: 6px;
+    #title {
+      font-weight: 800;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+    #meta {
       font-size: 12px;
-      opacity: 0.78;
+      opacity: 0.8;
       word-break: break-word;
     }
-    #clips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
-    }
-    .clipBtn {
-      appearance: none;
-      border: 0;
-      border-radius: 10px;
-      padding: 8px 10px;
-      background: #2f82ff;
-      color: #fff;
+    #status {
+      margin-top: 8px;
       font-size: 13px;
       font-weight: 700;
-      cursor: pointer;
+      color: #1d3f7a;
     }
-    .clipBtn.active {
-      background: #1e5fbf;
-    }
-    #hint {
-      position: fixed;
-      right: 12px;
-      top: 12px;
-      z-index: 10;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.72);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.10);
-      color: #222;
+    #help {
+      margin-top: 8px;
       font-size: 12px;
-      line-height: 1.45;
-      user-select: none;
+      opacity: 0.82;
+      line-height: 1.5;
+    }
+
+    #mobileControls {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 25;
       pointer-events: none;
     }
-    #loading {
+
+    #joystick {
       position: fixed;
-      inset: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(238,242,247,0.68);
-      backdrop-filter: blur(6px);
-      color: #222;
-      font-size: 16px;
-      font-weight: 700;
-      transition: opacity 0.25s ease;
+      left: 18px;
+      bottom: 18px;
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.08);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
-    #loading.hidden { opacity: 0; pointer-events: none; }
+
+    #joystick::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(255,255,255,0.35);
+    }
+
+    #joyKnob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 54px;
+      height: 54px;
+      margin-left: -27px;
+      margin-top: -27px;
+      border-radius: 50%;
+      background: rgba(47, 130, 255, 0.9);
+      box-shadow: 0 8px 18px rgba(47, 130, 255, 0.25);
+      transform: translate(0, 0);
+    }
+
+    #joyLabel {
+      position: absolute;
+      left: 50%;
+      bottom: -24px;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: rgba(0,0,0,0.6);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    #jumpBtn {
+      position: fixed;
+      right: 18px;
+      bottom: 28px;
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      border: 0;
+      background: linear-gradient(180deg, #ff8f4d, #ff6a2c);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      box-shadow: 0 10px 24px rgba(255, 106, 44, 0.28);
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #jumpBtn:active {
+      transform: scale(0.97);
+    }
+
+    @media (max-width: 700px) {
+      #ui {
+        min-width: 0;
+        max-width: calc(100vw - 24px);
+      }
+      #help {
+        font-size: 11px;
+      }
+      #jumpBtn {
+        width: 94px;
+        height: 94px;
+        font-size: 16px;
+      }
+      #joystick {
+        width: 118px;
+        height: 118px;
+      }
+      #joyKnob {
+        width: 48px;
+        height: 48px;
+        margin-left: -24px;
+        margin-top: -24px;
+      }
+    }
   </style>
+
   <script type="importmap">
     {
       "imports": {
@@ -98,97 +192,140 @@
   </script>
 </head>
 <body>
-  <div id="loading">Meshy_AI_biped_Animation_Run_03_withSkin.glb を読み込み中…</div>
+  <div id="loading">読み込み中…</div>
 
   <div id="ui">
-    <div><strong>Meshy アニメーション再生</strong></div>
-    <div>ファイル: <span id="fileName">Meshy_AI_biped_Animation_Run_03_withSkin.glb</span></div>
-    <span id="status">待機中</span>
-    <div id="clips"></div>
+    <div id="title">Meshy / character.glb 操作ビューア</div>
+    <div id="meta">
+      見た目: <span id="fileName">character.glb</span><br>
+      走りアニメ: <span id="animName">Meshy_AI_biped_Animation_Run_03_withSkin.glb</span>
+    </div>
+    <div id="status">待機中</div>
+    <div id="help">
+      操作: WASD / 矢印キー / 画面スティック / ジャンプボタン<br>
+      W/S = 前進・後退, A/D = 回転, Space = ジャンプ
+    </div>
   </div>
 
-  <div id="hint">
-    マウスドラッグで回転 / ホイールでズーム<br>
-    埋め込みアニメーションは自動再生
+  <div id="mobileControls">
+    <div id="joystick" aria-label="joystick">
+      <div id="joyKnob"></div>
+      <div id="joyLabel">MOVE / TURN</div>
+    </div>
+    <button id="jumpBtn">JUMP</button>
   </div>
 
   <script type="module">
     import * as THREE from "three";
-    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-    const MODEL_URL = "./Meshy_AI_biped_Animation_Run_03_withSkin.glb";
+    const CHARACTER_URL = "./character.glb";
+    const ANIMATION_URL = "./Meshy_AI_biped_Animation_Run_03_withSkin.glb";
+    const RUN_CLIP_NAME = "Armature|Run_03|baselayer";
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xEEF2F7);
-    scene.fog = new THREE.Fog(0xEEF2F7, 20, 100);
+    scene.fog = new THREE.Fog(0xEEF2F7, 18, 120);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
-    camera.position.set(0, 1.8, 5);
+    camera.position.set(0, 2.5, 6.8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.target.set(0, 1.2, 0);
+    const ambient = new THREE.AmbientLight(0xffffff, 1.25);
+    scene.add(ambient);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.3));
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    dirLight.position.set(8, 12, 6);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 50;
-    dirLight.shadow.camera.left = -20;
-    dirLight.shadow.camera.right = 20;
-    dirLight.shadow.camera.top = 20;
-    dirLight.shadow.camera.bottom = -20;
-    scene.add(dirLight);
+    const sun = new THREE.DirectionalLight(0xffffff, 2.15);
+    sun.position.set(8, 14, 6);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 0.5;
+    sun.shadow.camera.far = 60;
+    sun.shadow.camera.left = -20;
+    sun.shadow.camera.right = 20;
+    sun.shadow.camera.top = 20;
+    sun.shadow.camera.bottom = -20;
+    scene.add(sun);
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
+      new THREE.PlaneGeometry(250, 250),
       new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1.0, metalness: 0.0 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    const grid = new THREE.GridHelper(200, 100, 0x666666, 0xb8b8b8);
+    const grid = new THREE.GridHelper(250, 125, 0x7a7a7a, 0xbfc7d1);
     grid.material.transparent = true;
-    grid.material.opacity = 0.35;
+    grid.material.opacity = 0.32;
     scene.add(grid);
+
+    const player = new THREE.Group();
+    scene.add(player);
+
+    const loader = new GLTFLoader();
 
     const uiStatus = document.getElementById("status");
     const loading = document.getElementById("loading");
-    const clipsEl = document.getElementById("clips");
+    const fileName = document.getElementById("fileName");
+    const animName = document.getElementById("animName");
 
-    const root = new THREE.Group();
-    scene.add(root);
+    const joystickEl = document.getElementById("joystick");
+    const joyKnob = document.getElementById("joyKnob");
+    const jumpBtn = document.getElementById("jumpBtn");
 
+    fileName.textContent = "character.glb";
+    animName.textContent = RUN_CLIP_NAME;
+
+    let modelRoot = null;
     let mixer = null;
-    let actions = [];
-    let activeAction = null;
-    let activeModel = null;
+    let runAction = null;
+
+    const clock = new THREE.Clock();
+
+    const keys = new Set();
+    const input = {
+      forward: 0,
+      turn: 0,
+      jumpQueued: false
+    };
+
+    const stick = {
+      active: false,
+      pointerId: null,
+      x: 0,
+      y: 0,
+      radius: 40
+    };
+
+    const physics = {
+      y: 0,
+      vy: 0,
+      onGround: true
+    };
+
+    const config = {
+      moveSpeed: 4.8,
+      turnSpeed: 2.6,
+      gravity: -22.0,
+      jumpVelocity: 8.8,
+      cameraHeight: 2.55,
+      cameraDistance: 6.9,
+      cameraSmooth: 8.5,
+      targetHeight: 1.5,
+      modelHeight: 2.45
+    };
 
     function setStatus(text) {
       uiStatus.textContent = text;
-    }
-
-    function clearRoot() {
-      while (root.children.length > 0) root.remove(root.children[0]);
-      mixer = null;
-      actions = [];
-      activeAction = null;
-      activeModel = null;
-      clipsEl.innerHTML = "";
     }
 
     function applyShadows(object3D) {
@@ -205,12 +342,13 @@
 
       const box1 = new THREE.Box3().setFromObject(model);
       const center1 = box1.getCenter(new THREE.Vector3());
+
       model.position.x -= center1.x;
       model.position.z -= center1.z;
 
       const box2 = new THREE.Box3().setFromObject(model);
       const size2 = box2.getSize(new THREE.Vector3());
-      const scale = 2.4 / (size2.y || 1);
+      const scale = config.modelHeight / Math.max(size2.y, 0.0001);
       model.scale.setScalar(scale);
 
       const box3 = new THREE.Box3().setFromObject(model);
@@ -225,94 +363,285 @@
       return model;
     }
 
-    function buildClipButtons(names) {
-      clipsEl.innerHTML = "";
-      names.forEach((name, i) => {
-        const btn = document.createElement("button");
-        btn.className = "clipBtn";
-        btn.textContent = name || `Animation ${i + 1}`;
-        btn.addEventListener("click", () => playClip(i));
-        clipsEl.appendChild(btn);
-      });
+    function setActionPaused(paused) {
+      if (!runAction) return;
+      if (paused) {
+        runAction.paused = true;
+      } else {
+        if (!runAction.isRunning()) runAction.play();
+        runAction.paused = false;
+      }
     }
 
-    function setActiveButton(index) {
-      const buttons = clipsEl.querySelectorAll(".clipBtn");
-      buttons.forEach((btn, i) => btn.classList.toggle("active", i === index));
+    function requestJump() {
+      if (!physics.onGround) return;
+      physics.vy = config.jumpVelocity;
+      physics.onGround = false;
     }
 
-    function playClip(index) {
-      if (!mixer || !actions[index]) return;
-      if (activeAction) activeAction.fadeOut(0.2);
-      activeAction = actions[index];
-      activeAction.reset().fadeIn(0.2).play();
-      setActiveButton(index);
-      setStatus(`再生中: ${actions[index].getClip().name || `Animation ${index + 1}`}`);
+    function getKeyboardState() {
+      const forward =
+        (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) +
+        (keys.has("KeyS") || keys.has("ArrowDown") ? -1 : 0);
+
+      const turn =
+        (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0) +
+        (keys.has("KeyD") || keys.has("ArrowRight") ? -1 : 0);
+
+      return {
+        forward,
+        turn,
+        jump: keys.has("Space")
+      };
     }
 
-    function createFallbackCube() {
-      clearRoot();
-      const cube = new THREE.Mesh(
-        new THREE.BoxGeometry(1, 2, 1),
-        new THREE.MeshStandardMaterial({ color: 0xff3b3b, roughness: 0.6, metalness: 0.1 })
-      );
-      cube.position.y = 1;
-      cube.castShadow = true;
-      cube.receiveShadow = true;
-      root.add(cube);
-      activeModel = cube;
-      setStatus("読み込み失敗: 赤い立方体を表示しています");
-      loading.classList.add("hidden");
+    function getCombinedInput() {
+      const keyboard = getKeyboardState();
+
+      return {
+        forward: keyboard.forward + (-stick.y),
+        turn: keyboard.turn + stick.x,
+        jump: keyboard.jump || input.jumpQueued
+      };
     }
 
-    function loadModel() {
-      const loader = new GLTFLoader();
-      loader.load(
-        MODEL_URL,
-        (gltf) => {
-          clearRoot();
+    function updateJoystickVisual() {
+      const px = stick.x * stick.radius;
+      const py = stick.y * stick.radius;
+      joyKnob.style.transform = `translate(${px}px, ${py}px)`;
+    }
 
-          const model = fitAndGround(gltf.scene);
-          root.add(model);
-          activeModel = model;
+    function resetJoystick() {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+      updateJoystickVisual();
+    }
 
-          const animationClips = gltf.animations || [];
-          if (animationClips.length > 0) {
-            mixer = new THREE.AnimationMixer(model);
-            actions = animationClips.map((clip) => {
-              const action = mixer.clipAction(clip);
-              action.setLoop(THREE.LoopRepeat);
-              action.clampWhenFinished = false;
-              return action;
-            });
-            buildClipButtons(animationClips.map((c) => c.name));
-            playClip(0);
-            setStatus(`読み込み完了: アニメーション ${animationClips.length} 個`);
-          } else {
-            setStatus("読み込み完了: 埋め込みアニメーションは見つかりませんでした");
-          }
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
 
-          loading.classList.add("hidden");
-        },
-        undefined,
-        (err) => {
-          console.error("GLB load failed", err);
-          createFallbackCube();
+    joystickEl.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      stick.active = true;
+      stick.pointerId = e.pointerId;
+      joystickEl.setPointerCapture(e.pointerId);
+
+      const rect = joystickEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+
+      const len = Math.hypot(dx, dy);
+      const maxLen = stick.radius;
+
+      const nx = len > maxLen ? dx / len : dx / maxLen;
+      const ny = len > maxLen ? dy / len : dy / maxLen;
+
+      stick.x = clamp(nx, -1, 1);
+      stick.y = clamp(ny, -1, 1);
+      updateJoystickVisual();
+    });
+
+    joystickEl.addEventListener("pointermove", (e) => {
+      if (!stick.active || e.pointerId !== stick.pointerId) return;
+      e.preventDefault();
+
+      const rect = joystickEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+
+      const len = Math.hypot(dx, dy);
+      const maxLen = stick.radius;
+
+      let nx = dx / maxLen;
+      let ny = dy / maxLen;
+
+      if (len > maxLen) {
+        nx = dx / len;
+        ny = dy / len;
+      }
+
+      stick.x = clamp(nx, -1, 1);
+      stick.y = clamp(ny, -1, 1);
+      updateJoystickVisual();
+    });
+
+    function endJoystick(e) {
+      if (e.pointerId !== stick.pointerId) return;
+      resetJoystick();
+    }
+
+    joystickEl.addEventListener("pointerup", endJoystick);
+    joystickEl.addEventListener("pointercancel", endJoystick);
+    joystickEl.addEventListener("lostpointercapture", () => resetJoystick());
+
+    jumpBtn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      input.jumpQueued = true;
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD"].includes(e.code)) {
+        e.preventDefault();
+      }
+      keys.add(e.code);
+    }, { passive: false });
+
+    window.addEventListener("keyup", (e) => {
+      keys.delete(e.code);
+    });
+
+    async function loadGameAssets() {
+      try {
+        setStatus("モデルを読み込み中…");
+
+        const [characterResult, animResult] = await Promise.allSettled([
+          loader.loadAsync(CHARACTER_URL),
+          loader.loadAsync(ANIMATION_URL)
+        ]);
+
+        const characterGLTF = characterResult.status === "fulfilled" ? characterResult.value : null;
+        const animGLTF = animResult.status === "fulfilled" ? animResult.value : null;
+
+        if (!characterGLTF && !animGLTF) {
+          throw new Error("Both GLB files failed to load.");
         }
+
+        let visibleScene = null;
+
+        if (characterGLTF?.scene) {
+          visibleScene = characterGLTF.scene;
+        } else if (animGLTF?.scene) {
+          visibleScene = animGLTF.scene;
+        }
+
+        if (!visibleScene) {
+          throw new Error("No visible scene found.");
+        }
+
+        modelRoot = visibleScene;
+        fitAndGround(modelRoot);
+        player.add(modelRoot);
+
+        const allClips = [];
+        if (animGLTF?.animations?.length) allClips.push(...animGLTF.animations);
+        if (characterGLTF?.animations?.length) allClips.push(...characterGLTF.animations);
+
+        const chosenClip =
+          allClips.find((clip) => clip.name === RUN_CLIP_NAME) ||
+          allClips.find((clip) => clip.name?.toLowerCase().includes("run_03")) ||
+          allClips[0] ||
+          null;
+
+        if (chosenClip) {
+          mixer = new THREE.AnimationMixer(modelRoot);
+          runAction = mixer.clipAction(chosenClip);
+
+          runAction.setLoop(THREE.LoopRepeat, Infinity);
+          runAction.clampWhenFinished = false;
+          runAction.enabled = true;
+          runAction.reset();
+          runAction.play();
+          runAction.paused = true;
+        }
+
+        loading.classList.add("hidden");
+        setStatus("待機中");
+      } catch (err) {
+        console.error(err);
+        setStatus("読み込み失敗");
+        loading.classList.add("hidden");
+      }
+    }
+
+    function updateCamera(delta) {
+      const facingYaw = player.rotation.y + Math.PI;
+      const offset = new THREE.Vector3(0, config.cameraHeight, config.cameraDistance);
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), facingYaw);
+
+      const desiredCameraPos = new THREE.Vector3().copy(player.position).add(offset);
+      const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
+      camera.position.lerp(desiredCameraPos, lerpAlpha);
+
+      const lookTarget = new THREE.Vector3(
+        player.position.x,
+        player.position.y + config.targetHeight,
+        player.position.z
+      );
+
+      camera.lookAt(lookTarget);
+    }
+
+    function updateMovement(delta) {
+      const nowInput = getCombinedInput();
+
+      if (nowInput.jump) {
+        requestJump();
+        input.jumpQueued = false;
+      }
+
+      const moveForward = clamp(nowInput.forward, -1, 1);
+      const turn = clamp(nowInput.turn, -1, 1);
+
+      if (Math.abs(turn) > 0.001) {
+        player.rotation.y += turn * config.turnSpeed * delta;
+      }
+
+      const facingYaw = player.rotation.y + Math.PI;
+
+      if (Math.abs(moveForward) > 0.001) {
+        player.position.x += Math.sin(facingYaw) * moveForward * config.moveSpeed * delta;
+        player.position.z += Math.cos(facingYaw) * moveForward * config.moveSpeed * delta;
+      }
+
+      physics.vy += config.gravity * delta;
+      player.position.y += physics.vy * delta;
+
+      if (player.position.y <= 0) {
+        player.position.y = 0;
+        physics.vy = 0;
+        physics.onGround = true;
+      }
+
+      const isMoving = Math.abs(moveForward) > 0.001 || Math.abs(turn) > 0.001;
+
+      if (runAction) {
+        if (isMoving) {
+          setActionPaused(false);
+        } else {
+          setActionPaused(true);
+        }
+      }
+
+      if (mixer) {
+        mixer.update(delta);
+      }
+
+      setStatus(
+        physics.onGround
+          ? (isMoving ? "移動中" : "待機中")
+          : (isMoving ? "移動中 / ジャンプ中" : "ジャンプ中")
       );
     }
 
-    const clock = new THREE.Clock();
     function animate() {
       requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      if (mixer) mixer.update(delta);
-      controls.update();
+
+      const delta = Math.min(clock.getDelta(), 0.033);
+
+      updateMovement(delta);
+      updateCamera(delta);
+
       renderer.render(scene, camera);
     }
-
-    loadModel();
-    animate();
 
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -320,6 +649,9 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
+
+    loadGameAssets();
+    animate();
   </script>
 </body>
 </html>
