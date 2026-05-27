@@ -3,169 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Three.js Character Controller</title>
-
+  <title>GLB File Picker Character Controller</title>
   <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #f6f7fb;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      touch-action: none;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    #hud {
-      position: fixed;
-      left: 12px;
-      top: 12px;
-      z-index: 10;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.82);
-      backdrop-filter: blur(8px);
-      color: #222;
-      font-size: 14px;
-      line-height: 1.55;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-      user-select: none;
-      pointer-events: none;
-    }
-
-    #status {
-      display: block;
-      margin-top: 4px;
-      font-size: 12px;
-      opacity: 0.78;
-    }
-
-    #joystick-base {
-      position: fixed;
-      left: 24px;
-      bottom: 24px;
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.16);
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      backdrop-filter: blur(6px);
-      z-index: 20;
-      touch-action: none;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #joystick-thumb {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.65);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-      transform: translate(0px, 0px);
-      transition: transform 0.06s linear;
-      pointer-events: none;
-    }
-
-    #jump-button {
-      position: fixed;
-      right: 24px;
-      bottom: 30px;
-      z-index: 20;
-      width: 88px;
-      height: 88px;
-      border: 0;
-      border-radius: 50%;
-      background: rgba(47, 130, 255, 0.9);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 800;
-      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
-      touch-action: none;
-      user-select: none;
-    }
-
-    #jump-button:active {
-      transform: translateY(1px) scale(0.98);
-    }
-
-    #mobile-help {
-      position: fixed;
-      right: 12px;
-      bottom: 132px;
-      z-index: 10;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.72);
-      color: #222;
-      font-size: 12px;
-      line-height: 1.4;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-      user-select: none;
-      pointer-events: none;
-    }
+    html, body { width:100%; height:100%; margin:0; overflow:hidden; background:#f6f7fb; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; touch-action:none; }
+    canvas { display:block; width:100%; height:100%; touch-action:none; }
+    #hud { position:fixed; left:12px; top:12px; z-index:20; padding:12px; border-radius:14px; background:rgba(255,255,255,.82); backdrop-filter:blur(8px); box-shadow:0 8px 30px rgba(0,0,0,.12); color:#222; line-height:1.5; font-size:14px; user-select:none; min-width:260px; }
+    #status { display:block; margin-top:4px; font-size:12px; opacity:.78; word-break:break-all; }
+    #controls { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    button, label.file-btn { appearance:none; border:0; border-radius:10px; padding:9px 12px; background:#2f82ff; color:#fff; font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 6px 16px rgba(47,130,255,.25); }
+    button:active, label.file-btn:active { transform:translateY(1px); }
+    label.file-btn input { display:none; }
+    #hint { position:fixed; right:12px; top:12px; z-index:20; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.72); box-shadow:0 8px 30px rgba(0,0,0,.10); color:#222; font-size:12px; line-height:1.45; user-select:none; pointer-events:none; }
+    #dropzone { position:fixed; inset:0; z-index:5; border:2px dashed rgba(47,130,255,.20); background:transparent; pointer-events:none; opacity:0; transition:opacity .15s ease; }
+    #dropzone.active { opacity:1; background:rgba(47,130,255,.05); }
+    #jumpBtn { position:fixed; right:18px; bottom:18px; z-index:20; width:88px; height:88px; border:0; border-radius:50%; background:rgba(47,130,255,.90); color:#fff; font-weight:800; font-size:16px; box-shadow:0 10px 26px rgba(0,0,0,.22); touch-action:none; }
+    #jumpBtn:active { transform:translateY(1px) scale(.98); }
+    #joystick-base { position:fixed; left:24px; bottom:24px; width:150px; height:150px; border-radius:50%; background:rgba(255,255,255,.16); border:2px solid rgba(255,255,255,.35); backdrop-filter:blur(6px); z-index:20; touch-action:none; user-select:none; display:flex; align-items:center; justify-content:center; }
+    #joystick-thumb { width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.65); box-shadow:0 6px 18px rgba(0,0,0,.18); transform:translate(0px,0px); transition:transform .06s linear; pointer-events:none; }
   </style>
-
   <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
-      }
-    }
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/" } }
   </script>
 </head>
-
 <body>
   <div id="hud">
-    WASD / 矢印キーで操作<br>
-    W・↑ 前進 / S・↓ 後退 / A・← 左回転 / D・→ 右回転<br>
-    Space でジャンプ
-    <span id="status">character.glb を読み込み中…</span>
+    GLBファイルを選んで読み込む<br>
+    WASD / 矢印キーで操作、Spaceでジャンプ
+    <span id="status">まだモデルが読み込まれていません</span>
+    <div id="controls">
+      <label class="file-btn">GLBを選ぶ<input id="fileInput" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json"></label>
+      <button id="reloadBtn" type="button">再読み込み</button>
+    </div>
   </div>
-
-  <div id="joystick-base" aria-label="virtual joystick">
-    <div id="joystick-thumb"></div>
-  </div>
-
-  <button id="jump-button" type="button">JUMP</button>
-
-  <div id="mobile-help">
-    左下スティックで移動<br>
-    右下でジャンプ
-  </div>
-
+  <div id="hint">ここにGLBをドラッグ＆ドロップもできます<br>うまくいかない時は、まずファイル選択を使ってください</div>
+  <div id="dropzone"></div>
+  <div id="joystick-base" aria-label="virtual joystick"><div id="joystick-thumb"></div></div>
+  <button id="jumpBtn" type="button">JUMP</button>
   <script type="module">
     import * as THREE from "three";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-    // =========================
-    // シーン / カメラ / レンダラー
-    // =========================
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf6f7fb);
     scene.fog = new THREE.Fog(0xf6f7fb, 25, 90);
 
-    const camera = new THREE.PerspectiveCamera(
-      60,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      500
-    );
-
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: false
-    });
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
@@ -173,36 +56,21 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
-    // =========================
-    // ライティング
-    // =========================
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
-    scene.add(ambientLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    dirLight.position.set(8, 15, 10);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.camera.left = -20;
+    dirLight.shadow.camera.right = 20;
+    dirLight.shadow.camera.top = 20;
+    dirLight.shadow.camera.bottom = -20;
+    scene.add(dirLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 2.2);
-    directionalLight.position.set(8, 15, 10);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -20;
-    directionalLight.shadow.camera.right = 20;
-    directionalLight.shadow.camera.top = 20;
-    directionalLight.shadow.camera.bottom = -20;
-    scene.add(directionalLight);
-
-    // =========================
-    // 地面とグリッド
-    // =========================
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        roughness: 1.0,
-        metalness: 0.0
-      })
-    );
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }));
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
@@ -212,302 +80,157 @@
     grid.material.opacity = 0.35;
     scene.add(grid);
 
-    // =========================
-    // キャラクター
-    // =========================
     const characterRoot = new THREE.Group();
     scene.add(characterRoot);
-
-    const statusEl = document.getElementById("status");
     let characterObject = null;
-    let characterMode = "none";
-    let modelMixer = null;
+    let currentObjectURL = null;
+    let currentFile = null;
+    const statusEl = document.getElementById("status");
+    const fileInput = document.getElementById("fileInput");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const dropzone = document.getElementById("dropzone");
 
-    const MODEL_YAW_OFFSET = Math.PI; // 向きが合わない場合は 0 / Math.PI/2 / Math.PI で調整
+    function setStatus(text) { statusEl.textContent = text; }
+    function clearCharacter() { while (characterRoot.children.length > 0) characterRoot.remove(characterRoot.children[0]); characterObject = null; }
+    function applyShadowFlags(object3D) { object3D.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } }); }
 
-    function clearCharacter() {
-      while (characterRoot.children.length > 0) {
-        characterRoot.remove(characterRoot.children[0]);
-      }
-      characterObject = null;
-      characterMode = "none";
-      modelMixer = null;
-    }
-
-    function applyShadowFlags(object3D) {
-      object3D.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-    }
-
-    function createFallbackCube() {
+    function createFallbackCube(message = "モデルの読み込みに失敗したため、赤い立方体を使用中") {
       clearCharacter();
-
-      const cube = new THREE.Mesh(
-        new THREE.BoxGeometry(1, 2, 1),
-        new THREE.MeshStandardMaterial({
-          color: 0xff3b3b,
-          roughness: 0.6,
-          metalness: 0.1
-        })
-      );
-
-      cube.position.y = 1;
-      cube.castShadow = true;
-      cube.receiveShadow = true;
-
-      characterRoot.add(cube);
-      characterObject = cube;
-      characterMode = "cube";
-      statusEl.textContent = "character.glb の読み込みに失敗したため、赤い立方体を使用中";
+      const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({ color: 0xff3b3b, roughness: 0.6, metalness: 0.1 }));
+      cube.position.y = 1; cube.castShadow = true; cube.receiveShadow = true;
+      characterRoot.add(cube); characterObject = cube; setStatus(message);
     }
 
     function fitAndGroundModel(model) {
       applyShadowFlags(model);
-
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-
-      // 高さを揃える
-      const targetHeight = 2.4;
-      const scale = targetHeight / (size.y || 1);
+      const box1 = new THREE.Box3().setFromObject(model);
+      const center1 = box1.getCenter(new THREE.Vector3());
+      model.position.x -= center1.x; model.position.z -= center1.z;
+      const box2 = new THREE.Box3().setFromObject(model);
+      const size2 = box2.getSize(new THREE.Vector3());
+      const targetHeight = 2.4; const scale = targetHeight / (size2.y || 1);
       model.scale.setScalar(scale);
-
-      // スケール後に再計算
-      box.setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      const minY = box.min.y;
-
-      // 原点に近づけて、接地面を地面に合わせる
-      model.position.x -= center.x;
-      model.position.z -= center.z;
-      model.position.y -= minY;
-
-      // 進行方向の補正
-      model.rotation.y = MODEL_YAW_OFFSET;
-
+      const box3 = new THREE.Box3().setFromObject(model);
+      const center3 = box3.getCenter(new THREE.Vector3());
+      const minY = box3.min.y;
+      model.position.x -= center3.x; model.position.z -= center3.z; model.position.y -= minY;
       return model;
     }
 
-    function loadCharacter() {
+    async function loadFromObjectURL(url, fileName = "selected file") {
       const loader = new GLTFLoader();
-
-      loader.load(
-        "./character.glb",
-        (gltf) => {
+      return new Promise((resolve) => {
+        loader.load(url, (gltf) => {
           clearCharacter();
-
           const model = fitAndGroundModel(gltf.scene);
-          characterRoot.add(model);
-          characterObject = model;
-          characterMode = "glb";
-
-          if (gltf.animations && gltf.animations.length > 0) {
-            modelMixer = new THREE.AnimationMixer(model);
-            gltf.animations.forEach((clip) => {
-              modelMixer.clipAction(clip).play();
-            });
-          }
-
-          statusEl.textContent = "character.glb を読み込みました";
-        },
-        undefined,
-        () => {
-          createFallbackCube();
-        }
-      );
+          characterRoot.add(model); characterObject = model;
+          setStatus(`${fileName} を読み込みました`);
+          resolve(true);
+        }, undefined, (err) => {
+          console.error("GLB load error:", err);
+          createFallbackCube(`${fileName} の読み込みに失敗したため、赤い立方体を使用中`);
+          resolve(false);
+        });
+      });
     }
 
-    // =========================
-    // 入力
-    // =========================
-    const keys = Object.create(null);
+    async function loadSelectedFile(file) {
+      if (!file) return;
+      currentFile = file;
+      setStatus(`読み込み中: ${file.name}`);
+      if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
+      currentObjectURL = URL.createObjectURL(file);
+      await loadFromObjectURL(currentObjectURL, file.name);
+    }
 
+    fileInput.addEventListener("change", async (e) => { const file = e.target.files && e.target.files[0]; if (file) await loadSelectedFile(file); });
+    reloadBtn.addEventListener("click", async () => { if (currentFile) await loadSelectedFile(currentFile); else setStatus("先にGLBファイルを選んでください"); });
+    window.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("active"); });
+    window.addEventListener("dragleave", (e) => { e.preventDefault(); dropzone.classList.remove("active"); });
+    window.addEventListener("drop", async (e) => {
+      e.preventDefault(); dropzone.classList.remove("active");
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      const isGLB = file.name.toLowerCase().endsWith(".glb") || file.type.includes("gltf");
+      if (!isGLB) { setStatus("GLBまたはGLTFファイルを選んでください"); return; }
+      await loadSelectedFile(file);
+    });
+
+    const keys = Object.create(null);
     window.addEventListener("keydown", (event) => {
       keys[event.code] = true;
-
-      if (event.code === "Space" && !event.repeat) {
-        event.preventDefault();
-        tryJump();
-      }
+      if (event.code === "Space" && !event.repeat) { event.preventDefault(); tryJump(); }
     });
+    window.addEventListener("keyup", (event) => { keys[event.code] = false; });
 
-    window.addEventListener("keyup", (event) => {
-      keys[event.code] = false;
-    });
-
-    // =========================
-    // スマホ用スティック
-    // =========================
-    const joystickBase = document.getElementById("joystick-base");
-    const joystickThumb = document.getElementById("joystick-thumb");
-    const jumpButton = document.getElementById("jump-button");
-
-    const joystick = {
-      active: false,
-      pointerId: null,
-      x: 0,
-      y: 0,
-      maxRadius: 48
-    };
-
-    function updateJoystickVisual(x, y) {
-      joystickThumb.style.transform = `translate(${x * joystick.maxRadius}px, ${y * joystick.maxRadius}px)`;
-    }
-
-    function resetJoystick() {
-      joystick.active = false;
-      joystick.pointerId = null;
-      joystick.x = 0;
-      joystick.y = 0;
-      updateJoystickVisual(0, 0);
-    }
-
-    joystickBase.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      joystick.active = true;
-      joystick.pointerId = e.pointerId;
-      joystickBase.setPointerCapture(e.pointerId);
-    });
-
-    joystickBase.addEventListener("pointermove", (e) => {
-      if (!joystick.active || joystick.pointerId !== e.pointerId) return;
-
-      const rect = joystickBase.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-
-      let dx = e.clientX - cx;
-      let dy = e.clientY - cy;
-
-      const len = Math.hypot(dx, dy);
-      const max = joystick.maxRadius;
-
-      if (len > max) {
-        dx = (dx / len) * max;
-        dy = (dy / len) * max;
-      }
-
-      joystick.x = dx / max;
-      joystick.y = dy / max;
-      updateJoystickVisual(joystick.x, joystick.y);
-    });
-
-    function endJoystick(e) {
-      if (joystick.pointerId !== e.pointerId) return;
-      resetJoystick();
-    }
-
-    joystickBase.addEventListener("pointerup", endJoystick);
-    joystickBase.addEventListener("pointercancel", endJoystick);
-    joystickBase.addEventListener("lostpointercapture", () => {
-      resetJoystick();
-    });
-
-    jumpButton.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      tryJump();
-    });
-
-    // =========================
-    // ジャンプ物理
-    // =========================
     let verticalVelocity = 0;
     let grounded = true;
     const gravity = -22;
     const jumpStrength = 8.8;
+    function tryJump() { if (!grounded) return; verticalVelocity = jumpStrength; grounded = false; }
 
-    function tryJump() {
-      if (!grounded) return;
-      verticalVelocity = jumpStrength;
-      grounded = false;
-    }
+    const joystickBase = document.getElementById("joystick-base");
+    const joystickThumb = document.getElementById("joystick-thumb");
+    const joystick = { active: false, pointerId: null, x: 0, y: 0, maxRadius: 48 };
+    function updateJoystickVisual(x, y) { joystickThumb.style.transform = `translate(${x * joystick.maxRadius}px, ${y * joystick.maxRadius}px)`; }
+    function resetJoystick() { joystick.active = false; joystick.pointerId = null; joystick.x = 0; joystick.y = 0; updateJoystickVisual(0, 0); }
+    joystickBase.addEventListener("pointerdown", (e) => { e.preventDefault(); joystick.active = true; joystick.pointerId = e.pointerId; joystickBase.setPointerCapture(e.pointerId); });
+    joystickBase.addEventListener("pointermove", (e) => {
+      if (!joystick.active || joystick.pointerId !== e.pointerId) return;
+      const rect = joystickBase.getBoundingClientRect(); const cx = rect.left + rect.width / 2; const cy = rect.top + rect.height / 2;
+      let dx = e.clientX - cx; let dy = e.clientY - cy; const len = Math.hypot(dx, dy); const max = joystick.maxRadius;
+      if (len > max) { dx = (dx / len) * max; dy = (dy / len) * max; }
+      joystick.x = dx / max; joystick.y = dy / max; updateJoystickVisual(joystick.x, joystick.y);
+    });
+    function endJoystick(e) { if (joystick.pointerId !== e.pointerId) return; resetJoystick(); }
+    joystickBase.addEventListener("pointerup", endJoystick);
+    joystickBase.addEventListener("pointercancel", endJoystick);
+    joystickBase.addEventListener("lostpointercapture", resetJoystick);
+    document.getElementById("jumpBtn").addEventListener("pointerdown", (e) => { e.preventDefault(); tryJump(); });
 
-    // =========================
-    // カメラ初期位置
-    // =========================
     camera.position.set(0, 4, 8);
     camera.lookAt(0, 1.2, 0);
-
-    // =========================
-    // メインループ
-    // =========================
     const clock = new THREE.Clock();
 
     function animate() {
       requestAnimationFrame(animate);
-
       const delta = Math.min(clock.getDelta(), 0.033);
-
       const turnSpeed = 2.8;
       const moveSpeed = 5.0;
-
       const turnLeft = keys.ArrowLeft || keys.KeyA;
       const turnRight = keys.ArrowRight || keys.KeyD;
       const forwardKey = keys.ArrowUp || keys.KeyW;
       const backwardKey = keys.ArrowDown || keys.KeyS;
-
       const stickX = joystick.x;
       const stickY = joystick.y;
-
-      // 左右回転
-      if (turnLeft || stickX < -0.18) {
-        characterRoot.rotation.y += turnSpeed * delta;
-      }
-      if (turnRight || stickX > 0.18) {
-        characterRoot.rotation.y -= turnSpeed * delta;
-      }
-
-      // 前後移動
+      if (turnLeft || stickX < -0.18) characterRoot.rotation.y += turnSpeed * delta;
+      if (turnRight || stickX > 0.18) characterRoot.rotation.y -= turnSpeed * delta;
       let moveAmount = 0;
       if (forwardKey || stickY < -0.18) moveAmount += 1;
       if (backwardKey || stickY > 0.18) moveAmount -= 1;
-
       if (moveAmount !== 0) {
         const forwardDir = new THREE.Vector3(0, 0, 1).applyQuaternion(characterRoot.quaternion);
         characterRoot.position.addScaledVector(forwardDir, moveAmount * moveSpeed * delta);
       }
-
-      // ジャンプと重力
       verticalVelocity += gravity * delta;
       characterRoot.position.y += verticalVelocity * delta;
-
-      if (characterRoot.position.y <= 0) {
-        characterRoot.position.y = 0;
-        verticalVelocity = 0;
-        grounded = true;
-      }
-
-      if (modelMixer) {
-        modelMixer.update(delta);
-      }
-
-      // 3Dゲーム風の斜め後ろカメラ
+      if (characterRoot.position.y <= 0) { characterRoot.position.y = 0; verticalVelocity = 0; grounded = true; }
+      if (characterObject && characterObject.isMesh && characterObject.geometry && characterObject.geometry.type === "PlaneGeometry") characterObject.lookAt(camera.position);
       const cameraOffset = new THREE.Vector3(0, 3.8, -7.5).applyQuaternion(characterRoot.quaternion);
       const desiredCameraPos = characterRoot.position.clone().add(cameraOffset);
-
       camera.position.lerp(desiredCameraPos, 1 - Math.exp(-8 * delta));
       camera.lookAt(characterRoot.position.x, characterRoot.position.y + 1.3, characterRoot.position.z);
-
       renderer.render(scene, camera);
     }
-
     animate();
 
-    // =========================
-    // リサイズ対応
-    // =========================
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
-
-    loadCharacter();
+    setStatus("GLBファイルを選んでください");
   </script>
 </body>
 </html>
