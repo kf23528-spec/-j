@@ -217,7 +217,7 @@
     </div>
     <div id="help">
       操作: WASD / 矢印キー / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
-      移動方向へ体を向けてから前進します。Shift でダッシュ、J で攻撃。
+      キャラはスティック方向を向いてから前進します。Shift でダッシュ、J で攻撃。
     </div>
   </div>
 
@@ -346,8 +346,13 @@
 
     const clock = new THREE.Clock();
 
-    const trees = [];
     const boars = [];
+    const tempV1 = new THREE.Vector3();
+    const tempV2 = new THREE.Vector3();
+    const tempV3 = new THREE.Vector3();
+    const tempV4 = new THREE.Vector3();
+    const tempV5 = new THREE.Vector3();
+    const upAxis = new THREE.Vector3(0, 1, 0);
 
     function setStatus(text) {
       uiStatus.textContent = text;
@@ -358,15 +363,11 @@
     }
 
     function rand(min, max) {
-      return min + Math.random() * (max - min);
+      return min + Math.random() * max;
     }
 
     function shortestAngleDiff(a, b) {
       return Math.atan2(Math.sin(b - a), Math.cos(b - a));
-    }
-
-    function angleToFaceTarget(dirX, dirZ) {
-      return Math.atan2(dirX, dirZ) - Math.PI;
     }
 
     function applyShadowsAndFixMaterials(object3D) {
@@ -434,10 +435,9 @@
     }
 
     async function loadBaseModel() {
-      const walkFBX = await fbxLoader.loadAsync(WALK_FBX_URL);
-      const model = walkFBX;
-      fitAndGround(model);
-      modelRoot = model;
+      const base = await fbxLoader.loadAsync(WALK_FBX_URL);
+      modelRoot = base;
+      fitAndGround(modelRoot);
       player.add(modelRoot);
     }
 
@@ -524,33 +524,6 @@
       return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
     }
 
-    function syncLocomotion(force = false) {
-      if (attackPlaying && !force) return;
-
-      const input = getMoveInput();
-      const moving = input.magnitude > 0.001;
-
-      if (!moving) {
-        if (currentActionName !== "idle") {
-          hardStopAction("walk");
-          hardStopAction("run");
-          currentActionName = "idle";
-        }
-        return;
-      }
-
-      const desired = (dashMode || dashHeld) ? "run" : "walk";
-
-      if (force || currentActionName !== desired) {
-        stopAllActions(0.08);
-        playAction(desired, 0.08);
-      } else {
-        const a = actions[desired];
-        if (a && !a.isRunning()) a.play();
-        if (a) a.paused = false;
-      }
-    }
-
     function getKeyboardMoveVector() {
       const x =
         (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) +
@@ -565,6 +538,7 @@
 
     function getMoveInput() {
       const k = getKeyboardMoveVector();
+
       let x = clamp(k.x + stick.x, -1, 1);
       let z = clamp(k.z + (-stick.y), -1, 1);
 
@@ -594,13 +568,30 @@
       return new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
     }
 
+    function getCameraRelativeMoveDirection(inputX, inputZ) {
+      camera.getWorldDirection(tempV1);
+      tempV1.y = 0;
+      if (tempV1.lengthSq() < 1e-6) tempV1.set(0, 0, -1);
+      tempV1.normalize(); // camera forward (camera -> target)
+
+      tempV2.crossVectors(tempV1, upAxis).normalize(); // right
+
+      tempV3.copy(tempV2).multiplyScalar(inputX);
+      tempV4.copy(tempV1).multiplyScalar(-inputZ); // up on stick => away from camera
+
+      tempV5.copy(tempV3).add(tempV4);
+      if (tempV5.lengthSq() < 1e-8) return tempV5.set(0, 0, 0);
+      return tempV5.normalize();
+    }
+
     function applyAttackDamage() {
       if (!boars.length) return;
 
       const playerPos = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
       const forward = getCharacterForwardVector().normalize();
 
-      for (const boar of [...boars]) {
+      for (let i = boars.length - 1; i >= 0; i--) {
+        const boar = boars[i];
         if (boar.dead || !boar.root.visible) continue;
 
         const boarPos = new THREE.Vector3(boar.root.position.x, boar.root.position.y, boar.root.position.z);
@@ -612,14 +603,14 @@
 
         const dir = toBoar.clone().normalize();
         const dot = forward.dot(dir);
-
         if (dot < config.attackConeDot) continue;
 
         boar.hp -= config.attackDamage;
+
         if (boar.hp <= 0) {
           boar.dead = true;
           scene.remove(boar.root);
-          boars.splice(boars.indexOf(boar), 1);
+          boars.splice(i, 1);
         }
       }
     }
@@ -646,6 +637,33 @@
       dashMode = on;
       dashBtn.classList.toggle("active", dashMode);
       if (!attackPlaying) syncLocomotion(true);
+    }
+
+    function syncLocomotion(force = false) {
+      if (attackPlaying && !force) return;
+
+      const input = getMoveInput();
+      const moving = input.magnitude > 0.001;
+
+      if (!moving) {
+        if (currentActionName !== "idle") {
+          hardStopAction("walk");
+          hardStopAction("run");
+          currentActionName = "idle";
+        }
+        return;
+      }
+
+      const desired = (dashMode || dashHeld) ? "run" : "walk";
+
+      if (force || currentActionName !== desired) {
+        stopAllActions(0.08);
+        playAction(desired, 0.08);
+      } else {
+        const a = actions[desired];
+        if (a && !a.isRunning()) a.play();
+        if (a) a.paused = false;
+      }
     }
 
     function updateJoystickVisual() {
@@ -804,7 +822,6 @@
             }
           });
           treeGroup.add(tree);
-          trees.push(tree);
         }
       } catch (err) {
         console.warn("tree.glb load failed, using fallback trees.", err);
@@ -815,26 +832,17 @@
         for (const p of positions) {
           const tree = new THREE.Group();
 
-          const trunk = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.25, 0.33, 2.4, 8),
-            trunkMat
-          );
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.33, 2.4, 8), trunkMat);
           trunk.position.y = 1.2;
           trunk.castShadow = true;
           trunk.receiveShadow = true;
 
-          const crown1 = new THREE.Mesh(
-            new THREE.ConeGeometry(1.15, 2.8, 8),
-            leafMat
-          );
+          const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.15, 2.8, 8), leafMat);
           crown1.position.y = 3.2;
           crown1.castShadow = true;
           crown1.receiveShadow = true;
 
-          const crown2 = new THREE.Mesh(
-            new THREE.ConeGeometry(0.95, 2.2, 8),
-            leafMat
-          );
+          const crown2 = new THREE.Mesh(new THREE.ConeGeometry(0.95, 2.2, 8), leafMat);
           crown2.position.y = 4.0;
           crown2.castShadow = true;
           crown2.receiveShadow = true;
@@ -844,7 +852,6 @@
           tree.rotation.y = p.rotY;
           tree.scale.setScalar(p.scale);
           treeGroup.add(tree);
-          trees.push(tree);
         }
       }
     }
@@ -977,20 +984,28 @@
       const moving = input.magnitude > 0.001;
 
       if (moving) {
-        const desiredYaw = angleToFaceTarget(input.x, input.z);
-        const currentYaw = player.rotation.y;
-        const diff = shortestAngleDiff(currentYaw, desiredYaw);
-        const maxTurn = config.turnSpeed * delta;
-        player.rotation.y += clamp(diff, -maxTurn, maxTurn);
+        const worldDir = getCameraRelativeMoveDirection(input.x, input.z);
+        if (worldDir.lengthSq() > 1e-8) {
+          const desiredYaw = Math.atan2(worldDir.x, worldDir.z) - Math.PI;
+          const currentYaw = player.rotation.y;
+          const diff = shortestAngleDiff(currentYaw, desiredYaw);
+          const maxTurn = config.turnSpeed * delta;
 
-        const facingYaw = player.rotation.y + Math.PI;
-        const speed = currentSpeed() * input.magnitude;
+          // まず向きを合わせる
+          player.rotation.y += clamp(diff, -maxTurn, maxTurn);
 
-        player.position.x += Math.sin(facingYaw) * speed * delta;
-        player.position.z += Math.cos(facingYaw) * speed * delta;
+          // 向きが合うほど進む。完全に後ろ向きへ行く時はほぼ止まって回転優先
+          const align = clamp(1 - Math.abs(diff) / 0.9, 0, 1);
+          const moveFactor = 0.15 + 0.85 * align;
+          const speed = currentSpeed() * input.magnitude * moveFactor;
 
-        if (!attackPlaying) {
-          syncLocomotion(false);
+          const facingYaw = player.rotation.y + Math.PI;
+          tempV1.set(Math.sin(facingYaw), 0, Math.cos(facingYaw));
+          player.position.addScaledVector(tempV1, speed * delta);
+
+          if (!attackPlaying) {
+            syncLocomotion(false);
+          }
         }
       } else if (!attackPlaying && currentActionName !== "idle") {
         hardStopAction("walk");
