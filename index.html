@@ -41,7 +41,7 @@
       top: 12px;
       z-index: 20;
       min-width: 280px;
-      max-width: min(92vw, 460px);
+      max-width: min(92vw, 480px);
       padding: 12px 14px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.84);
@@ -59,13 +59,13 @@
     }
     #meta {
       font-size: 12px;
-      opacity: 0.8;
+      opacity: 0.82;
       word-break: break-word;
     }
     #status {
       margin-top: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       color: #1d3f7a;
     }
     #help {
@@ -160,7 +160,9 @@
       -webkit-user-select: none;
       z-index: 25;
     }
-    #jumpBtn:active { transform: scale(0.97); }
+    #jumpBtn:active {
+      transform: scale(0.97);
+    }
 
     @media (max-width: 700px) {
       #ui {
@@ -199,12 +201,12 @@
   <div id="loading">読み込み中…</div>
 
   <div id="ui">
-    <div id="title">Character 操作ビューア</div>
+    <div id="title">Character Animation Controller</div>
     <div id="meta">
-      表示モデル: <span id="fileName">characteranimation.glb</span><br>
+      見た目: <span id="baseName">Meshy_AI_biped_Animation_Walking_withSkin.fbx</span><br>
       歩き: <span id="walkName">Meshy_AI_biped_Animation_Walking_withSkin.fbx</span><br>
-      攻撃: <span id="attackName">Meshy_AI_biped_Animation_Attack_withSkin.fbx</span><br>
-      走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span>
+      走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span><br>
+      攻撃: <span id="attackName">Meshy_AI_biped_Animation_Attack_withSkin.fbx</span>
     </div>
     <div id="status">待機中</div>
     <div id="buttons">
@@ -224,10 +226,9 @@
 
   <script type="module">
     import * as THREE from "three";
-    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
     import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 
-    const BASE_MODEL_URL = "./characteranimation.glb";
+    const BASE_MODEL_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
     const WALK_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
     const ATTACK_FBX_URL = "./Meshy_AI_biped_Animation_Attack_withSkin.fbx";
     const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
@@ -244,15 +245,15 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.4;
+    renderer.toneMappingExposure = 1.35;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.style.touchAction = "none";
     document.body.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9d6ff, 2.6));
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9d6ff, 2.7));
 
-    const sun = new THREE.DirectionalLight(0xffffff, 3.2);
+    const sun = new THREE.DirectionalLight(0xffffff, 3.0);
     sun.position.set(8, 16, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -281,36 +282,25 @@
     grid.material.opacity = 0.32;
     scene.add(grid);
 
-    const gltfLoader = new GLTFLoader();
-    const fbxLoader = new FBXLoader();
+    const loader = new FBXLoader();
 
     const uiStatus = document.getElementById("status");
     const loading = document.getElementById("loading");
-    const fileName = document.getElementById("fileName");
-    const walkName = document.getElementById("walkName");
-    const attackName = document.getElementById("attackName");
-    const runName = document.getElementById("runName");
     const runBtn = document.getElementById("runBtn");
     const attackBtn = document.getElementById("attackBtn");
-
-    fileName.textContent = "characteranimation.glb";
-    walkName.textContent = "Meshy_AI_biped_Animation_Walking_withSkin.fbx";
-    attackName.textContent = "Meshy_AI_biped_Animation_Attack_withSkin.fbx";
-    runName.textContent = "Meshy_AI_biped_Animation_Running_withSkin.fbx";
 
     const player = new THREE.Group();
     scene.add(player);
 
     let modelRoot = null;
     let mixer = null;
-
     const actions = {
       walk: null,
-      attack: null,
-      run: null
+      run: null,
+      attack: null
     };
 
-    let currentLocomotion = "idle"; // idle | walk | run
+    let currentActionName = "idle";
     let attackPlaying = false;
     let runMode = false;
 
@@ -392,60 +382,60 @@
     }
 
     async function loadBaseModel() {
-      try {
-        const gltf = await gltfLoader.loadAsync(BASE_MODEL_URL);
-        const model = gltf.scene;
-        fitAndGround(model);
-        modelRoot = model;
-        player.add(modelRoot);
-        return true;
-      } catch (e) {
-        console.warn("GLB base model failed, trying FBX fallback...", e);
-        try {
-          const fbx = await fbxLoader.loadAsync(BASE_MODEL_URL);
-          const model = fbx;
-          fitAndGround(model);
-          modelRoot = model;
-          player.add(modelRoot);
-          return true;
-        } catch (e2) {
-          console.error("Base model load failed:", e2);
-          return false;
+      const base = await loader.loadAsync(BASE_MODEL_URL);
+      const model = base;
+      fitAndGround(model);
+      modelRoot = model;
+      player.add(modelRoot);
+    }
+
+    function firstClip(fbx) {
+      if (!fbx.animations || fbx.animations.length === 0) return null;
+      return fbx.animations[0];
+    }
+
+    function applyTrackTimeScale(clip, factor) {
+      const c = clip.clone();
+      for (const track of c.tracks) {
+        if (track && typeof track.setInterpolation === "function") {
+          // noop: placeholder so clone stays intact
         }
       }
+      return c;
     }
 
-    async function loadClip(url, key) {
-      const fbx = await fbxLoader.loadAsync(url);
-      const clip = fbx.animations && fbx.animations.length > 0 ? fbx.animations[0] : null;
-      if (!clip) {
-        console.warn(`No animation clip found in ${url}`);
-        return;
-      }
-      actions[key] = mixer.clipAction(clip);
-      actions[key].setLoop(key === "attack" ? THREE.LoopOnce : THREE.LoopRepeat, key === "attack" ? 1 : Infinity);
-      actions[key].clampWhenFinished = key === "attack";
-      actions[key].enabled = true;
-      console.log(`${key} clip loaded:`, clip.name, clip);
-    }
+    async function loadAnimations() {
+      const [walkFBX, runFBX, attackFBX] = await Promise.all([
+        loader.loadAsync(WALK_FBX_URL),
+        loader.loadAsync(RUN_FBX_URL),
+        loader.loadAsync(ATTACK_FBX_URL)
+      ]);
 
-    async function loadAll() {
-      setStatus("モデルを読み込み中…");
-      const ok = await loadBaseModel();
-      if (!ok) {
-        loading.classList.add("hidden");
-        setStatus("読み込み失敗");
-        return;
-      }
+      const walkClip = firstClip(walkFBX);
+      const runClip = firstClip(runFBX);
+      const attackClip = firstClip(attackFBX);
 
       mixer = new THREE.AnimationMixer(modelRoot);
 
-      try {
-        await loadClip(WALK_FBX_URL, "walk");
-        await loadClip(ATTACK_FBX_URL, "attack");
-        await loadClip(RUN_FBX_URL, "run");
-      } catch (e) {
-        console.error("Animation loading failed:", e);
+      if (walkClip) {
+        actions.walk = mixer.clipAction(walkClip);
+        actions.walk.setLoop(THREE.LoopRepeat, Infinity);
+        actions.walk.clampWhenFinished = false;
+        actions.walk.enabled = true;
+      }
+
+      if (runClip) {
+        actions.run = mixer.clipAction(runClip);
+        actions.run.setLoop(THREE.LoopRepeat, Infinity);
+        actions.run.clampWhenFinished = false;
+        actions.run.enabled = true;
+      }
+
+      if (attackClip) {
+        actions.attack = mixer.clipAction(attackClip);
+        actions.attack.setLoop(THREE.LoopOnce, 1);
+        actions.attack.clampWhenFinished = true;
+        actions.attack.enabled = true;
       }
 
       mixer.addEventListener("finished", (event) => {
@@ -455,54 +445,67 @@
         }
       });
 
-      loading.classList.add("hidden");
-      setStatus("待機中");
-      console.log("Loaded actions:", actions);
+      console.log("Loaded clips:", {
+        walk: walkClip?.name,
+        run: runClip?.name,
+        attack: attackClip?.name
+      });
     }
 
-    function stopAllActions() {
-      for (const key of ["walk", "attack", "run"]) {
+    function stopAllActions(fade = 0.12) {
+      for (const key of ["walk", "run", "attack"]) {
         const a = actions[key];
         if (!a) continue;
-        a.stop();
-        a.reset();
-        a.paused = false;
+        a.fadeOut(fade);
       }
     }
 
-    function playAction(key) {
-      const a = actions[key];
+    function hardStopAction(name) {
+      const a = actions[name];
       if (!a) return;
-      stopAllActions();
+      a.stop();
       a.reset();
       a.paused = false;
-      a.enabled = true;
-      a.play();
-      if (key !== "attack") {
-        currentLocomotion = key;
+    }
+
+    function playAction(name, fade = 0.14) {
+      const next = actions[name];
+      if (!next) return;
+
+      for (const key of ["walk", "run"]) {
+        if (key !== name) hardStopAction(key);
       }
+
+      next.reset();
+      next.enabled = true;
+      next.paused = false;
+      next.setEffectiveWeight(1);
+      next.fadeIn(fade).play();
+      currentActionName = name;
     }
 
     function syncLocomotion(force = false) {
-      if (!actions.walk && !actions.run) return;
       if (attackPlaying && !force) return;
 
       const input = getCombinedInput();
       const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
 
       if (!isMoving) {
-        if (currentLocomotion !== "idle") {
-          stopAllActions();
-          currentLocomotion = "idle";
+        if (currentActionName !== "idle") {
+          hardStopAction("walk");
+          hardStopAction("run");
+          currentActionName = "idle";
         }
         return;
       }
 
-      const next = runMode ? "run" : "walk";
-      if (currentLocomotion !== next || force) {
-        playAction(next);
+      const desired = runMode ? "run" : "walk";
+
+      if (force || currentActionName !== desired) {
+        stopAllActions(0.08);
+        playAction(desired, 0.08);
       } else {
-        const a = actions[next];
+        const a = actions[desired];
         if (a && !a.isRunning()) a.play();
         if (a) a.paused = false;
       }
@@ -511,13 +514,17 @@
     function startAttack() {
       const a = actions.attack;
       if (!a) return;
+
       attackPlaying = true;
-      stopAllActions();
+      stopAllActions(0.05);
+
       a.reset();
       a.enabled = true;
+      a.paused = false;
       a.clampWhenFinished = true;
       a.setLoop(THREE.LoopOnce, 1);
       a.play();
+      currentActionName = "attack";
     }
 
     function setRunMode(on) {
@@ -691,19 +698,11 @@
 
       if (!attackPlaying) {
         if (isMoving) {
-          const desired = runMode ? "run" : "walk";
-          if (currentLocomotion !== desired) {
-            playAction(desired);
-          } else {
-            const a = actions[desired];
-            if (a && !a.isRunning()) a.play();
-            if (a) a.paused = false;
-          }
-        } else {
-          if (currentLocomotion !== "idle") {
-            stopAllActions();
-            currentLocomotion = "idle";
-          }
+          syncLocomotion(false);
+        } else if (currentActionName !== "idle") {
+          hardStopAction("walk");
+          hardStopAction("run");
+          currentActionName = "idle";
         }
       }
 
@@ -712,7 +711,7 @@
           ? "攻撃中"
           : physics.onGround
             ? (isMoving ? (runMode ? "走行中" : "移動中") : "待機中")
-            : (isMoving ? "移動中 / ジャンプ中" : "ジャンプ中")
+            : (isMoving ? (runMode ? "走行中 / ジャンプ中" : "移動中 / ジャンプ中") : "ジャンプ中")
       );
     }
 
@@ -730,6 +729,20 @@
         player.position.y + config.targetHeight,
         player.position.z
       );
+    }
+
+    async function bootstrap() {
+      try {
+        setStatus("モデルを読み込み中…");
+        await loadBaseModel();
+        await loadAnimations();
+        loading.classList.add("hidden");
+        setStatus("待機中");
+      } catch (err) {
+        console.error(err);
+        loading.classList.add("hidden");
+        setStatus("読み込み失敗");
+      }
     }
 
     function animate() {
@@ -754,7 +767,7 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
 
-    loadAll();
+    bootstrap();
     animate();
   </script>
 </body>
