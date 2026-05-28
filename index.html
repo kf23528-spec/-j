@@ -176,8 +176,8 @@
   <div id="ui">
     <div id="title">Meshy / character 操作ビューア</div>
     <div id="meta">
-      表示モデル: <span id="fileName">Meshy_AI_biped_Animation_Run_03_withSkin.glb</span><br>
-      アニメ: <span id="animName">Armature|Run_03|baselayer</span>
+      表示モデル: <span id="fileName">cyberpunk+character+3d+model 3.glb</span><br>
+      アニメ: <span id="animName">Walk</span>
     </div>
     <div id="status">待機中</div>
     <div id="help">
@@ -195,8 +195,8 @@
     import * as THREE from "three";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-    const MODEL_URL = "./Meshy_AI_biped_Animation_Run_03_withSkin.glb";
-    const TARGET_CLIP_NAME = "Armature|Run_03|baselayer";
+    const MODEL_URL = "./cyberpunk+character+3d+model 3.glb";
+    const TARGET_CLIP_HINTS = ["Walk", "walk", "Run", "run"];
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xEEF2F7);
@@ -254,8 +254,8 @@
     const joyKnob = document.getElementById("joyKnob");
     const jumpBtn = document.getElementById("jumpBtn");
 
-    fileName.textContent = "Meshy_AI_biped_Animation_Run_03_withSkin.glb";
-    animName.textContent = TARGET_CLIP_NAME;
+    fileName.textContent = "cyberpunk+character+3d+model 3.glb";
+    animName.textContent = "Walk";
 
     const player = new THREE.Group();
     scene.add(player);
@@ -378,7 +378,7 @@
       physics.onGround = false;
     }
 
-    function playRunAnimation() {
+    function playAnimation() {
       if (!action) return;
       action.enabled = true;
       action.reset();
@@ -386,7 +386,7 @@
       action.play();
     }
 
-    function stopRunAnimation() {
+    function stopAnimation() {
       if (!action) return;
       action.stop();
       action.reset();
@@ -402,7 +402,9 @@
         fitAndGround(modelRoot);
         player.add(modelRoot);
 
-        const clip = gltf.animations.find((c) => c.name && c.name.includes("Run_03"));
+        const clip =
+          gltf.animations.find((c) => c.name && TARGET_CLIP_HINTS.some((hint) => c.name.includes(hint))) ||
+          gltf.animations[0];
 
         if (clip) {
           mixer = new THREE.AnimationMixer(modelRoot);
@@ -415,7 +417,7 @@
           wasMoving = false;
           console.log("Animation found:", clip.name);
         } else {
-          console.error("Run_03 animation not found. Available clips:", gltf.animations.map(a => a.name));
+          console.error("Animation clip not found. Available clips:", gltf.animations.map(a => a.name));
         }
 
         loading.classList.add("hidden");
@@ -457,9 +459,9 @@
       const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
 
       if (isMoving && !wasMoving) {
-        playRunAnimation();
+        playAnimation();
       } else if (!isMoving && wasMoving) {
-        stopRunAnimation();
+        stopAnimation();
       }
       wasMoving = isMoving;
 
@@ -573,7 +575,6 @@
 
       updateMovement(delta);
 
-      // 毎フレーム必ず更新
       if (mixer) {
         mixer.update(delta);
       }
