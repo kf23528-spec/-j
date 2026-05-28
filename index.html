@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Character Animation Viewer</title>
+  <title>Character Animation Controller</title>
   <style>
     html, body {
       width: 100%;
@@ -23,7 +23,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(238, 242, 247, 0.76);
+      background: rgba(238, 242, 247, 0.78);
       backdrop-filter: blur(8px);
       color: #222;
       font-size: 16px;
@@ -41,7 +41,7 @@
       top: 12px;
       z-index: 20;
       min-width: 280px;
-      max-width: min(92vw, 420px);
+      max-width: min(92vw, 460px);
       padding: 12px 14px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.84);
@@ -73,6 +73,33 @@
       font-size: 12px;
       opacity: 0.82;
       line-height: 1.5;
+    }
+    #buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .modeBtn {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      cursor: pointer;
+      background: #2f82ff;
+      box-shadow: 0 8px 18px rgba(47, 130, 255, 0.22);
+    }
+    .modeBtn.active {
+      background: #1d5fc0;
+    }
+    .modeBtn.attack {
+      background: #ff6a2c;
+      box-shadow: 0 8px 18px rgba(255, 106, 44, 0.22);
+    }
+    .modeBtn.attack.active {
+      background: #cc4e1d;
     }
 
     #joystick {
@@ -133,9 +160,7 @@
       -webkit-user-select: none;
       z-index: 25;
     }
-    #jumpBtn:active {
-      transform: scale(0.97);
-    }
+    #jumpBtn:active { transform: scale(0.97); }
 
     @media (max-width: 700px) {
       #ui {
@@ -177,9 +202,15 @@
     <div id="title">Character 操作ビューア</div>
     <div id="meta">
       表示モデル: <span id="fileName">characteranimation.glb</span><br>
-      アニメ候補: <span id="animName">Walk / Run_03</span>
+      歩き: <span id="walkName">Meshy_AI_biped_Animation_Walking_withSkin.fbx</span><br>
+      攻撃: <span id="attackName">Meshy_AI_biped_Animation_Attack_withSkin.fbx</span><br>
+      走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span>
     </div>
     <div id="status">待機中</div>
+    <div id="buttons">
+      <button id="runBtn" class="modeBtn">走る</button>
+      <button id="attackBtn" class="modeBtn attack">攻撃</button>
+    </div>
     <div id="help">
       操作: WASD / 矢印キー / 画面スティック / ジャンプボタン<br>
       W/S = 前進・後退, A/D = 回転, Space = ジャンプ
@@ -194,9 +225,12 @@
   <script type="module">
     import * as THREE from "three";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+    import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 
-    const MODEL_URL = "./characteranimation.glb";
-    const TARGET_CLIP_HINTS = ["Walk", "walk", "Run_03", "run_03", "Run", "run"];
+    const BASE_MODEL_URL = "./characteranimation.glb";
+    const WALK_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
+    const ATTACK_FBX_URL = "./Meshy_AI_biped_Animation_Attack_withSkin.fbx";
+    const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xEEF2F7);
@@ -210,16 +244,16 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.4;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.style.touchAction = "none";
     document.body.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9d6ff, 2.6));
 
-    const sun = new THREE.DirectionalLight(0xffffff, 2.15);
-    sun.position.set(8, 14, 6);
+    const sun = new THREE.DirectionalLight(0xffffff, 3.2);
+    sun.position.set(8, 16, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.near = 0.5;
@@ -229,6 +263,10 @@
     sun.shadow.camera.top = 20;
     sun.shadow.camera.bottom = -20;
     scene.add(sun);
+
+    const fill = new THREE.PointLight(0xffffff, 1.2, 80);
+    fill.position.set(-6, 8, -4);
+    scene.add(fill);
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(250, 250),
@@ -243,27 +281,38 @@
     grid.material.opacity = 0.32;
     scene.add(grid);
 
-    const loader = new GLTFLoader();
+    const gltfLoader = new GLTFLoader();
+    const fbxLoader = new FBXLoader();
 
     const uiStatus = document.getElementById("status");
     const loading = document.getElementById("loading");
     const fileName = document.getElementById("fileName");
-    const animName = document.getElementById("animName");
-
-    const joystickEl = document.getElementById("joystick");
-    const joyKnob = document.getElementById("joyKnob");
-    const jumpBtn = document.getElementById("jumpBtn");
+    const walkName = document.getElementById("walkName");
+    const attackName = document.getElementById("attackName");
+    const runName = document.getElementById("runName");
+    const runBtn = document.getElementById("runBtn");
+    const attackBtn = document.getElementById("attackBtn");
 
     fileName.textContent = "characteranimation.glb";
-    animName.textContent = "Walk / Run_03";
+    walkName.textContent = "Meshy_AI_biped_Animation_Walking_withSkin.fbx";
+    attackName.textContent = "Meshy_AI_biped_Animation_Attack_withSkin.fbx";
+    runName.textContent = "Meshy_AI_biped_Animation_Running_withSkin.fbx";
 
     const player = new THREE.Group();
     scene.add(player);
 
     let modelRoot = null;
     let mixer = null;
-    let action = null;
-    let wasMoving = false;
+
+    const actions = {
+      walk: null,
+      attack: null,
+      run: null
+    };
+
+    let currentLocomotion = "idle"; // idle | walk | run
+    let attackPlaying = false;
+    let runMode = false;
 
     const keys = new Set();
 
@@ -302,17 +351,23 @@
       return Math.max(min, Math.min(max, v));
     }
 
-    function applyShadows(object3D) {
+    function applyShadowsAndFixMaterials(object3D) {
       object3D.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          for (const mat of mats) {
+            if (!mat) continue;
+            mat.side = THREE.DoubleSide;
+            mat.needsUpdate = true;
+          }
         }
       });
     }
 
     function fitAndGround(model) {
-      applyShadows(model);
+      applyShadowsAndFixMaterials(model);
 
       const box1 = new THREE.Box3().setFromObject(model);
       const center1 = box1.getCenter(new THREE.Vector3());
@@ -336,18 +391,139 @@
       return model;
     }
 
-    function updateJoystickVisual() {
-      const px = stick.x * stick.radius;
-      const py = stick.y * stick.radius;
-      joyKnob.style.transform = `translate(${px}px, ${py}px)`;
+    async function loadBaseModel() {
+      try {
+        const gltf = await gltfLoader.loadAsync(BASE_MODEL_URL);
+        const model = gltf.scene;
+        fitAndGround(model);
+        modelRoot = model;
+        player.add(modelRoot);
+        return true;
+      } catch (e) {
+        console.warn("GLB base model failed, trying FBX fallback...", e);
+        try {
+          const fbx = await fbxLoader.loadAsync(BASE_MODEL_URL);
+          const model = fbx;
+          fitAndGround(model);
+          modelRoot = model;
+          player.add(modelRoot);
+          return true;
+        } catch (e2) {
+          console.error("Base model load failed:", e2);
+          return false;
+        }
+      }
     }
 
-    function resetJoystick() {
-      stick.active = false;
-      stick.pointerId = null;
-      stick.x = 0;
-      stick.y = 0;
-      updateJoystickVisual();
+    async function loadClip(url, key) {
+      const fbx = await fbxLoader.loadAsync(url);
+      const clip = fbx.animations && fbx.animations.length > 0 ? fbx.animations[0] : null;
+      if (!clip) {
+        console.warn(`No animation clip found in ${url}`);
+        return;
+      }
+      actions[key] = mixer.clipAction(clip);
+      actions[key].setLoop(key === "attack" ? THREE.LoopOnce : THREE.LoopRepeat, key === "attack" ? 1 : Infinity);
+      actions[key].clampWhenFinished = key === "attack";
+      actions[key].enabled = true;
+      console.log(`${key} clip loaded:`, clip.name, clip);
+    }
+
+    async function loadAll() {
+      setStatus("モデルを読み込み中…");
+      const ok = await loadBaseModel();
+      if (!ok) {
+        loading.classList.add("hidden");
+        setStatus("読み込み失敗");
+        return;
+      }
+
+      mixer = new THREE.AnimationMixer(modelRoot);
+
+      try {
+        await loadClip(WALK_FBX_URL, "walk");
+        await loadClip(ATTACK_FBX_URL, "attack");
+        await loadClip(RUN_FBX_URL, "run");
+      } catch (e) {
+        console.error("Animation loading failed:", e);
+      }
+
+      mixer.addEventListener("finished", (event) => {
+        if (event.action === actions.attack) {
+          attackPlaying = false;
+          syncLocomotion(true);
+        }
+      });
+
+      loading.classList.add("hidden");
+      setStatus("待機中");
+      console.log("Loaded actions:", actions);
+    }
+
+    function stopAllActions() {
+      for (const key of ["walk", "attack", "run"]) {
+        const a = actions[key];
+        if (!a) continue;
+        a.stop();
+        a.reset();
+        a.paused = false;
+      }
+    }
+
+    function playAction(key) {
+      const a = actions[key];
+      if (!a) return;
+      stopAllActions();
+      a.reset();
+      a.paused = false;
+      a.enabled = true;
+      a.play();
+      if (key !== "attack") {
+        currentLocomotion = key;
+      }
+    }
+
+    function syncLocomotion(force = false) {
+      if (!actions.walk && !actions.run) return;
+      if (attackPlaying && !force) return;
+
+      const input = getCombinedInput();
+      const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
+
+      if (!isMoving) {
+        if (currentLocomotion !== "idle") {
+          stopAllActions();
+          currentLocomotion = "idle";
+        }
+        return;
+      }
+
+      const next = runMode ? "run" : "walk";
+      if (currentLocomotion !== next || force) {
+        playAction(next);
+      } else {
+        const a = actions[next];
+        if (a && !a.isRunning()) a.play();
+        if (a) a.paused = false;
+      }
+    }
+
+    function startAttack() {
+      const a = actions.attack;
+      if (!a) return;
+      attackPlaying = true;
+      stopAllActions();
+      a.reset();
+      a.enabled = true;
+      a.clampWhenFinished = true;
+      a.setLoop(THREE.LoopOnce, 1);
+      a.play();
+    }
+
+    function setRunMode(on) {
+      runMode = on;
+      runBtn.classList.toggle("active", runMode);
+      if (!attackPlaying) syncLocomotion(true);
     }
 
     function getKeyboardState() {
@@ -378,114 +554,22 @@
       physics.onGround = false;
     }
 
-    function playAnimation() {
-      if (!action) return;
-      action.enabled = true;
-      action.reset();
-      action.paused = false;
-      action.play();
+    const joystickEl = document.getElementById("joystick");
+    const joyKnob = document.getElementById("joyKnob");
+    const jumpBtn = document.getElementById("jumpBtn");
+
+    function updateJoystickVisual() {
+      const px = stick.x * stick.radius;
+      const py = stick.y * stick.radius;
+      joyKnob.style.transform = `translate(${px}px, ${py}px)`;
     }
 
-    function stopAnimation() {
-      if (!action) return;
-      action.stop();
-      action.reset();
-    }
-
-    async function loadModel() {
-      try {
-        setStatus("モデルを読み込み中…");
-
-        const gltf = await loader.loadAsync(MODEL_URL);
-
-        modelRoot = gltf.scene;
-        fitAndGround(modelRoot);
-        player.add(modelRoot);
-
-        const clip =
-          gltf.animations.find((c) => c.name && TARGET_CLIP_HINTS.some((hint) => c.name.includes(hint))) ||
-          gltf.animations[0];
-
-        if (clip) {
-          mixer = new THREE.AnimationMixer(modelRoot);
-          action = mixer.clipAction(clip);
-          action.setLoop(THREE.LoopRepeat, Infinity);
-          action.clampWhenFinished = false;
-          action.enabled = true;
-          action.reset();
-          action.stop();
-          wasMoving = false;
-          console.log("Animation found:", clip.name);
-        } else {
-          console.error("Animation clip not found. Available clips:", gltf.animations.map(a => a.name));
-        }
-
-        loading.classList.add("hidden");
-        setStatus("待機中");
-      } catch (err) {
-        console.error(err);
-        loading.classList.add("hidden");
-        setStatus("読み込み失敗");
-      }
-    }
-
-    function updateMovement(delta) {
-      const input = getCombinedInput();
-
-      if (input.jump) {
-        requestJump();
-      }
-
-      if (Math.abs(input.turn) > 0.001) {
-        player.rotation.y += input.turn * config.turnSpeed * delta;
-      }
-
-      const facingYaw = player.rotation.y + Math.PI;
-
-      if (Math.abs(input.forward) > 0.001) {
-        player.position.x += Math.sin(facingYaw) * input.forward * config.moveSpeed * delta;
-        player.position.z += Math.cos(facingYaw) * input.forward * config.moveSpeed * delta;
-      }
-
-      physics.vy += config.gravity * delta;
-      player.position.y += physics.vy * delta;
-
-      if (player.position.y <= 0) {
-        player.position.y = 0;
-        physics.vy = 0;
-        physics.onGround = true;
-      }
-
-      const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
-
-      if (isMoving && !wasMoving) {
-        playAnimation();
-      } else if (!isMoving && wasMoving) {
-        stopAnimation();
-      }
-      wasMoving = isMoving;
-
-      setStatus(
-        physics.onGround
-          ? (isMoving ? "移動中" : "待機中")
-          : (isMoving ? "移動中 / ジャンプ中" : "ジャンプ中")
-      );
-    }
-
-    function updateCamera(delta) {
-      const facingYaw = player.rotation.y + Math.PI;
-      const offset = new THREE.Vector3(0, config.cameraHeight, config.cameraDistance);
-      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), facingYaw);
-
-      const desiredCameraPos = new THREE.Vector3().copy(player.position).add(offset);
-      const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
-      camera.position.lerp(desiredCameraPos, lerpAlpha);
-
-      camera.lookAt(
-        player.position.x,
-        player.position.y + config.targetHeight,
-        player.position.z
-      );
+    function resetJoystick() {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+      updateJoystickVisual();
     }
 
     joystickEl.addEventListener("pointerdown", (e) => {
@@ -556,6 +640,14 @@
       requestJump();
     });
 
+    runBtn.addEventListener("click", () => {
+      setRunMode(!runMode);
+    });
+
+    attackBtn.addEventListener("click", () => {
+      startAttack();
+    });
+
     window.addEventListener("keydown", (e) => {
       if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD"].includes(e.code)) {
         e.preventDefault();
@@ -567,6 +659,78 @@
     window.addEventListener("keyup", (e) => {
       keys.delete(e.code);
     });
+
+    function updateMovement(delta) {
+      const input = getCombinedInput();
+
+      if (input.jump) {
+        requestJump();
+      }
+
+      if (Math.abs(input.turn) > 0.001) {
+        player.rotation.y += input.turn * config.turnSpeed * delta;
+      }
+
+      const facingYaw = player.rotation.y + Math.PI;
+
+      if (Math.abs(input.forward) > 0.001) {
+        player.position.x += Math.sin(facingYaw) * input.forward * config.moveSpeed * delta;
+        player.position.z += Math.cos(facingYaw) * input.forward * config.moveSpeed * delta;
+      }
+
+      physics.vy += config.gravity * delta;
+      player.position.y += physics.vy * delta;
+
+      if (player.position.y <= 0) {
+        player.position.y = 0;
+        physics.vy = 0;
+        physics.onGround = true;
+      }
+
+      const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
+
+      if (!attackPlaying) {
+        if (isMoving) {
+          const desired = runMode ? "run" : "walk";
+          if (currentLocomotion !== desired) {
+            playAction(desired);
+          } else {
+            const a = actions[desired];
+            if (a && !a.isRunning()) a.play();
+            if (a) a.paused = false;
+          }
+        } else {
+          if (currentLocomotion !== "idle") {
+            stopAllActions();
+            currentLocomotion = "idle";
+          }
+        }
+      }
+
+      setStatus(
+        attackPlaying
+          ? "攻撃中"
+          : physics.onGround
+            ? (isMoving ? (runMode ? "走行中" : "移動中") : "待機中")
+            : (isMoving ? "移動中 / ジャンプ中" : "ジャンプ中")
+      );
+    }
+
+    function updateCamera(delta) {
+      const facingYaw = player.rotation.y + Math.PI;
+      const offset = new THREE.Vector3(0, config.cameraHeight, config.cameraDistance);
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), facingYaw);
+
+      const desiredCameraPos = new THREE.Vector3().copy(player.position).add(offset);
+      const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
+      camera.position.lerp(desiredCameraPos, lerpAlpha);
+
+      camera.lookAt(
+        player.position.x,
+        player.position.y + config.targetHeight,
+        player.position.z
+      );
+    }
 
     function animate() {
       requestAnimationFrame(animate);
@@ -590,7 +754,7 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
 
-    loadModel();
+    loadAll();
     animate();
   </script>
 </body>
