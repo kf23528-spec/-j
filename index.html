@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Character Animation Controller - Forest Map</title>
+  <title>Forest Game Controller</title>
   <style>
     html, body {
       width: 100%;
@@ -41,7 +41,7 @@
       top: 12px;
       z-index: 20;
       min-width: 280px;
-      max-width: min(92vw, 480px);
+      max-width: min(92vw, 500px);
       padding: 12px 14px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.84);
@@ -67,12 +67,6 @@
       font-size: 13px;
       font-weight: 800;
       color: #1d3f7a;
-    }
-    #help {
-      margin-top: 8px;
-      font-size: 12px;
-      opacity: 0.82;
-      line-height: 1.5;
     }
     #buttons {
       display: flex;
@@ -100,6 +94,13 @@
     }
     .modeBtn.attack.active {
       background: #cc4e1d;
+    }
+
+    #help {
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.82;
+      line-height: 1.5;
     }
 
     #joystick {
@@ -160,7 +161,9 @@
       -webkit-user-select: none;
       z-index: 25;
     }
-    #jumpBtn:active { transform: scale(0.97); }
+    #jumpBtn:active {
+      transform: scale(0.97);
+    }
 
     @media (max-width: 700px) {
       #ui {
@@ -199,22 +202,22 @@
   <div id="loading">読み込み中…</div>
 
   <div id="ui">
-    <div id="title">Character Animation Controller</div>
+    <div id="title">Forest Game Controller</div>
     <div id="meta">
-      見た目: <span id="baseName">Meshy_AI_biped_Animation_Walking_withSkin.fbx</span><br>
       歩き: <span id="walkName">Meshy_AI_biped_Animation_Walking_withSkin.fbx</span><br>
       走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span><br>
       攻撃: <span id="attackName">Meshy_AI_biped_Animation_Attack_withSkin.fbx</span><br>
-      木: <span id="treeName">tree.glb</span>
+      木: <span id="treeName">tree.glb</span><br>
+      猪: <span id="boarName">boar.glb</span>
     </div>
     <div id="status">待機中</div>
     <div id="buttons">
-      <button id="runBtn" class="modeBtn">走る</button>
+      <button id="dashBtn" class="modeBtn">ダッシュ</button>
       <button id="attackBtn" class="modeBtn attack">攻撃</button>
     </div>
     <div id="help">
-      操作: WASD / 矢印キー / 画面スティック / ジャンプボタン<br>
-      W/S = 前進・後退, A/D = 回転, Space = ジャンプ
+      操作: WASD / 矢印キー / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
+      移動方向へ体を向けてから前進します。Shift でダッシュ、J で攻撃。
     </div>
   </div>
 
@@ -228,11 +231,11 @@
     import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-    const BASE_MODEL_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
     const WALK_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
     const ATTACK_FBX_URL = "./Meshy_AI_biped_Animation_Attack_withSkin.fbx";
     const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
     const TREE_URL = "./tree.glb";
+    const BOAR_URL = "./boar.glb";
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
@@ -284,12 +287,12 @@
     grassGrid.material.opacity = 0.16;
     scene.add(grassGrid);
 
-    const loader = new FBXLoader();
+    const fbxLoader = new FBXLoader();
     const gltfLoader = new GLTFLoader();
 
     const uiStatus = document.getElementById("status");
     const loading = document.getElementById("loading");
-    const runBtn = document.getElementById("runBtn");
+    const dashBtn = document.getElementById("dashBtn");
     const attackBtn = document.getElementById("attackBtn");
 
     const player = new THREE.Group();
@@ -297,6 +300,7 @@
 
     let modelRoot = null;
     let mixer = null;
+
     const actions = {
       walk: null,
       run: null,
@@ -305,7 +309,8 @@
 
     let currentActionName = "idle";
     let attackPlaying = false;
-    let runMode = false;
+    let dashMode = false;
+    let dashHeld = false;
 
     const keys = new Set();
 
@@ -323,18 +328,26 @@
     };
 
     const config = {
-      moveSpeed: 4.8,
-      turnSpeed: 2.6,
+      walkSpeed: 4.8,
+      dashMultiplier: 2.5,
       gravity: -22.0,
       jumpVelocity: 8.8,
       cameraHeight: 2.55,
       cameraDistance: 6.9,
       cameraSmooth: 8.5,
       targetHeight: 1.5,
-      modelHeight: 2.45
+      modelHeight: 2.45,
+      turnSpeed: 10.5,
+      attackDamage: 50,
+      attackRange: 4.5,
+      attackConeDot: 0.45,
+      boarHp: 100
     };
 
     const clock = new THREE.Clock();
+
+    const trees = [];
+    const boars = [];
 
     function setStatus(text) {
       uiStatus.textContent = text;
@@ -342,6 +355,18 @@
 
     function clamp(v, min, max) {
       return Math.max(min, Math.min(max, v));
+    }
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function shortestAngleDiff(a, b) {
+      return Math.atan2(Math.sin(b - a), Math.cos(b - a));
+    }
+
+    function angleToFaceTarget(dirX, dirZ) {
+      return Math.atan2(dirX, dirZ) - Math.PI;
     }
 
     function applyShadowsAndFixMaterials(object3D) {
@@ -359,7 +384,7 @@
       });
     }
 
-    function fitAndGround(model) {
+    function fitAndGround(model, targetHeight = config.modelHeight) {
       applyShadowsAndFixMaterials(model);
 
       const box1 = new THREE.Box3().setFromObject(model);
@@ -369,7 +394,7 @@
 
       const box2 = new THREE.Box3().setFromObject(model);
       const size2 = box2.getSize(new THREE.Vector3());
-      const scale = config.modelHeight / Math.max(size2.y, 0.0001);
+      const scale = targetHeight / Math.max(size2.y, 0.0001);
       model.scale.setScalar(scale);
 
       const box3 = new THREE.Box3().setFromObject(model);
@@ -384,9 +409,33 @@
       return model;
     }
 
+    function fitAndGroundSimple(model, targetHeight = 1.2) {
+      applyShadowsAndFixMaterials(model);
+
+      const box1 = new THREE.Box3().setFromObject(model);
+      const center1 = box1.getCenter(new THREE.Vector3());
+      model.position.x -= center1.x;
+      model.position.z -= center1.z;
+
+      const box2 = new THREE.Box3().setFromObject(model);
+      const size2 = box2.getSize(new THREE.Vector3());
+      const scale = targetHeight / Math.max(size2.y, 0.0001);
+      model.scale.setScalar(scale);
+
+      const box3 = new THREE.Box3().setFromObject(model);
+      const center3 = box3.getCenter(new THREE.Vector3());
+      const minY = box3.min.y;
+
+      model.position.x -= center3.x;
+      model.position.z -= center3.z;
+      model.position.y -= minY;
+
+      return model;
+    }
+
     async function loadBaseModel() {
-      const base = await loader.loadAsync(BASE_MODEL_URL);
-      const model = base;
+      const walkFBX = await fbxLoader.loadAsync(WALK_FBX_URL);
+      const model = walkFBX;
       fitAndGround(model);
       modelRoot = model;
       player.add(modelRoot);
@@ -399,9 +448,9 @@
 
     async function loadAnimations() {
       const [walkFBX, runFBX, attackFBX] = await Promise.all([
-        loader.loadAsync(WALK_FBX_URL),
-        loader.loadAsync(RUN_FBX_URL),
-        loader.loadAsync(ATTACK_FBX_URL)
+        fbxLoader.loadAsync(WALK_FBX_URL),
+        fbxLoader.loadAsync(RUN_FBX_URL),
+        fbxLoader.loadAsync(ATTACK_FBX_URL)
       ]);
 
       const walkClip = firstClip(walkFBX);
@@ -437,12 +486,6 @@
           syncLocomotion(true);
         }
       });
-
-      console.log("Loaded clips:", {
-        walk: walkClip?.name,
-        run: runClip?.name,
-        attack: attackClip?.name
-      });
     }
 
     function stopAllActions(fade = 0.12) {
@@ -477,13 +520,17 @@
       currentActionName = name;
     }
 
+    function currentSpeed() {
+      return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
+    }
+
     function syncLocomotion(force = false) {
       if (attackPlaying && !force) return;
 
-      const input = getCombinedInput();
-      const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
+      const input = getMoveInput();
+      const moving = input.magnitude > 0.001;
 
-      if (!isMoving) {
+      if (!moving) {
         if (currentActionName !== "idle") {
           hardStopAction("walk");
           hardStopAction("run");
@@ -492,7 +539,7 @@
         return;
       }
 
-      const desired = runMode ? "run" : "walk";
+      const desired = (dashMode || dashHeld) ? "run" : "walk";
 
       if (force || currentActionName !== desired) {
         stopAllActions(0.08);
@@ -504,9 +551,82 @@
       }
     }
 
+    function getKeyboardMoveVector() {
+      const x =
+        (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) +
+        (keys.has("KeyA") || keys.has("ArrowLeft") ? -1 : 0);
+
+      const z =
+        (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) +
+        (keys.has("KeyS") || keys.has("ArrowDown") ? -1 : 0);
+
+      return { x, z };
+    }
+
+    function getMoveInput() {
+      const k = getKeyboardMoveVector();
+      let x = clamp(k.x + stick.x, -1, 1);
+      let z = clamp(k.z + (-stick.y), -1, 1);
+
+      const len = Math.hypot(x, z);
+      if (len > 1) {
+        x /= len;
+        z /= len;
+      }
+
+      return {
+        x,
+        z,
+        magnitude: Math.hypot(x, z),
+        jump: keys.has("Space"),
+        attack: keys.has("KeyJ") || keys.has("KeyK")
+      };
+    }
+
+    function requestJump() {
+      if (!physics.onGround) return;
+      physics.vy = config.jumpVelocity;
+      physics.onGround = false;
+    }
+
+    function getCharacterForwardVector() {
+      const yaw = player.rotation.y + Math.PI;
+      return new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+    }
+
+    function applyAttackDamage() {
+      if (!boars.length) return;
+
+      const playerPos = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
+      const forward = getCharacterForwardVector().normalize();
+
+      for (const boar of [...boars]) {
+        if (boar.dead || !boar.root.visible) continue;
+
+        const boarPos = new THREE.Vector3(boar.root.position.x, boar.root.position.y, boar.root.position.z);
+        const toBoar = boarPos.clone().sub(playerPos);
+        toBoar.y = 0;
+
+        const dist = toBoar.length();
+        if (dist > config.attackRange) continue;
+
+        const dir = toBoar.clone().normalize();
+        const dot = forward.dot(dir);
+
+        if (dot < config.attackConeDot) continue;
+
+        boar.hp -= config.attackDamage;
+        if (boar.hp <= 0) {
+          boar.dead = true;
+          scene.remove(boar.root);
+          boars.splice(boars.indexOf(boar), 1);
+        }
+      }
+    }
+
     function startAttack() {
       const a = actions.attack;
-      if (!a) return;
+      if (!a || attackPlaying) return;
 
       attackPlaying = true;
       stopAllActions(0.05);
@@ -518,45 +638,15 @@
       a.setLoop(THREE.LoopOnce, 1);
       a.play();
       currentActionName = "attack";
+
+      applyAttackDamage();
     }
 
-    function setRunMode(on) {
-      runMode = on;
-      runBtn.classList.toggle("active", runMode);
+    function setDashMode(on) {
+      dashMode = on;
+      dashBtn.classList.toggle("active", dashMode);
       if (!attackPlaying) syncLocomotion(true);
     }
-
-    function getKeyboardState() {
-      const forward =
-        (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) +
-        (keys.has("KeyS") || keys.has("ArrowDown") ? -1 : 0);
-
-      const turn =
-        (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0) +
-        (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0);
-
-      const jump = keys.has("Space");
-      return { forward, turn, jump };
-    }
-
-    function getCombinedInput() {
-      const k = getKeyboardState();
-      return {
-        forward: clamp(k.forward + (-stick.y), -1, 1),
-        turn: clamp(k.turn + stick.x, -1, 1),
-        jump: k.jump
-      };
-    }
-
-    function requestJump() {
-      if (!physics.onGround) return;
-      physics.vy = config.jumpVelocity;
-      physics.onGround = false;
-    }
-
-    const joystickEl = document.getElementById("joystick");
-    const joyKnob = document.getElementById("joyKnob");
-    const jumpBtn = document.getElementById("jumpBtn");
 
     function updateJoystickVisual() {
       const px = stick.x * stick.radius;
@@ -571,6 +661,10 @@
       stick.y = 0;
       updateJoystickVisual();
     }
+
+    const joystickEl = document.getElementById("joystick");
+    const joyKnob = document.getElementById("joyKnob");
+    const jumpBtn = document.getElementById("jumpBtn");
 
     joystickEl.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -640,8 +734,8 @@
       requestJump();
     });
 
-    runBtn.addEventListener("click", () => {
-      setRunMode(!runMode);
+    dashBtn.addEventListener("click", () => {
+      setDashMode(!dashMode);
     });
 
     attackBtn.addEventListener("click", () => {
@@ -649,56 +743,56 @@
     });
 
     window.addEventListener("keydown", (e) => {
-      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD"].includes(e.code)) {
+      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", "KeyJ", "KeyK"].includes(e.code)) {
         e.preventDefault();
       }
       keys.add(e.code);
+
       if (e.code === "Space") requestJump();
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = true;
+      if (e.code === "KeyJ" || e.code === "KeyK") startAttack();
     }, { passive: false });
 
     window.addEventListener("keyup", (e) => {
       keys.delete(e.code);
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = false;
     });
 
-    function addForestTrees() {
+    function randomWorldPosition(minR = 18, maxR = 95) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = rand(minR, maxR);
+      return {
+        x: Math.cos(angle) * dist,
+        z: Math.sin(angle) * dist
+      };
+    }
+
+    async function addForestTrees() {
       const treeGroup = new THREE.Group();
       scene.add(treeGroup);
 
-      const treePositions = [];
+      const positions = [];
       const count = 30;
-      const radius = 95;
 
       for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 18 + Math.random() * radius;
-
-        const x = Math.cos(angle) * dist;
-        const z = Math.sin(angle) * dist;
-
-        if (Math.hypot(x, z) < 14) {
+        const p = randomWorldPosition(25, 105);
+        if (Math.hypot(p.x, p.z) < 14) {
           i--;
           continue;
         }
-
-        treePositions.push({
-          x,
-          z,
+        positions.push({
+          x: p.x,
+          z: p.z,
           scale: 0.8 + Math.random() * 0.9,
           rotY: Math.random() * Math.PI * 2
         });
       }
 
-      const gltfPromise = gltfLoader.loadAsync(TREE_URL).then((treeGLTF) => {
+      try {
+        const treeGLTF = await gltfLoader.loadAsync(TREE_URL);
         const template = treeGLTF.scene;
-        template.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            child.material = child.material.clone();
-          }
-        });
 
-        for (const p of treePositions) {
+        for (const p of positions) {
           const tree = template.clone(true);
           tree.position.set(p.x, 0, p.z);
           tree.rotation.y = p.rotY;
@@ -710,14 +804,15 @@
             }
           });
           treeGroup.add(tree);
+          trees.push(tree);
         }
-      }).catch((err) => {
+      } catch (err) {
         console.warn("tree.glb load failed, using fallback trees.", err);
 
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7b4f2a, roughness: 1.0 });
         const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1.0 });
 
-        for (const p of treePositions) {
+        for (const p of positions) {
           const tree = new THREE.Group();
 
           const trunk = new THREE.Mesh(
@@ -749,28 +844,158 @@
           tree.rotation.y = p.rotY;
           tree.scale.setScalar(p.scale);
           treeGroup.add(tree);
+          trees.push(tree);
         }
-      });
+      }
+    }
 
-      return gltfPromise;
+    function createFallbackBoar() {
+      const boar = new THREE.Group();
+
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b4b2b, roughness: 1.0 });
+      const snoutMat = new THREE.MeshStandardMaterial({ color: 0x7f6044, roughness: 1.0 });
+      const earMat = new THREE.MeshStandardMaterial({ color: 0x5c3f23, roughness: 1.0 });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 0.9), bodyMat);
+      body.position.y = 0.8;
+      body.castShadow = true;
+      body.receiveShadow = true;
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.65), snoutMat);
+      head.position.set(1.15, 0.85, 0);
+      head.castShadow = true;
+      head.receiveShadow = true;
+
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.24), snoutMat);
+      snout.position.set(1.52, 0.78, 0);
+      snout.castShadow = true;
+      snout.receiveShadow = true;
+
+      const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), earMat);
+      ear1.position.set(0.95, 1.18, 0.22);
+      ear1.rotation.z = Math.PI / 2;
+      ear1.rotation.x = -0.3;
+      ear1.castShadow = true;
+      ear1.receiveShadow = true;
+
+      const ear2 = ear1.clone();
+      ear2.position.z = -0.22;
+
+      const legGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6);
+      const legOffsets = [
+        [-0.6, 0.25, 0.3],
+        [-0.6, 0.25, -0.3],
+        [0.5, 0.25, 0.3],
+        [0.5, 0.25, -0.3]
+      ];
+      for (const [x, y, z] of legOffsets) {
+        const leg = new THREE.Mesh(legGeo, bodyMat);
+        leg.position.set(x, y, z);
+        leg.castShadow = true;
+        leg.receiveShadow = true;
+        boar.add(leg);
+      }
+
+      boar.add(body, head, snout, ear1, ear2);
+      return boar;
+    }
+
+    async function addBoars() {
+      const positions = [];
+      const count = 15;
+
+      for (let i = 0; i < count; i++) {
+        const p = randomWorldPosition(20, 105);
+        if (Math.hypot(p.x, p.z) < 18) {
+          i--;
+          continue;
+        }
+        positions.push({
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: 0.75 + Math.random() * 0.5
+        });
+      }
+
+      try {
+        const boarGLTF = await gltfLoader.loadAsync(BOAR_URL);
+        const template = boarGLTF.scene;
+
+        for (const p of positions) {
+          const boarRoot = template.clone(true);
+          fitAndGroundSimple(boarRoot, 1.25);
+          boarRoot.position.set(p.x, 0, p.z);
+          boarRoot.rotation.y = p.rotY;
+          boarRoot.scale.multiplyScalar(p.scale);
+
+          boarRoot.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+
+          scene.add(boarRoot);
+          boars.push({
+            root: boarRoot,
+            hp: config.boarHp,
+            dead: false
+          });
+        }
+      } catch (err) {
+        console.warn("boar.glb load failed, using fallback boars.", err);
+
+        for (const p of positions) {
+          const boarRoot = createFallbackBoar();
+          fitAndGroundSimple(boarRoot, 1.15);
+          boarRoot.position.set(p.x, 0, p.z);
+          boarRoot.rotation.y = p.rotY;
+          boarRoot.scale.multiplyScalar(p.scale);
+          scene.add(boarRoot);
+
+          boars.push({
+            root: boarRoot,
+            hp: config.boarHp,
+            dead: false
+          });
+        }
+      }
     }
 
     function updateMovement(delta) {
-      const input = getCombinedInput();
+      const input = getMoveInput();
 
       if (input.jump) {
         requestJump();
       }
 
-      if (Math.abs(input.turn) > 0.001) {
-        player.rotation.y += input.turn * config.turnSpeed * delta;
+      if (input.attack) {
+        startAttack();
       }
 
-      const facingYaw = player.rotation.y + Math.PI;
+      const moving = input.magnitude > 0.001;
 
-      if (Math.abs(input.forward) > 0.001) {
-        player.position.x += Math.sin(facingYaw) * input.forward * config.moveSpeed * delta;
-        player.position.z += Math.cos(facingYaw) * input.forward * config.moveSpeed * delta;
+      if (moving) {
+        const desiredYaw = angleToFaceTarget(input.x, input.z);
+        const currentYaw = player.rotation.y;
+        const diff = shortestAngleDiff(currentYaw, desiredYaw);
+        const maxTurn = config.turnSpeed * delta;
+        player.rotation.y += clamp(diff, -maxTurn, maxTurn);
+
+        const facingYaw = player.rotation.y + Math.PI;
+        const speed = currentSpeed() * input.magnitude;
+
+        player.position.x += Math.sin(facingYaw) * speed * delta;
+        player.position.z += Math.cos(facingYaw) * speed * delta;
+
+        if (!attackPlaying) {
+          syncLocomotion(false);
+        }
+      } else if (!attackPlaying && currentActionName !== "idle") {
+        hardStopAction("walk");
+        hardStopAction("run");
+        currentActionName = "idle";
       }
 
       physics.vy += config.gravity * delta;
@@ -782,31 +1007,12 @@
         physics.onGround = true;
       }
 
-      const isMoving = Math.abs(input.forward) > 0.001 || Math.abs(input.turn) > 0.001;
-
-      if (!attackPlaying) {
-        if (isMoving) {
-          const desired = runMode ? "run" : "walk";
-          if (currentActionName !== desired) {
-            playAction(desired, 0.08);
-          } else {
-            const a = actions[desired];
-            if (a && !a.isRunning()) a.play();
-            if (a) a.paused = false;
-          }
-        } else if (currentActionName !== "idle") {
-          hardStopAction("walk");
-          hardStopAction("run");
-          currentActionName = "idle";
-        }
-      }
-
       setStatus(
         attackPlaying
           ? "攻撃中"
           : physics.onGround
-            ? (isMoving ? (runMode ? "走行中" : "移動中") : "待機中")
-            : (isMoving ? (runMode ? "走行中 / ジャンプ中" : "移動中 / ジャンプ中") : "ジャンプ中")
+            ? (moving ? (dashMode || dashHeld ? "ダッシュ中" : "移動中") : "待機中")
+            : (moving ? "移動中 / ジャンプ中" : "ジャンプ中")
       );
     }
 
@@ -832,6 +1038,7 @@
         await loadBaseModel();
         await loadAnimations();
         await addForestTrees();
+        await addBoars();
         loading.classList.add("hidden");
         setStatus("待機中");
       } catch (err) {
