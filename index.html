@@ -210,8 +210,9 @@
       <button id="attackBtn" class="modeBtn attack">攻撃</button>
     </div>
     <div id="help">
-      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
-      スティック方向へ体を向けてから前進します。Shift でダッシュ、J で攻撃。
+      操作: WASD / 矢印キー / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
+      スティック方向へ体を向けてから前進します。Shift でダッシュ、J で攻撃。<br>
+      マウスドラッグ / スワイプで視点回転。
     </div>
   </div>
 
@@ -231,7 +232,6 @@
     const TREE_URL = "./tree.glb";
     const BOAR_URL = "./boar.glb";
 
-    // もしキャラの正面がまだズレるならここだけ 0 / Math.PI / ±Math.PI/2 で調整
     const VISUAL_LOCAL_YAW = Math.PI;
 
     const scene = new THREE.Scene();
@@ -240,6 +240,7 @@
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
     camera.position.set(0, 2.5, 6.8);
+    camera.up.set(0, 1, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -319,6 +320,19 @@
       radius: 40
     };
 
+    const cameraOrbit = {
+      yaw: Math.PI,
+      pitch: 0.34,
+      radius: 7.3,
+      minPitch: 0.10,
+      maxPitch: 1.00,
+      sensitivity: 0.005,
+      dragging: false,
+      pointerId: null,
+      lastX: 0,
+      lastY: 0
+    };
+
     const physics = {
       vy: 0,
       onGround: true
@@ -329,8 +343,6 @@
       dashMultiplier: 2.5,
       gravity: -22.0,
       jumpVelocity: 8.8,
-      cameraHeight: 2.55,
-      cameraDistance: 6.9,
       cameraSmooth: 8.5,
       targetHeight: 1.5,
       modelHeight: 2.45,
@@ -338,12 +350,13 @@
       attackDamage: 50,
       attackRange: 4.5,
       attackConeDot: 0.45,
-      boarHp: 100
+      boarHp: 100,
+      playerRadius: 0.68
     };
 
-    const clock = new THREE.Clock();
-
+    const treeColliders = [];
     const boars = [];
+
     const tmp = {
       v1: new THREE.Vector3(),
       v2: new THREE.Vector3(),
@@ -351,9 +364,13 @@
       v4: new THREE.Vector3(),
       v5: new THREE.Vector3(),
       q: new THREE.Quaternion(),
-      m: new THREE.Matrix4()
+      m: new THREE.Matrix4(),
+      spherical: new THREE.Spherical(),
+      forwardLocal: new THREE.Vector3(0, 0, -1),
+      up: new THREE.Vector3(0, 1, 0)
     };
-    const upAxis = new THREE.Vector3(0, 1, 0);
+
+    const clock = new THREE.Clock();
 
     function setStatus(text) {
       uiStatus.textContent = text;
@@ -434,11 +451,12 @@
     function collectRootNames(root) {
       const names = new Set();
       root.traverse((obj) => {
-        if (obj?.name && (/^Armature$/i.test(obj.name) || /^RootNode$/i.test(obj.name) || /^Scene$/i.test(obj.name))) {
+        if (!obj?.name) return;
+        if (/^Armature$/i.test(obj.name) || /^RootNode$/i.test(obj.name) || /^Scene$/i.test(obj.name)) {
           names.add(obj.name);
         }
         if ((obj.isBone || obj.type === "Bone") && (!obj.parent || !obj.parent.isBone)) {
-          if (obj.name) names.add(obj.name);
+          names.add(obj.name);
         }
       });
       return [...names];
@@ -460,7 +478,6 @@
           if (prop === "position" || prop === "quaternion" || prop === "scale") return false;
         }
 
-        // ルートっぽい hips/pelvis の位置だけ消してスライドを抑える
         if (/Hips|hips|mixamorigHips|Pelvis|pelvis/i.test(target) && prop === "position") {
           return false;
         }
@@ -605,43 +622,73 @@
     }
 
     function getCameraRelativeMoveDirection(inputX, inputZ) {
-      camera.getWorldDirection(tmp.v1);
-      tmp.v1.y = 0;
-      if (tmp.v1.lengthSq() < 1e-8) tmp.v1.set(0, 0, -1);
-      tmp.v1.normalize(); // camera forward (camera -> target)
+      // ここは「カメラの向き」を基準にする
+      const forward = tmp.v1.set(
+        -Math.sin(cameraOrbit.yaw),
+        0,
+        -Math.cos(cameraOrbit.yaw)
+      ).normalize();
 
-      tmp.v2.crossVectors(tmp.v1, upAxis).normalize(); // camera right
+      const right = tmp.v2.crossVectors(forward, tmp.up).normalize();
 
-      tmp.v3.copy(tmp.v2).multiplyScalar(inputX);
-      tmp.v4.copy(tmp.v1).multiplyScalar(-inputZ); // 上 = カメラ奥
+      tmp.v3.copy(right).multiplyScalar(inputX);
+      tmp.v4.copy(forward).multiplyScalar(-inputZ);
 
-      tmp.v5.copy(tmp.v3).add(tmp.v4);
-      if (tmp.v5.lengthSq() < 1e-8) return tmp.v5.set(0, 0, 0);
-      return tmp.v5.normalize();
+      const move = tmp.v5.copy(tmp.v3).add(tmp.v4);
+      if (move.lengthSq() < 1e-8) return move.set(0, 0, 0);
+      return move.normalize();
+    }
+
+    function collidesWithTrees(x, z) {
+      const r = config.playerRadius;
+      for (const c of treeColliders) {
+        const dx = x - c.x;
+        const dz = z - c.z;
+        const rr = r + c.r;
+        if ((dx * dx + dz * dz) < (rr * rr)) return true;
+      }
+      return false;
+    }
+
+    function movePlayerWithCollision(moveVec) {
+      const pos = playerRoot.position;
+
+      let nextX = pos.x + moveVec.x;
+      let nextZ = pos.z + moveVec.z;
+
+      // Xだけ試す
+      if (!collidesWithTrees(nextX, pos.z)) {
+        pos.x = nextX;
+      }
+
+      // Zだけ試す
+      if (!collidesWithTrees(pos.x, nextZ)) {
+        pos.z = nextZ;
+      }
     }
 
     function getCharacterForwardVector() {
-      return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+      return tmp.v1.set(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
     }
 
     function applyAttackDamage() {
       if (!boars.length) return;
 
-      const playerPos = tmp.v1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
+      const playerPos = tmp.v2.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
       const forward = getCharacterForwardVector();
 
       for (let i = boars.length - 1; i >= 0; i--) {
         const boar = boars[i];
         if (boar.dead || !boar.root.visible) continue;
 
-        tmp.v2.set(boar.root.position.x, boar.root.position.y, boar.root.position.z);
-        tmp.v3.copy(tmp.v2).sub(playerPos);
-        tmp.v3.y = 0;
+        tmp.v3.set(boar.root.position.x, boar.root.position.y, boar.root.position.z);
+        tmp.v4.copy(tmp.v3).sub(playerPos);
+        tmp.v4.y = 0;
 
-        const dist = tmp.v3.length();
+        const dist = tmp.v4.length();
         if (dist > config.attackRange) continue;
 
-        const dir = tmp.v3.clone().normalize();
+        const dir = tmp.v4.clone().normalize();
         if (forward.dot(dir) < config.attackConeDot) continue;
 
         boar.hp -= config.attackDamage;
@@ -716,6 +763,24 @@
       stick.x = 0;
       stick.y = 0;
       updateJoystickVisual();
+    }
+
+    function updateCamera(delta) {
+      tmp.spherical.radius = cameraOrbit.radius;
+      tmp.spherical.phi = Math.PI / 2 - cameraOrbit.pitch;
+      tmp.spherical.theta = cameraOrbit.yaw;
+
+      const offset = new THREE.Vector3().setFromSpherical(tmp.spherical);
+      const desired = tmp.v1.copy(playerRoot.position).add(offset);
+
+      const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
+      camera.position.lerp(desired, lerpAlpha);
+
+      camera.lookAt(
+        playerRoot.position.x,
+        playerRoot.position.y + config.targetHeight,
+        playerRoot.position.z
+      );
     }
 
     const joystickEl = document.getElementById("joystick");
@@ -798,6 +863,43 @@
       startAttack();
     });
 
+    // カメラ視点操作（PCドラッグ / スマホ1本指スワイプ）
+    renderer.domElement.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      cameraOrbit.dragging = true;
+      cameraOrbit.pointerId = e.pointerId;
+      cameraOrbit.lastX = e.clientX;
+      cameraOrbit.lastY = e.clientY;
+      renderer.domElement.setPointerCapture(e.pointerId);
+    });
+
+    renderer.domElement.addEventListener("pointermove", (e) => {
+      if (!cameraOrbit.dragging || e.pointerId !== cameraOrbit.pointerId) return;
+
+      e.preventDefault();
+      const dx = e.clientX - cameraOrbit.lastX;
+      const dy = e.clientY - cameraOrbit.lastY;
+      cameraOrbit.lastX = e.clientX;
+      cameraOrbit.lastY = e.clientY;
+
+      cameraOrbit.yaw -= dx * cameraOrbit.sensitivity;
+      cameraOrbit.pitch -= dy * cameraOrbit.sensitivity;
+      cameraOrbit.pitch = clamp(cameraOrbit.pitch, cameraOrbit.minPitch, cameraOrbit.maxPitch);
+    });
+
+    function endCameraOrbit(e) {
+      if (e.pointerId !== cameraOrbit.pointerId) return;
+      cameraOrbit.dragging = false;
+      cameraOrbit.pointerId = null;
+    }
+
+    renderer.domElement.addEventListener("pointerup", endCameraOrbit);
+    renderer.domElement.addEventListener("pointercancel", endCameraOrbit);
+    renderer.domElement.addEventListener("lostpointercapture", () => {
+      cameraOrbit.dragging = false;
+      cameraOrbit.pointerId = null;
+    });
+
     window.addEventListener("keydown", (e) => {
       if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", "KeyJ", "KeyK"].includes(e.code)) {
         e.preventDefault();
@@ -848,6 +950,10 @@
         const treeGLTF = await gltfLoader.loadAsync(TREE_URL);
         const template = treeGLTF.scene;
 
+        const treeBox = new THREE.Box3().setFromObject(template);
+        const treeSize = treeBox.getSize(new THREE.Vector3());
+        const baseRadius = Math.max(treeSize.x, treeSize.z) * 0.40 || 1.0;
+
         for (const p of positions) {
           const tree = template.clone(true);
           tree.position.set(p.x, 0, p.z);
@@ -860,6 +966,12 @@
             }
           });
           treeGroup.add(tree);
+
+          treeColliders.push({
+            x: p.x,
+            z: p.z,
+            r: baseRadius * p.scale
+          });
         }
       } catch (err) {
         console.warn("tree.glb load failed, using fallback trees.", err);
@@ -890,6 +1002,12 @@
           tree.rotation.y = p.rotY;
           tree.scale.setScalar(p.scale);
           treeGroup.add(tree);
+
+          treeColliders.push({
+            x: p.x,
+            z: p.z,
+            r: 1.25 * p.scale
+          });
         }
       }
     }
@@ -1017,27 +1135,25 @@
       const moving = input.magnitude > 0.001;
 
       if (moving) {
-        const desiredMoveDir = getCameraRelativeMoveDirection(input.x, input.z);
+        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
 
-        if (desiredMoveDir.lengthSq() > 1e-8) {
-          // 目標方向へ向く quaternion を作る
-          tmp.m.lookAt(new THREE.Vector3(0, 0, 0), desiredMoveDir, upAxis);
-          tmp.q.setFromRotationMatrix(tmp.m);
-
-          // まず向きを合わせる
+        if (moveDir.lengthSq() > 1e-8) {
+          // キャラの向きは「進みたい方向」に向ける
+          tmp.q.setFromUnitVectors(tmp.forwardLocal, moveDir);
           playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
 
-          // 現在の前方向
-          const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+          const currentForward = getCharacterForwardVector();
+          const align = clamp(currentForward.dot(moveDir), 0, 1);
 
-          // 前を向いているほど進める。正面を向く前は回転優先
-          const align = clamp(currentForward.dot(desiredMoveDir), 0, 1);
-          const moveScale = align * align;
-
+          // 向きが合っていない間は少しだけ減速して、スムーズに向きを合わせる
+          const moveScale = 0.20 + 0.80 * align;
           const speed = currentSpeed() * input.magnitude * moveScale;
-          playerRoot.position.addScaledVector(currentForward, speed * delta);
 
-          if (!attackPlaying) syncLocomotion(false);
+          movePlayerWithCollision(moveDir.clone().multiplyScalar(speed * delta));
+
+          if (!attackPlaying) {
+            syncLocomotion(false);
+          }
         }
       } else if (!attackPlaying && currentActionName !== "idle") {
         hardStopAction("walk");
@@ -1064,18 +1180,15 @@
     }
 
     function updateCamera(delta) {
-      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
-      const right = new THREE.Vector3().crossVectors(upAxis, forward).normalize();
+      tmp.spherical.radius = cameraOrbit.radius;
+      tmp.spherical.phi = Math.PI / 2 - cameraOrbit.pitch;
+      tmp.spherical.theta = cameraOrbit.yaw;
 
-      const offset = new THREE.Vector3()
-        .copy(forward).multiplyScalar(-config.cameraDistance)
-        .addScaledVector(right, 1.8);
+      const offset = new THREE.Vector3().setFromSpherical(tmp.spherical);
+      const desired = tmp.v1.copy(playerRoot.position).add(offset);
 
-      offset.y = config.cameraHeight;
-
-      const desiredCameraPos = new THREE.Vector3().copy(playerRoot.position).add(offset);
       const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
-      camera.position.lerp(desiredCameraPos, lerpAlpha);
+      camera.position.lerp(desired, lerpAlpha);
 
       camera.lookAt(
         playerRoot.position.x,
