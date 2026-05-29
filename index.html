@@ -307,7 +307,6 @@
     let attackPlaying = false;
     let dashMode = false;
     let dashHeld = false;
-    let playerYaw = 0;
 
     const keys = new Set();
 
@@ -348,10 +347,10 @@
 
     let cameraYaw = Math.PI;
     let cameraPitch = 0.22;
-    const trees = [];
 
-    const clock = new THREE.Clock();
+    const trees = [];
     const boars = [];
+    const clock = new THREE.Clock();
 
     const tmp = {
       v1: new THREE.Vector3(),
@@ -374,10 +373,6 @@
 
     function rand(min, max) {
       return min + Math.random() * max;
-    }
-
-    function shortestAngleDiff(a, b) {
-      return Math.atan2(Math.sin(b - a), Math.cos(b - a));
     }
 
     function applyShadowsAndFixMaterials(object3D) {
@@ -485,9 +480,18 @@
     }
 
     function getCameraBasis() {
-      // cameraYaw を基準に、地面上の前後左右ベクトルを作る
-      const forward = new THREE.Vector3(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw)).normalize();
-      const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
+      const forward = new THREE.Vector3(
+        -Math.sin(cameraYaw),
+        0,
+        -Math.cos(cameraYaw)
+      ).normalize();
+
+      const right = new THREE.Vector3(
+        Math.cos(cameraYaw),
+        0,
+        -Math.sin(cameraYaw)
+      ).normalize();
+
       return { forward, right };
     }
 
@@ -671,7 +675,7 @@
     }
 
     function getCharacterForwardVector() {
-      return new THREE.Vector3(Math.sin(playerYaw), 0, Math.cos(playerYaw)).normalize();
+      return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
     }
 
     function applyAttackDamage() {
@@ -881,6 +885,7 @@
 
     function moveCameraDrag(e) {
       if (!cameraDragging || e.pointerId !== cameraPointerId) return;
+
       const dx = e.clientX - cameraLastX;
       const dy = e.clientY - cameraLastY;
 
@@ -1125,26 +1130,26 @@
         const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
 
         if (moveDir.lengthSq() > 1e-8) {
-          const desiredYaw = Math.atan2(moveDir.x, moveDir.z);
-          const diff = shortestAngleDiff(playerYaw, desiredYaw);
-          const maxTurn = config.turnSpeed * delta;
+          tmp.m.lookAt(new THREE.Vector3(0, 0, 0), moveDir, upAxis);
+          tmp.q.setFromRotationMatrix(tmp.m);
 
-          playerYaw += clamp(diff, -maxTurn, maxTurn);
-          playerRoot.rotation.y = playerYaw;
+          // 体の向きをまず合わせる
+          playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
 
-          const forward = new THREE.Vector3(Math.sin(playerYaw), 0, Math.cos(playerYaw));
-          const align = clamp(forward.dot(moveDir), 0, 1);
+          // 現在の前方
+          const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+
+          // 向きが合うほど進む
+          const align = clamp(currentForward.dot(moveDir), 0, 1);
           const moveScale = align * align;
 
           const speed = currentSpeed() * input.magnitude * moveScale;
-          const dx = forward.x * speed * delta;
-          const dz = forward.z * speed * delta;
+          const dx = currentForward.x * speed * delta;
+          const dz = currentForward.z * speed * delta;
 
           moveWithCollision(dx, dz);
 
-          if (!attackPlaying) {
-            syncLocomotion(false);
-          }
+          if (!attackPlaying) syncLocomotion(false);
         }
       } else if (!attackPlaying && currentActionName !== "idle") {
         hardStopAction("walk");
