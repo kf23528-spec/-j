@@ -19,7 +19,7 @@
     #loading {
       position: fixed;
       inset: 0;
-      z-index: 30;
+      z-index: 40;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -39,7 +39,7 @@
       position: fixed;
       left: 12px;
       top: 12px;
-      z-index: 20;
+      z-index: 30;
       min-width: 280px;
       max-width: min(92vw, 500px);
       padding: 12px 14px;
@@ -99,6 +99,87 @@
       line-height: 1.5;
     }
 
+    #playerHud {
+      margin-top: 10px;
+      padding: 10px 10px 9px;
+      border-radius: 12px;
+      background: rgba(240, 246, 255, 0.92);
+      border: 1px solid rgba(29, 95, 192, 0.16);
+    }
+    .hudRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #1c3359;
+    }
+    .barWrap {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(28, 51, 89, 0.12);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
+    }
+    .barFill {
+      width: 100%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #4fd06f, #19a54f);
+      transition: width 0.08s linear;
+    }
+
+    #worldUI {
+      position: fixed;
+      inset: 0;
+      z-index: 25;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .boarTag {
+      position: absolute;
+      min-width: 120px;
+      transform: translate(-50%, -100%);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+      opacity: 1;
+      transition: opacity 0.1s linear;
+      will-change: transform, opacity;
+    }
+    .boarLevel {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.50);
+      margin-bottom: 5px;
+    }
+    .boarHpText {
+      margin-top: 4px;
+      font-size: 11px;
+      opacity: 0.95;
+    }
+    .boarBarWrap {
+      width: 120px;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.25);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.28);
+    }
+    .boarBarFill {
+      width: 100%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ff5b5b, #e61d1d);
+      transition: width 0.08s linear;
+    }
+
     #joystick {
       position: fixed;
       left: 18px;
@@ -114,7 +195,7 @@
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
-      z-index: 25;
+      z-index: 35;
     }
     #joystick::before {
       content: "";
@@ -155,7 +236,7 @@
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
-      z-index: 25;
+      z-index: 35;
     }
     #jumpBtn:active { transform: scale(0.97); }
 
@@ -180,6 +261,12 @@
         margin-left: -24px;
         margin-top: -24px;
       }
+      .boarTag {
+        min-width: 100px;
+      }
+      .boarBarWrap {
+        width: 100px;
+      }
     }
   </style>
 
@@ -202,11 +289,19 @@
       走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span><br>
       攻撃: <span id="attackName">Meshy_AI_biped_Animation_Attack_withSkin.fbx</span><br>
       木: <span id="treeName">tree.glb</span><br>
-      猪: <span id="boarName">boar.glb</span><br>
-      プレイヤーHP: <span id="playerHp">200 / 200</span><br>
-      プレイヤー攻撃: <span id="playerAtk">5 / s</span><br>
-      猪攻撃: <span id="boarAtk">3 / s</span>
+      猪: <span id="boarName">boar.glb</span>
     </div>
+
+    <div id="playerHud">
+      <div class="hudRow">
+        <span>プレイヤーHP</span>
+        <span id="playerHpText">200 / 200</span>
+      </div>
+      <div class="barWrap">
+        <div id="playerHpFill" class="barFill"></div>
+      </div>
+    </div>
+
     <div id="status">待機中</div>
     <div id="buttons">
       <button id="dashBtn" class="modeBtn">ダッシュ</button>
@@ -217,6 +312,8 @@
       スティックはカメラ基準。ドラッグでカメラを回せます。
     </div>
   </div>
+
+  <div id="worldUI"></div>
 
   <div id="joystick" aria-label="joystick">
     <div id="joyKnob"></div>
@@ -233,8 +330,6 @@
     const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
     const TREE_URL = "./tree.glb";
     const BOAR_URL = "./boar.glb";
-
-    const VISUAL_LOCAL_YAW = Math.PI;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
@@ -293,9 +388,9 @@
     const loading = document.getElementById("loading");
     const dashBtn = document.getElementById("dashBtn");
     const attackBtn = document.getElementById("attackBtn");
-    const playerHpText = document.getElementById("playerHp");
-    const playerAtkText = document.getElementById("playerAtk");
-    const boarAtkText = document.getElementById("boarAtk");
+    const playerHpText = document.getElementById("playerHpText");
+    const playerHpFill = document.getElementById("playerHpFill");
+    const worldUI = document.getElementById("worldUI");
 
     const playerRoot = new THREE.Group();
     scene.add(playerRoot);
@@ -342,17 +437,21 @@
       targetHeight: 1.5,
       modelHeight: 2.45,
       turnSpeed: 9.0,
+
+      playerHpMax: 200,
       playerAttackDps: 5,
       playerAttackDuration: 5.0,
-      playerHpMax: 200,
+      attackRange: 4.5,
+      attackConeDot: 0.45,
+
       boarBaseHp: 100,
       boarBaseAttack: 3,
       boarLevelMin: 1,
-      boarLevelMax: 5,
-      boarAttackRange: 2.25,
-      attackRange: 4.5,
-      attackConeDot: 0.45,
-      boarHp: 100,
+      boarLevelMax: 6,
+      boarMoveSpeed: 1.6,
+      boarAggroRange: 18.0,
+      boarAttackRange: 2.1,
+
       playerCollisionRadius: 0.72,
       cameraYawSensitivity: 0.005,
       cameraPitchSensitivity: 0.004,
@@ -384,22 +483,29 @@
     };
     const upAxis = new THREE.Vector3(0, 1, 0);
 
-    function setStatus(text) {
-      uiStatus.textContent = text;
-    }
-
-    function updateHud() {
-      playerHpText.textContent = `${Math.max(0, Math.ceil(playerHp))} / ${config.playerHpMax}`;
-      playerAtkText.textContent = `${config.playerAttackDps} / s`;
-      boarAtkText.textContent = `${config.boarBaseAttack} / s`;
-    }
-
     function clamp(v, min, max) {
       return Math.max(min, Math.min(max, v));
     }
 
     function rand(min, max) {
       return min + Math.random() * max;
+    }
+
+    function setStatus(text) {
+      uiStatus.textContent = text;
+    }
+
+    function updatePlayerHud() {
+      const pct = (playerHp / config.playerHpMax) * 100;
+      playerHpText.textContent = `${Math.max(0, Math.ceil(playerHp))} / ${config.playerHpMax}`;
+      playerHpFill.style.width = `${clamp(pct, 0, 100)}%`;
+      if (pct > 60) {
+        playerHpFill.style.background = "linear-gradient(90deg, #4fd06f, #19a54f)";
+      } else if (pct > 25) {
+        playerHpFill.style.background = "linear-gradient(90deg, #ffd24d, #ff9f1a)";
+      } else {
+        playerHpFill.style.background = "linear-gradient(90deg, #ff6b6b, #d91f1f)";
+      }
     }
 
     function applyShadowsAndFixMaterials(object3D) {
@@ -419,7 +525,6 @@
 
     function fitAndGround(model, targetHeight = config.modelHeight, groundLift = 0.0) {
       applyShadowsAndFixMaterials(model);
-
       model.updateWorldMatrix(true, true);
 
       const box1 = new THREE.Box3().setFromObject(model);
@@ -546,7 +651,7 @@
       const base = await fbxLoader.loadAsync(WALK_FBX_URL);
       visualRoot = base;
       fitAndGround(visualRoot, config.modelHeight, 0.03);
-      visualRoot.rotation.y = VISUAL_LOCAL_YAW;
+      visualRoot.rotation.y = Math.PI;
       playerRoot.add(visualRoot);
     }
 
@@ -675,7 +780,10 @@
 
     function takePlayerDamage(amount) {
       if (gameOver) return;
+
       playerHp = Math.max(0, playerHp - amount);
+      updatePlayerHud();
+
       if (playerHp <= 0) {
         playerHp = 0;
         gameOver = true;
@@ -688,7 +796,6 @@
         currentActionName = "idle";
         setStatus("ゲームオーバー");
       }
-      updateHud();
     }
 
     function applyPlayerAttackDamage(delta) {
@@ -713,11 +820,9 @@
         if (forward.dot(dir) < config.attackConeDot) continue;
 
         boar.hp -= damage;
-
         if (boar.hp <= 0) {
-          boar.dead = true;
-          scene.remove(boar.root);
-          boars.splice(i, 1);
+          boar.hp = 0;
+          killBoar(boar, i);
         }
       }
     }
@@ -738,8 +843,7 @@
         const dist = tmp.v3.length();
         if (dist > boar.attackRange) continue;
 
-        const boarDamage = boar.atkDps * delta;
-        takePlayerDamage(boarDamage);
+        takePlayerDamage(boar.atkDps * delta);
         if (gameOver) return;
       }
     }
@@ -747,6 +851,7 @@
     function finishAttack() {
       attackPlaying = false;
       attackTimer = 0;
+      attackBtn.classList.remove("active");
       if (actions.attack) {
         hardStopAction("attack");
       }
@@ -762,6 +867,7 @@
 
       attackPlaying = true;
       attackTimer = config.playerAttackDuration;
+      attackBtn.classList.add("active");
       stopAllActions(0.05);
 
       a.reset();
@@ -976,6 +1082,224 @@
       };
     }
 
+    function createBoarTag(level, hp, hpMax) {
+      const el = document.createElement("div");
+      el.className = "boarTag";
+      el.innerHTML = `
+        <div class="boarLevel">Lv.${level}</div>
+        <div class="boarBarWrap"><div class="boarBarFill"></div></div>
+        <div class="boarHpText">${Math.ceil(hp)} / ${Math.ceil(hpMax)}</div>
+      `;
+      worldUI.appendChild(el);
+
+      return {
+        el,
+        fill: el.querySelector(".boarBarFill"),
+        text: el.querySelector(".boarHpText")
+      };
+    }
+
+    function updateBoarTag(boar) {
+      if (!boar.tag) return;
+
+      if (boar.dead || !boar.root.visible) {
+        boar.tag.el.style.opacity = "0";
+        return;
+      }
+
+      const pos = tmp.v1.set(
+        boar.root.position.x,
+        boar.root.position.y + boar.uiOffset,
+        boar.root.position.z
+      ).project(camera);
+
+      const inFront = pos.z > -1 && pos.z < 1;
+      const onScreen = pos.x >= -1.2 && pos.x <= 1.2 && pos.y >= -1.2 && pos.y <= 1.2;
+
+      if (!inFront || !onScreen) {
+        boar.tag.el.style.opacity = "0";
+        return;
+      }
+
+      const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+
+      boar.tag.el.style.opacity = "1";
+      boar.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+      boar.tag.fill.style.width = `${clamp((boar.hp / boar.hpMax) * 100, 0, 100)}%`;
+      boar.tag.text.textContent = `HP ${Math.ceil(boar.hp)} / ${Math.ceil(boar.hpMax)}`;
+    }
+
+    function killBoar(boar, index) {
+      boar.dead = true;
+      if (boar.root.parent) boar.root.parent.remove(boar.root);
+      if (boar.tag?.el?.parentNode) boar.tag.el.parentNode.removeChild(boar.tag.el);
+      boars.splice(index, 1);
+    }
+
+    function getBoarStats(level) {
+      const mult = Math.pow(1.5, level - 1);
+      return {
+        level,
+        hpMax: config.boarBaseHp * mult,
+        atkDps: config.boarBaseAttack * mult
+      };
+    }
+
+    function createFallbackBoarRig() {
+      const boar = new THREE.Group();
+
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b4b2b, roughness: 1.0 });
+      const snoutMat = new THREE.MeshStandardMaterial({ color: 0x7f6044, roughness: 1.0 });
+      const earMat = new THREE.MeshStandardMaterial({ color: 0x5c3f23, roughness: 1.0 });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 0.9), bodyMat);
+      body.position.y = 0.8;
+      body.castShadow = true;
+      body.receiveShadow = true;
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.65), snoutMat);
+      head.position.set(1.15, 0.85, 0);
+      head.castShadow = true;
+      head.receiveShadow = true;
+
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.24), snoutMat);
+      snout.position.set(1.52, 0.78, 0);
+      snout.castShadow = true;
+      snout.receiveShadow = true;
+
+      const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), earMat);
+      ear1.position.set(0.95, 1.18, 0.22);
+      ear1.rotation.z = Math.PI / 2;
+      ear1.rotation.x = -0.3;
+      ear1.castShadow = true;
+      ear1.receiveShadow = true;
+
+      const ear2 = ear1.clone();
+      ear2.position.z = -0.22;
+
+      const legGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6);
+      const legs = [];
+      const legOffsets = [
+        [-0.6, 0.25, 0.3],
+        [-0.6, 0.25, -0.3],
+        [0.5, 0.25, 0.3],
+        [0.5, 0.25, -0.3]
+      ];
+      for (const [x, y, z] of legOffsets) {
+        const leg = new THREE.Mesh(legGeo, bodyMat);
+        leg.position.set(x, y, z);
+        leg.castShadow = true;
+        leg.receiveShadow = true;
+        boar.add(leg);
+        legs.push(leg);
+      }
+
+      boar.add(body, head, snout, ear1, ear2);
+
+      boar.userData.parts = {
+        body,
+        head,
+        snout,
+        ears: [ear1, ear2],
+        legs
+      };
+
+      return boar;
+    }
+
+    function updateBoarAnimation(boar, delta) {
+      if (boar.dead) return;
+
+      boar.stateTime += delta;
+
+      const root = boar.root;
+      const parts = boar.parts;
+      const t = boar.stateTime;
+
+      const isCombat = boar.state === "combat";
+      const bobAmp = isCombat ? 0.08 : 0.04;
+      const bobFreq = isCombat ? 12.0 : 7.0;
+      root.position.y = boar.baseY + Math.sin(t * bobFreq) * bobAmp;
+
+      if (parts) {
+        const sway = Math.sin(t * (isCombat ? 18 : 10)) * (isCombat ? 0.05 : 0.025);
+        parts.body.rotation.z = sway;
+        parts.head.rotation.x = isCombat ? 0.22 : 0.05;
+        parts.head.rotation.z = -sway * 0.7;
+        parts.snout.rotation.z = -sway * 0.55;
+        parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.4;
+        parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.4;
+
+        const legSwing = Math.sin(t * (isCombat ? 16 : 8)) * (isCombat ? 0.75 : 0.55);
+        const legL1 = parts.legs[0];
+        const legL2 = parts.legs[1];
+        const legR1 = parts.legs[2];
+        const legR2 = parts.legs[3];
+
+        legL1.rotation.x = legSwing;
+        legR2.rotation.x = legSwing;
+        legL2.rotation.x = -legSwing;
+        legR1.rotation.x = -legSwing;
+      } else {
+        const lean = isCombat ? 0.06 : 0.03;
+        root.rotation.z = Math.sin(t * (isCombat ? 14 : 8)) * lean;
+      }
+    }
+
+    function updateBoars(delta) {
+      const playerPos = playerRoot.position;
+
+      for (let i = boars.length - 1; i >= 0; i--) {
+        const boar = boars[i];
+        if (boar.dead) continue;
+
+        const pos = boar.root.position;
+        tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
+        const dist = tmp.v1.length();
+
+        boar.stateTime += delta;
+
+        if (dist < config.boarAggroRange) {
+          boar.state = "combat";
+        } else {
+          boar.state = "move";
+        }
+
+        if (boar.state === "combat") {
+          const dir = tmp.v1.clone().normalize();
+
+          if (dist > boar.attackRange * 0.95) {
+            pos.x += dir.x * boar.moveSpeed * 1.25 * delta;
+            pos.z += dir.z * boar.moveSpeed * 1.25 * delta;
+          }
+
+          const targetYaw = Math.atan2(dir.x, dir.z);
+          boar.root.rotation.y = THREE.MathUtils.lerp(boar.root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
+
+          if (dist <= boar.attackRange) {
+            takePlayerDamage(boar.atkDps * delta);
+          }
+        } else {
+          boar.wanderTimer -= delta;
+          if (boar.wanderTimer <= 0) {
+            boar.wanderYaw += rand(-1.0, 1.0) * 1.0;
+            boar.wanderTimer = rand(1.2, 3.2);
+          }
+
+          const dir = new THREE.Vector3(Math.cos(boar.wanderYaw), 0, Math.sin(boar.wanderYaw));
+          pos.x += dir.x * boar.moveSpeed * 0.35 * delta;
+          pos.z += dir.z * boar.moveSpeed * 0.35 * delta;
+
+          const targetYaw = Math.atan2(dir.x, dir.z);
+          boar.root.rotation.y = THREE.MathUtils.lerp(boar.root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
+        }
+
+        updateBoarAnimation(boar, delta);
+        updateBoarTag(boar);
+      }
+    }
+
     async function addForestTrees() {
       const treeGroup = new THREE.Group();
       scene.add(treeGroup);
@@ -1009,7 +1333,6 @@
         for (const p of positions) {
           const tree = fitAndGround(template.clone(true), TREE_TARGET_HEIGHT * p.scale, TREE_GROUND_LIFT);
 
-          // ここで y を上書きしない。これが埋まり防止の重要ポイント。
           tree.position.x = p.x;
           tree.position.z = p.z;
           tree.rotation.y = p.rotY;
@@ -1065,63 +1388,9 @@
     }
 
     function createFallbackBoar() {
-      const boar = new THREE.Group();
-
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b4b2b, roughness: 1.0 });
-      const snoutMat = new THREE.MeshStandardMaterial({ color: 0x7f6044, roughness: 1.0 });
-      const earMat = new THREE.MeshStandardMaterial({ color: 0x5c3f23, roughness: 1.0 });
-
-      const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 0.9), bodyMat);
-      body.position.y = 0.8;
-      body.castShadow = true;
-      body.receiveShadow = true;
-
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.65), snoutMat);
-      head.position.set(1.15, 0.85, 0);
-      head.castShadow = true;
-      head.receiveShadow = true;
-
-      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.24), snoutMat);
-      snout.position.set(1.52, 0.78, 0);
-      snout.castShadow = true;
-      snout.receiveShadow = true;
-
-      const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), earMat);
-      ear1.position.set(0.95, 1.18, 0.22);
-      ear1.rotation.z = Math.PI / 2;
-      ear1.rotation.x = -0.3;
-      ear1.castShadow = true;
-      ear1.receiveShadow = true;
-
-      const ear2 = ear1.clone();
-      ear2.position.z = -0.22;
-
-      const legGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6);
-      const legOffsets = [
-        [-0.6, 0.25, 0.3],
-        [-0.6, 0.25, -0.3],
-        [0.5, 0.25, 0.3],
-        [0.5, 0.25, -0.3]
-      ];
-      for (const [x, y, z] of legOffsets) {
-        const leg = new THREE.Mesh(legGeo, bodyMat);
-        leg.position.set(x, y, z);
-        leg.castShadow = true;
-        leg.receiveShadow = true;
-        boar.add(leg);
-      }
-
-      boar.add(body, head, snout, ear1, ear2);
+      const boar = createFallbackBoarRig();
+      boar.rotation.y = Math.PI / 2;
       return boar;
-    }
-
-    function getBoarStats(level) {
-      const mult = Math.pow(1.5, level - 1);
-      return {
-        level,
-        hpMax: config.boarBaseHp * mult,
-        atkDps: config.boarBaseAttack * mult
-      };
     }
 
     async function addBoars() {
@@ -1134,6 +1403,7 @@
           i--;
           continue;
         }
+
         const level = config.boarLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.boarLevelMin + 1));
         positions.push({
           x: p.x,
@@ -1153,7 +1423,6 @@
           const levelVisualScale = 0.95 + (p.level - 1) * 0.11;
           const boarRoot = fitAndGround(template.clone(true), BOAR_TARGET_HEIGHT * p.scale * levelVisualScale, BOAR_GROUND_LIFT);
 
-          // y を上書きしない
           boarRoot.position.x = p.x;
           boarRoot.position.z = p.z;
           boarRoot.rotation.y = p.rotY;
@@ -1165,14 +1434,28 @@
             }
           });
 
+          const tag = createBoarTag(p.level, stats.hpMax, stats.hpMax);
+          const box = new THREE.Box3().setFromObject(boarRoot);
+          const size = box.getSize(new THREE.Vector3());
+
           scene.add(boarRoot);
           boars.push({
             root: boarRoot,
+            tag,
+            parts: null,
             level: p.level,
             hpMax: stats.hpMax,
             hp: stats.hpMax,
             atkDps: stats.atkDps,
-            attackRange: config.boarAttackRange + (p.level - 1) * 0.1,
+            attackRange: config.boarAttackRange + (p.level - 1) * 0.08,
+            aggroRange: config.boarAggroRange + (p.level - 1) * 0.8,
+            moveSpeed: config.boarMoveSpeed * (1 + (p.level - 1) * 0.08),
+            uiOffset: Math.max(1.6, size.y * 1.15),
+            state: "move",
+            stateTime: 0,
+            wanderYaw: Math.random() * Math.PI * 2,
+            wanderTimer: rand(0.8, 2.6),
+            baseY: boarRoot.position.y,
             dead: false
           });
         }
@@ -1188,14 +1471,28 @@
           boarRoot.position.z = p.z;
           boarRoot.rotation.y = p.rotY;
 
+          const tag = createBoarTag(p.level, stats.hpMax, stats.hpMax);
+          const box = new THREE.Box3().setFromObject(boarRoot);
+          const size = box.getSize(new THREE.Vector3());
+
           scene.add(boarRoot);
           boars.push({
             root: boarRoot,
+            tag,
+            parts: boarRoot.userData.parts,
             level: p.level,
             hpMax: stats.hpMax,
             hp: stats.hpMax,
             atkDps: stats.atkDps,
-            attackRange: config.boarAttackRange + (p.level - 1) * 0.1,
+            attackRange: config.boarAttackRange + (p.level - 1) * 0.08,
+            aggroRange: config.boarAggroRange + (p.level - 1) * 0.8,
+            moveSpeed: config.boarMoveSpeed * (1 + (p.level - 1) * 0.08),
+            uiOffset: Math.max(1.6, size.y * 1.15),
+            state: "move",
+            stateTime: 0,
+            wanderYaw: Math.random() * Math.PI * 2,
+            wanderTimer: rand(0.8, 2.6),
+            baseY: boarRoot.position.y,
             dead: false
           });
         }
@@ -1274,7 +1571,8 @@
         applyBoarDamageToPlayer(delta);
       }
 
-      updateHud();
+      updatePlayerHud();
+      updateBoars(delta);
     }
 
     function updateCamera(delta) {
@@ -1301,7 +1599,7 @@
 
     async function bootstrap() {
       try {
-        updateHud();
+        updatePlayerHud();
         setStatus("モデルを読み込み中…");
         await loadBaseModel();
         await loadAnimations();
