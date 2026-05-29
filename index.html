@@ -345,6 +345,10 @@
       cameraPitchMax: 0.78
     };
 
+    // 木と猪を大きめにする
+    const TREE_TARGET_HEIGHT = 7.0;
+    const BOAR_TARGET_HEIGHT = 1.75;
+
     let cameraYaw = Math.PI;
     let cameraPitch = 0.22;
 
@@ -390,53 +394,37 @@
       });
     }
 
-    function fitAndGround(model, targetHeight = config.modelHeight) {
+    // 拡大 → 中心合わせ → 地面にぴったり置く
+    function fitScaleAndGround(model, targetHeight = config.modelHeight) {
       applyShadowsAndFixMaterials(model);
 
-      const box1 = new THREE.Box3().setFromObject(model);
-      const center1 = box1.getCenter(new THREE.Vector3());
-      model.position.x -= center1.x;
-      model.position.z -= center1.z;
-
-      const box2 = new THREE.Box3().setFromObject(model);
-      const size2 = box2.getSize(new THREE.Vector3());
-      const scale = targetHeight / Math.max(size2.y, 0.0001);
-      model.scale.setScalar(scale);
-
-      const box3 = new THREE.Box3().setFromObject(model);
-      const center3 = box3.getCenter(new THREE.Vector3());
-      const minY = box3.min.y;
-
-      model.position.x -= center3.x;
-      model.position.z -= center3.z;
-      model.position.y -= minY;
-
-      model.rotation.set(0, 0, 0);
-      return model;
-    }
-
-    function fitAndGroundSimple(model, targetHeight = 1.2) {
-      applyShadowsAndFixMaterials(model);
+      model.updateMatrixWorld(true);
 
       const box1 = new THREE.Box3().setFromObject(model);
+      const size1 = box1.getSize(new THREE.Vector3());
       const center1 = box1.getCenter(new THREE.Vector3());
-      model.position.x -= center1.x;
-      model.position.z -= center1.z;
+
+      const scale = targetHeight / Math.max(size1.y, 0.0001);
+      model.scale.setScalar(scale);
+      model.updateMatrixWorld(true);
 
       const box2 = new THREE.Box3().setFromObject(model);
-      const size2 = box2.getSize(new THREE.Vector3());
-      const scale = targetHeight / Math.max(size2.y, 0.0001);
-      model.scale.setScalar(scale);
+      const center2 = box2.getCenter(new THREE.Vector3());
 
-      const box3 = new THREE.Box3().setFromObject(model);
-      const center3 = box3.getCenter(new THREE.Vector3());
-      const minY = box3.min.y;
+      // X/Z の中心を揃える
+      model.position.x -= center2.x;
+      model.position.z -= center2.z;
 
-      model.position.x -= center3.x;
-      model.position.z -= center3.z;
-      model.position.y -= minY;
+      // 地面( y = 0 )に合わせる
+      model.position.y -= box2.min.y;
 
-      return model;
+      model.updateMatrixWorld(true);
+
+      return {
+        scale,
+        box: new THREE.Box3().setFromObject(model),
+        size: new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3())
+      };
     }
 
     function collectRootNames(root) {
@@ -544,7 +532,7 @@
     async function loadBaseModel() {
       const base = await fbxLoader.loadAsync(WALK_FBX_URL);
       visualRoot = base;
-      fitAndGround(visualRoot);
+      fitScaleAndGround(visualRoot, config.modelHeight);
       visualRoot.rotation.y = VISUAL_LOCAL_YAW;
       playerRoot.add(visualRoot);
     }
@@ -940,7 +928,7 @@
         positions.push({
           x: p.x,
           z: p.z,
-          scale: 0.8 + Math.random() * 0.9,
+          scale: 0.85 + Math.random() * 0.95,
           rotY: Math.random() * Math.PI * 2
         });
       }
@@ -948,24 +936,29 @@
       try {
         const treeGLTF = await gltfLoader.loadAsync(TREE_URL);
         const template = treeGLTF.scene;
-        fitAndGroundSimple(template, 1.2);
 
-        const box = new THREE.Box3().setFromObject(template);
-        const size = box.getSize(new THREE.Vector3());
-        const baseRadius = Math.max(size.x, size.z) * 0.45;
+        // まず見本を1本作って、当たり判定サイズを決める
+        const sample = template.clone(true);
+        fitScaleAndGround(sample, TREE_TARGET_HEIGHT);
+        const sampleBox = new THREE.Box3().setFromObject(sample);
+        const sampleSize = sampleBox.getSize(new THREE.Vector3());
+        const baseRadius = Math.max(sampleSize.x, sampleSize.z) * 0.42;
 
         for (const p of positions) {
           const tree = template.clone(true);
+          fitScaleAndGround(tree, TREE_TARGET_HEIGHT * p.scale);
+
           tree.position.set(p.x, 0, p.z);
           tree.rotation.y = p.rotY;
-          tree.scale.setScalar(p.scale);
-          tree.userData.collisionRadius = baseRadius * p.scale + 0.4;
+
           tree.traverse((child) => {
             if (child.isMesh) {
               child.castShadow = true;
               child.receiveShadow = true;
             }
           });
+
+          tree.userData.collisionRadius = baseRadius * p.scale + 0.7;
           treeGroup.add(tree);
           trees.push(tree);
         }
@@ -994,10 +987,12 @@
           crown2.receiveShadow = true;
 
           tree.add(trunk, crown1, crown2);
+
+          // フォールバックも大きめに
           tree.position.set(p.x, 0, p.z);
           tree.rotation.y = p.rotY;
-          tree.scale.setScalar(p.scale);
-          tree.userData.collisionRadius = 1.7 * p.scale + 0.4;
+          tree.scale.setScalar(1.0 + p.scale * 0.55);
+          tree.userData.collisionRadius = 1.9 * p.scale + 0.6;
           treeGroup.add(tree);
           trees.push(tree);
         }
@@ -1069,7 +1064,7 @@
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
-          scale: 0.75 + Math.random() * 0.5
+          scale: 0.8 + Math.random() * 0.55
         });
       }
 
@@ -1079,10 +1074,12 @@
 
         for (const p of positions) {
           const boarRoot = template.clone(true);
-          fitAndGroundSimple(boarRoot, 1.25);
+
+          // 先に拡大してから地面に合わせる
+          fitScaleAndGround(boarRoot, BOAR_TARGET_HEIGHT * p.scale);
+
           boarRoot.position.set(p.x, 0, p.z);
           boarRoot.rotation.y = p.rotY;
-          boarRoot.scale.multiplyScalar(p.scale);
 
           boarRoot.traverse((child) => {
             if (child.isMesh) {
@@ -1103,10 +1100,13 @@
 
         for (const p of positions) {
           const boarRoot = createFallbackBoar();
-          fitAndGroundSimple(boarRoot, 1.15);
+
+          // フォールバックもちゃんと地面に乗せる
+          fitScaleAndGround(boarRoot, BOAR_TARGET_HEIGHT * p.scale);
+
           boarRoot.position.set(p.x, 0, p.z);
           boarRoot.rotation.y = p.rotY;
-          boarRoot.scale.multiplyScalar(p.scale);
+
           scene.add(boarRoot);
 
           boars.push({
@@ -1133,13 +1133,10 @@
           tmp.m.lookAt(new THREE.Vector3(0, 0, 0), moveDir, upAxis);
           tmp.q.setFromRotationMatrix(tmp.m);
 
-          // 体の向きをまず合わせる
           playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
 
-          // 現在の前方
           const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
 
-          // 向きが合うほど進む
           const align = clamp(currentForward.dot(moveDir), 0, 1);
           const moveScale = align * align;
 
