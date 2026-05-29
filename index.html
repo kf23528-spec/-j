@@ -202,7 +202,10 @@
       走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span><br>
       攻撃: <span id="attackName">Meshy_AI_biped_Animation_Attack_withSkin.fbx</span><br>
       木: <span id="treeName">tree.glb</span><br>
-      猪: <span id="boarName">boar.glb</span>
+      猪: <span id="boarName">boar.glb</span><br>
+      プレイヤーHP: <span id="playerHp">200 / 200</span><br>
+      プレイヤー攻撃: <span id="playerAtk">5 / s</span><br>
+      猪攻撃: <span id="boarAtk">3 / s</span>
     </div>
     <div id="status">待機中</div>
     <div id="buttons">
@@ -290,6 +293,9 @@
     const loading = document.getElementById("loading");
     const dashBtn = document.getElementById("dashBtn");
     const attackBtn = document.getElementById("attackBtn");
+    const playerHpText = document.getElementById("playerHp");
+    const playerAtkText = document.getElementById("playerAtk");
+    const boarAtkText = document.getElementById("boarAtk");
 
     const playerRoot = new THREE.Group();
     scene.add(playerRoot);
@@ -305,8 +311,10 @@
 
     let currentActionName = "idle";
     let attackPlaying = false;
+    let attackTimer = 0;
     let dashMode = false;
     let dashHeld = false;
+    let gameOver = false;
 
     const keys = new Set();
 
@@ -334,7 +342,14 @@
       targetHeight: 1.5,
       modelHeight: 2.45,
       turnSpeed: 9.0,
-      attackDamage: 50,
+      playerAttackDps: 5,
+      playerAttackDuration: 5.0,
+      playerHpMax: 200,
+      boarBaseHp: 100,
+      boarBaseAttack: 3,
+      boarLevelMin: 1,
+      boarLevelMax: 5,
+      boarAttackRange: 2.25,
       attackRange: 4.5,
       attackConeDot: 0.45,
       boarHp: 100,
@@ -345,10 +360,12 @@
       cameraPitchMax: 0.78
     };
 
-    // 木と猪を大きめにする
-    const TREE_TARGET_HEIGHT = 7.0;
-    const BOAR_TARGET_HEIGHT = 1.75;
+    const TREE_TARGET_HEIGHT = 9.5;
+    const TREE_GROUND_LIFT = 0.18;
+    const BOAR_TARGET_HEIGHT = 2.0;
+    const BOAR_GROUND_LIFT = 0.05;
 
+    let playerHp = config.playerHpMax;
     let cameraYaw = Math.PI;
     let cameraPitch = 0.22;
 
@@ -369,6 +386,12 @@
 
     function setStatus(text) {
       uiStatus.textContent = text;
+    }
+
+    function updateHud() {
+      playerHpText.textContent = `${Math.max(0, Math.ceil(playerHp))} / ${config.playerHpMax}`;
+      playerAtkText.textContent = `${config.playerAttackDps} / s`;
+      boarAtkText.textContent = `${config.boarBaseAttack} / s`;
     }
 
     function clamp(v, min, max) {
@@ -394,37 +417,27 @@
       });
     }
 
-    // 拡大 → 中心合わせ → 地面にぴったり置く
-    function fitScaleAndGround(model, targetHeight = config.modelHeight) {
+    function fitAndGround(model, targetHeight = config.modelHeight, groundLift = 0.0) {
       applyShadowsAndFixMaterials(model);
 
-      model.updateMatrixWorld(true);
+      model.updateWorldMatrix(true, true);
 
       const box1 = new THREE.Box3().setFromObject(model);
       const size1 = box1.getSize(new THREE.Vector3());
-      const center1 = box1.getCenter(new THREE.Vector3());
-
       const scale = targetHeight / Math.max(size1.y, 0.0001);
       model.scale.setScalar(scale);
-      model.updateMatrixWorld(true);
+
+      model.updateWorldMatrix(true, true);
 
       const box2 = new THREE.Box3().setFromObject(model);
       const center2 = box2.getCenter(new THREE.Vector3());
 
-      // X/Z の中心を揃える
       model.position.x -= center2.x;
       model.position.z -= center2.z;
+      model.position.y += (-box2.min.y) + groundLift;
 
-      // 地面( y = 0 )に合わせる
-      model.position.y -= box2.min.y;
-
-      model.updateMatrixWorld(true);
-
-      return {
-        scale,
-        box: new THREE.Box3().setFromObject(model),
-        size: new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3())
-      };
+      model.updateWorldMatrix(true, true);
+      return model;
     }
 
     function collectRootNames(root) {
@@ -532,7 +545,7 @@
     async function loadBaseModel() {
       const base = await fbxLoader.loadAsync(WALK_FBX_URL);
       visualRoot = base;
-      fitScaleAndGround(visualRoot, config.modelHeight);
+      fitAndGround(visualRoot, config.modelHeight, 0.03);
       visualRoot.rotation.y = VISUAL_LOCAL_YAW;
       playerRoot.add(visualRoot);
     }
@@ -578,13 +591,6 @@
         actions.attack.clampWhenFinished = true;
         actions.attack.enabled = true;
       }
-
-      mixer.addEventListener("finished", (event) => {
-        if (event.action === actions.attack) {
-          attackPlaying = false;
-          syncLocomotion(true);
-        }
-      });
     }
 
     function stopAllActions(fade = 0.12) {
@@ -657,6 +663,7 @@
     }
 
     function requestJump() {
+      if (gameOver) return;
       if (!physics.onGround) return;
       physics.vy = config.jumpVelocity;
       physics.onGround = false;
@@ -666,11 +673,30 @@
       return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
     }
 
-    function applyAttackDamage() {
+    function takePlayerDamage(amount) {
+      if (gameOver) return;
+      playerHp = Math.max(0, playerHp - amount);
+      if (playerHp <= 0) {
+        playerHp = 0;
+        gameOver = true;
+        attackPlaying = false;
+        attackTimer = 0;
+        stopAllActions(0.05);
+        hardStopAction("walk");
+        hardStopAction("run");
+        hardStopAction("attack");
+        currentActionName = "idle";
+        setStatus("ゲームオーバー");
+      }
+      updateHud();
+    }
+
+    function applyPlayerAttackDamage(delta) {
       if (!boars.length) return;
 
       const playerPos = tmp.v1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
       const forward = getCharacterForwardVector();
+      const damage = config.playerAttackDps * delta;
 
       for (let i = boars.length - 1; i >= 0; i--) {
         const boar = boars[i];
@@ -686,7 +712,7 @@
         const dir = tmp.v3.clone().normalize();
         if (forward.dot(dir) < config.attackConeDot) continue;
 
-        boar.hp -= config.attackDamage;
+        boar.hp -= damage;
 
         if (boar.hp <= 0) {
           boar.dead = true;
@@ -696,11 +722,46 @@
       }
     }
 
+    function applyBoarDamageToPlayer(delta) {
+      if (gameOver) return;
+      if (playerHp <= 0) return;
+
+      const playerPos = tmp.v1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
+
+      for (const boar of boars) {
+        if (boar.dead || !boar.root.visible) continue;
+
+        tmp.v2.set(boar.root.position.x, boar.root.position.y, boar.root.position.z);
+        tmp.v3.copy(playerPos).sub(tmp.v2);
+        tmp.v3.y = 0;
+
+        const dist = tmp.v3.length();
+        if (dist > boar.attackRange) continue;
+
+        const boarDamage = boar.atkDps * delta;
+        takePlayerDamage(boarDamage);
+        if (gameOver) return;
+      }
+    }
+
+    function finishAttack() {
+      attackPlaying = false;
+      attackTimer = 0;
+      if (actions.attack) {
+        hardStopAction("attack");
+      }
+      if (!gameOver) {
+        syncLocomotion(true);
+      }
+    }
+
     function startAttack() {
+      if (gameOver) return;
       const a = actions.attack;
       if (!a || attackPlaying) return;
 
       attackPlaying = true;
+      attackTimer = config.playerAttackDuration;
       stopAllActions(0.05);
 
       a.reset();
@@ -708,19 +769,22 @@
       a.paused = false;
       a.clampWhenFinished = true;
       a.setLoop(THREE.LoopOnce, 1);
+
+      const clipDuration = a.getClip()?.duration || 1.0;
+      a.timeScale = clipDuration / config.playerAttackDuration;
       a.play();
       currentActionName = "attack";
-
-      applyAttackDamage();
     }
 
     function setDashMode(on) {
+      if (gameOver) return;
       dashMode = on;
       dashBtn.classList.toggle("active", dashMode);
       if (!attackPlaying) syncLocomotion(true);
     }
 
     function syncLocomotion(force = false) {
+      if (gameOver) return;
       if (attackPlaying && !force) return;
 
       const input = getMoveInput();
@@ -928,7 +992,7 @@
         positions.push({
           x: p.x,
           z: p.z,
-          scale: 0.85 + Math.random() * 0.95,
+          scale: 0.95 + Math.random() * 1.1,
           rotY: Math.random() * Math.PI * 2
         });
       }
@@ -937,18 +1001,17 @@
         const treeGLTF = await gltfLoader.loadAsync(TREE_URL);
         const template = treeGLTF.scene;
 
-        // まず見本を1本作って、当たり判定サイズを決める
-        const sample = template.clone(true);
-        fitScaleAndGround(sample, TREE_TARGET_HEIGHT);
-        const sampleBox = new THREE.Box3().setFromObject(sample);
-        const sampleSize = sampleBox.getSize(new THREE.Vector3());
-        const baseRadius = Math.max(sampleSize.x, sampleSize.z) * 0.42;
+        const sample = fitAndGround(template.clone(true), TREE_TARGET_HEIGHT, TREE_GROUND_LIFT);
+        const box = new THREE.Box3().setFromObject(sample);
+        const size = box.getSize(new THREE.Vector3());
+        const baseRadius = Math.max(size.x, size.z) * 0.42;
 
         for (const p of positions) {
-          const tree = template.clone(true);
-          fitScaleAndGround(tree, TREE_TARGET_HEIGHT * p.scale);
+          const tree = fitAndGround(template.clone(true), TREE_TARGET_HEIGHT * p.scale, TREE_GROUND_LIFT);
 
-          tree.position.set(p.x, 0, p.z);
+          // ここで y を上書きしない。これが埋まり防止の重要ポイント。
+          tree.position.x = p.x;
+          tree.position.z = p.z;
           tree.rotation.y = p.rotY;
 
           tree.traverse((child) => {
@@ -971,28 +1034,30 @@
         for (const p of positions) {
           const tree = new THREE.Group();
 
-          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.33, 2.4, 8), trunkMat);
-          trunk.position.y = 1.2;
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.38, 3.0, 8), trunkMat);
+          trunk.position.y = 1.5;
           trunk.castShadow = true;
           trunk.receiveShadow = true;
 
-          const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.15, 2.8, 8), leafMat);
-          crown1.position.y = 3.2;
+          const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.8, 8), leafMat);
+          crown1.position.y = 4.1;
           crown1.castShadow = true;
           crown1.receiveShadow = true;
 
-          const crown2 = new THREE.Mesh(new THREE.ConeGeometry(0.95, 2.2, 8), leafMat);
-          crown2.position.y = 4.0;
+          const crown2 = new THREE.Mesh(new THREE.ConeGeometry(1.25, 3.0, 8), leafMat);
+          crown2.position.y = 5.0;
           crown2.castShadow = true;
           crown2.receiveShadow = true;
 
           tree.add(trunk, crown1, crown2);
 
-          // フォールバックも大きめに
-          tree.position.set(p.x, 0, p.z);
+          tree.position.x = p.x;
+          tree.position.z = p.z;
           tree.rotation.y = p.rotY;
+          tree.position.y = TREE_GROUND_LIFT;
+
           tree.scale.setScalar(1.0 + p.scale * 0.55);
-          tree.userData.collisionRadius = 1.9 * p.scale + 0.6;
+          tree.userData.collisionRadius = 2.2 * p.scale + 0.6;
           treeGroup.add(tree);
           trees.push(tree);
         }
@@ -1050,6 +1115,15 @@
       return boar;
     }
 
+    function getBoarStats(level) {
+      const mult = Math.pow(1.5, level - 1);
+      return {
+        level,
+        hpMax: config.boarBaseHp * mult,
+        atkDps: config.boarBaseAttack * mult
+      };
+    }
+
     async function addBoars() {
       const positions = [];
       const count = 15;
@@ -1060,11 +1134,13 @@
           i--;
           continue;
         }
+        const level = config.boarLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.boarLevelMin + 1));
         positions.push({
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
-          scale: 0.8 + Math.random() * 0.55
+          scale: 0.85 + Math.random() * 0.45,
+          level
         });
       }
 
@@ -1073,12 +1149,13 @@
         const template = boarGLTF.scene;
 
         for (const p of positions) {
-          const boarRoot = template.clone(true);
+          const stats = getBoarStats(p.level);
+          const levelVisualScale = 0.95 + (p.level - 1) * 0.11;
+          const boarRoot = fitAndGround(template.clone(true), BOAR_TARGET_HEIGHT * p.scale * levelVisualScale, BOAR_GROUND_LIFT);
 
-          // 先に拡大してから地面に合わせる
-          fitScaleAndGround(boarRoot, BOAR_TARGET_HEIGHT * p.scale);
-
-          boarRoot.position.set(p.x, 0, p.z);
+          // y を上書きしない
+          boarRoot.position.x = p.x;
+          boarRoot.position.z = p.z;
           boarRoot.rotation.y = p.rotY;
 
           boarRoot.traverse((child) => {
@@ -1091,7 +1168,11 @@
           scene.add(boarRoot);
           boars.push({
             root: boarRoot,
-            hp: config.boarHp,
+            level: p.level,
+            hpMax: stats.hpMax,
+            hp: stats.hpMax,
+            atkDps: stats.atkDps,
+            attackRange: config.boarAttackRange + (p.level - 1) * 0.1,
             dead: false
           });
         }
@@ -1099,19 +1180,22 @@
         console.warn("boar.glb load failed, using fallback boars.", err);
 
         for (const p of positions) {
+          const stats = getBoarStats(p.level);
           const boarRoot = createFallbackBoar();
+          fitAndGround(boarRoot, BOAR_TARGET_HEIGHT * p.scale * (0.95 + (p.level - 1) * 0.11), BOAR_GROUND_LIFT);
 
-          // フォールバックもちゃんと地面に乗せる
-          fitScaleAndGround(boarRoot, BOAR_TARGET_HEIGHT * p.scale);
-
-          boarRoot.position.set(p.x, 0, p.z);
+          boarRoot.position.x = p.x;
+          boarRoot.position.z = p.z;
           boarRoot.rotation.y = p.rotY;
 
           scene.add(boarRoot);
-
           boars.push({
             root: boarRoot,
-            hp: config.boarHp,
+            level: p.level,
+            hpMax: stats.hpMax,
+            hp: stats.hpMax,
+            atkDps: stats.atkDps,
+            attackRange: config.boarAttackRange + (p.level - 1) * 0.1,
             dead: false
           });
         }
@@ -1119,6 +1203,11 @@
     }
 
     function updateMovement(delta) {
+      if (gameOver) {
+        setStatus("ゲームオーバー");
+        return;
+      }
+
       const input = getMoveInput();
 
       if (input.jump) requestJump();
@@ -1172,6 +1261,22 @@
       );
     }
 
+    function updateCombat(delta) {
+      if (!gameOver) {
+        if (attackPlaying) {
+          attackTimer -= delta;
+          applyPlayerAttackDamage(delta);
+          if (attackTimer <= 0) {
+            finishAttack();
+          }
+        }
+
+        applyBoarDamageToPlayer(delta);
+      }
+
+      updateHud();
+    }
+
     function updateCamera(delta) {
       const cosPitch = Math.cos(cameraPitch);
       const sinPitch = Math.sin(cameraPitch);
@@ -1196,6 +1301,7 @@
 
     async function bootstrap() {
       try {
+        updateHud();
         setStatus("モデルを読み込み中…");
         await loadBaseModel();
         await loadAnimations();
@@ -1216,6 +1322,7 @@
       const delta = Math.min(clock.getDelta(), 0.033);
 
       updateMovement(delta);
+      updateCombat(delta);
 
       if (mixer) {
         mixer.update(delta);
