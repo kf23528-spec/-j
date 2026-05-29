@@ -210,7 +210,7 @@
       <button id="attackBtn" class="modeBtn attack">攻撃</button>
     </div>
     <div id="help">
-      操作: WASD / 矢印キー / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
+      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
       スティック方向へ体を向けてから前進します。Shift でダッシュ、J で攻撃。
     </div>
   </div>
@@ -230,6 +230,9 @@
     const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
     const TREE_URL = "./tree.glb";
     const BOAR_URL = "./boar.glb";
+
+    // もしキャラの正面がまだズレるならここだけ 0 / Math.PI / ±Math.PI/2 で調整
+    const VISUAL_LOCAL_YAW = Math.PI;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
@@ -305,7 +308,6 @@
     let attackPlaying = false;
     let dashMode = false;
     let dashHeld = false;
-    let playerYaw = 0;
 
     const keys = new Set();
 
@@ -339,18 +341,18 @@
       boarHp: 100
     };
 
-    // Meshy系FBXはルートモーションや根本の回転が入ることがあるので、ここでは
-    // 「回転は playerRoot のみ」「見た目は visualRoot のみ」に完全分離する。
-    const VISUAL_LOCAL_YAW = Math.PI;
-
     const clock = new THREE.Clock();
+
     const boars = [];
-    const tempV1 = new THREE.Vector3();
-    const tempV2 = new THREE.Vector3();
-    const tempV3 = new THREE.Vector3();
-    const tempV4 = new THREE.Vector3();
-    const tempV5 = new THREE.Vector3();
-    const tempQ = new THREE.Quaternion();
+    const tmp = {
+      v1: new THREE.Vector3(),
+      v2: new THREE.Vector3(),
+      v3: new THREE.Vector3(),
+      v4: new THREE.Vector3(),
+      v5: new THREE.Vector3(),
+      q: new THREE.Quaternion(),
+      m: new THREE.Matrix4()
+    };
     const upAxis = new THREE.Vector3(0, 1, 0);
 
     function setStatus(text) {
@@ -363,10 +365,6 @@
 
     function rand(min, max) {
       return min + Math.random() * max;
-    }
-
-    function shortestAngleDiff(a, b) {
-      return Math.atan2(Math.sin(b - a), Math.cos(b - a));
     }
 
     function applyShadowsAndFixMaterials(object3D) {
@@ -436,12 +434,11 @@
     function collectRootNames(root) {
       const names = new Set();
       root.traverse((obj) => {
-        if (!obj.name) return;
-        if (/^Armature$/i.test(obj.name) || /^RootNode$/i.test(obj.name) || /^Scene$/i.test(obj.name)) {
+        if (obj?.name && (/^Armature$/i.test(obj.name) || /^RootNode$/i.test(obj.name) || /^Scene$/i.test(obj.name))) {
           names.add(obj.name);
         }
         if ((obj.isBone || obj.type === "Bone") && (!obj.parent || !obj.parent.isBone)) {
-          names.add(obj.name);
+          if (obj.name) names.add(obj.name);
         }
       });
       return [...names];
@@ -459,15 +456,11 @@
         const target = name.slice(0, dot);
         const prop = name.slice(dot + 1);
 
-        // ルートモーション除去:
-        //  - Armature / RootNode の transform を削る
-        //  - 先頭骨の position は削る
-        //  - これで見た目アニメだけ残し、移動と回転は playerRoot に任せる
         if (rootNames.some((r) => target === r || target.startsWith(r + ".") || target.startsWith(r + "_"))) {
           if (prop === "position" || prop === "quaternion" || prop === "scale") return false;
         }
 
-        // 補助: 先頭骨の position は削ってスライドを防ぐ
+        // ルートっぽい hips/pelvis の位置だけ消してスライドを抑える
         if (/Hips|hips|mixamorigHips|Pelvis|pelvis/i.test(target) && prop === "position") {
           return false;
         }
@@ -499,7 +492,7 @@
       ]);
 
       const rootNames = collectRootNames(visualRoot);
-      rootNames.push("Armature", "RootNode");
+      rootNames.push("Armature", "RootNode", "Scene");
 
       const walkClip = stripRootMotionTracks(firstClip(walkFBX), rootNames);
       const runClip = stripRootMotionTracks(firstClip(runFBX), rootNames);
@@ -612,48 +605,46 @@
     }
 
     function getCameraRelativeMoveDirection(inputX, inputZ) {
-      camera.getWorldDirection(tempV1);
-      tempV1.y = 0;
-      if (tempV1.lengthSq() < 1e-8) tempV1.set(0, 0, -1);
-      tempV1.normalize(); // camera forward
+      camera.getWorldDirection(tmp.v1);
+      tmp.v1.y = 0;
+      if (tmp.v1.lengthSq() < 1e-8) tmp.v1.set(0, 0, -1);
+      tmp.v1.normalize(); // camera forward (camera -> target)
 
-      tempV2.crossVectors(tempV1, upAxis).normalize(); // camera right
+      tmp.v2.crossVectors(tmp.v1, upAxis).normalize(); // camera right
 
-      tempV3.copy(tempV2).multiplyScalar(inputX);
-      tempV4.copy(tempV1).multiplyScalar(-inputZ); // 上 = カメラ奥
+      tmp.v3.copy(tmp.v2).multiplyScalar(inputX);
+      tmp.v4.copy(tmp.v1).multiplyScalar(-inputZ); // 上 = カメラ奥
 
-      tempV5.copy(tempV3).add(tempV4);
-      if (tempV5.lengthSq() < 1e-8) return tempV5.set(0, 0, 0);
-      return tempV5.normalize();
+      tmp.v5.copy(tmp.v3).add(tmp.v4);
+      if (tmp.v5.lengthSq() < 1e-8) return tmp.v5.set(0, 0, 0);
+      return tmp.v5.normalize();
     }
 
     function getCharacterForwardVector() {
-      // playerYaw の正面
-      return new THREE.Vector3(Math.sin(playerYaw), 0, Math.cos(playerYaw)).normalize();
+      return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
     }
 
     function applyAttackDamage() {
       if (!boars.length) return;
 
-      const playerPos = tempV1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
+      const playerPos = tmp.v1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
       const forward = getCharacterForwardVector();
 
       for (let i = boars.length - 1; i >= 0; i--) {
         const boar = boars[i];
         if (boar.dead || !boar.root.visible) continue;
 
-        tempV2.set(boar.root.position.x, boar.root.position.y, boar.root.position.z);
-        tempV3.copy(tempV2).sub(playerPos);
-        tempV3.y = 0;
+        tmp.v2.set(boar.root.position.x, boar.root.position.y, boar.root.position.z);
+        tmp.v3.copy(tmp.v2).sub(playerPos);
+        tmp.v3.y = 0;
 
-        const dist = tempV3.length();
+        const dist = tmp.v3.length();
         if (dist > config.attackRange) continue;
 
-        const dir = tempV3.clone().normalize();
+        const dir = tmp.v3.clone().normalize();
         if (forward.dot(dir) < config.attackConeDot) continue;
 
         boar.hp -= config.attackDamage;
-
         if (boar.hp <= 0) {
           boar.dead = true;
           scene.remove(boar.root);
@@ -1026,26 +1017,27 @@
       const moving = input.magnitude > 0.001;
 
       if (moving) {
-        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
-        if (moveDir.lengthSq() > 1e-8) {
-          // ここが本体: キャラの向きは「進みたい方向」そのものへ
-          const desiredYaw = Math.atan2(moveDir.x, moveDir.z);
-          const diff = shortestAngleDiff(playerYaw, desiredYaw);
-          const maxTurn = config.turnSpeed * delta;
+        const desiredMoveDir = getCameraRelativeMoveDirection(input.x, input.z);
 
-          // 回転を優先しながら、向きが合うほど前進
-          playerYaw += clamp(diff, -maxTurn, maxTurn);
-          playerRoot.rotation.y = playerYaw;
+        if (desiredMoveDir.lengthSq() > 1e-8) {
+          // 目標方向へ向く quaternion を作る
+          tmp.m.lookAt(new THREE.Vector3(0, 0, 0), desiredMoveDir, upAxis);
+          tmp.q.setFromRotationMatrix(tmp.m);
 
-          const align = clamp(1 - Math.abs(diff) / 0.65, 0, 1);
+          // まず向きを合わせる
+          playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
+
+          // 現在の前方向
+          const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+
+          // 前を向いているほど進める。正面を向く前は回転優先
+          const align = clamp(currentForward.dot(desiredMoveDir), 0, 1);
           const moveScale = align * align;
 
-          const forward = new THREE.Vector3(Math.sin(playerYaw), 0, Math.cos(playerYaw));
-          playerRoot.position.addScaledVector(forward, currentSpeed() * input.magnitude * moveScale * delta);
+          const speed = currentSpeed() * input.magnitude * moveScale;
+          playerRoot.position.addScaledVector(currentForward, speed * delta);
 
-          if (!attackPlaying) {
-            syncLocomotion(false);
-          }
+          if (!attackPlaying) syncLocomotion(false);
         }
       } else if (!attackPlaying && currentActionName !== "idle") {
         hardStopAction("walk");
@@ -1072,8 +1064,14 @@
     }
 
     function updateCamera(delta) {
-      const offset = new THREE.Vector3(1.8, config.cameraHeight, config.cameraDistance);
-      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerYaw + Math.PI);
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+      const right = new THREE.Vector3().crossVectors(upAxis, forward).normalize();
+
+      const offset = new THREE.Vector3()
+        .copy(forward).multiplyScalar(-config.cameraDistance)
+        .addScaledVector(right, 1.8);
+
+      offset.y = config.cameraHeight;
 
       const desiredCameraPos = new THREE.Vector3().copy(playerRoot.position).add(offset);
       const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
