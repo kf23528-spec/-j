@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Forest Game Controller</title>
+  <title>Forest TPS Game</title>
   <style>
     html, body {
       width: 100%;
@@ -85,16 +85,12 @@
       background: #2f82ff;
       box-shadow: 0 8px 18px rgba(47, 130, 255, 0.22);
     }
-    .modeBtn.active {
-      background: #1d5fc0;
-    }
+    .modeBtn.active { background: #1d5fc0; }
     .modeBtn.attack {
       background: #ff6a2c;
       box-shadow: 0 8px 18px rgba(255, 106, 44, 0.22);
     }
-    .modeBtn.attack.active {
-      background: #cc4e1d;
-    }
+    .modeBtn.attack.active { background: #cc4e1d; }
 
     #help {
       margin-top: 8px;
@@ -161,9 +157,7 @@
       -webkit-user-select: none;
       z-index: 25;
     }
-    #jumpBtn:active {
-      transform: scale(0.97);
-    }
+    #jumpBtn:active { transform: scale(0.97); }
 
     @media (max-width: 700px) {
       #ui {
@@ -202,7 +196,7 @@
   <div id="loading">読み込み中…</div>
 
   <div id="ui">
-    <div id="title">Forest Game Controller</div>
+    <div id="title">Forest TPS Game</div>
     <div id="meta">
       歩き: <span id="walkName">Meshy_AI_biped_Animation_Walking_withSkin.fbx</span><br>
       走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span><br>
@@ -217,7 +211,7 @@
     </div>
     <div id="help">
       操作: WASD / 矢印キー / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
-      キャラはスティック方向を向いてから前進します。Shift でダッシュ、J で攻撃。
+      スティック方向へ体を向けてから前進します。Shift でダッシュ、J で攻撃。
     </div>
   </div>
 
@@ -337,12 +331,11 @@
       cameraSmooth: 8.5,
       targetHeight: 1.5,
       modelHeight: 2.45,
-      turnSpeed: 9.5,
+      turnSpeed: 10.0,
       attackDamage: 50,
       attackRange: 4.5,
       attackConeDot: 0.45,
-      boarHp: 100,
-      modelYawOffset: Math.PI
+      boarHp: 100
     };
 
     const clock = new THREE.Clock();
@@ -353,6 +346,8 @@
     const tempV3 = new THREE.Vector3();
     const tempV4 = new THREE.Vector3();
     const tempV5 = new THREE.Vector3();
+    const tempQ = new THREE.Quaternion();
+    const tempM = new THREE.Matrix4();
     const upAxis = new THREE.Vector3(0, 1, 0);
 
     function setStatus(text) {
@@ -407,7 +402,8 @@
       model.position.z -= center3.z;
       model.position.y -= minY;
 
-      model.rotation.y = config.modelYawOffset;
+      // ここでは余計な180度フリップを入れない
+      model.rotation.set(0, 0, 0);
       return model;
     }
 
@@ -440,9 +436,6 @@
       visualRoot = base;
       fitAndGround(visualRoot);
       playerRoot.add(visualRoot);
-
-      // 見た目と親の回転を分けるため、見た目の向き補正は内側だけに固定
-      visualRoot.rotation.y = config.modelYawOffset;
     }
 
     function firstClip(fbx) {
@@ -567,45 +560,45 @@
       physics.onGround = false;
     }
 
-    function getCharacterForwardVector() {
-      const yaw = playerRoot.rotation.y + Math.PI;
-      return new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-    }
-
     function getCameraRelativeMoveDirection(inputX, inputZ) {
       camera.getWorldDirection(tempV1);
       tempV1.y = 0;
       if (tempV1.lengthSq() < 1e-6) tempV1.set(0, 0, -1);
       tempV1.normalize(); // camera forward
 
-      tempV2.crossVectors(tempV1, upAxis).normalize(); // right
+      tempV2.crossVectors(tempV1, upAxis).normalize(); // camera right
 
       tempV3.copy(tempV2).multiplyScalar(inputX);
-      tempV4.copy(tempV1).multiplyScalar(-inputZ); // 上に倒す = カメラの奥
+      tempV4.copy(tempV1).multiplyScalar(-inputZ); // 上 = カメラ奥
 
       tempV5.copy(tempV3).add(tempV4);
       if (tempV5.lengthSq() < 1e-8) return tempV5.set(0, 0, 0);
       return tempV5.normalize();
     }
 
+    function getCharacterForwardVector() {
+      // lookAt 系で合わせたときの前方は -Z
+      return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+    }
+
     function applyAttackDamage() {
       if (!boars.length) return;
 
-      const playerPos = new THREE.Vector3(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
-      const forward = getCharacterForwardVector().normalize();
+      const playerPos = tempV1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
+      const forward = getCharacterForwardVector();
 
       for (let i = boars.length - 1; i >= 0; i--) {
         const boar = boars[i];
         if (boar.dead || !boar.root.visible) continue;
 
-        const boarPos = new THREE.Vector3(boar.root.position.x, boar.root.position.y, boar.root.position.z);
-        const toBoar = boarPos.clone().sub(playerPos);
-        toBoar.y = 0;
+        tempV2.set(boar.root.position.x, boar.root.position.y, boar.root.position.z);
+        tempV3.copy(tempV2).sub(playerPos);
+        tempV3.y = 0;
 
-        const dist = toBoar.length();
+        const dist = tempV3.length();
         if (dist > config.attackRange) continue;
 
-        const dir = toBoar.clone().normalize();
+        const dir = tempV3.clone().normalize();
         const dot = forward.dot(dir);
         if (dot < config.attackConeDot) continue;
 
@@ -670,6 +663,10 @@
       }
     }
 
+    const joystickEl = document.getElementById("joystick");
+    const joyKnob = document.getElementById("joyKnob");
+    const jumpBtn = document.getElementById("jumpBtn");
+
     function updateJoystickVisual() {
       const px = stick.x * stick.radius;
       const py = stick.y * stick.radius;
@@ -683,10 +680,6 @@
       stick.y = 0;
       updateJoystickVisual();
     }
-
-    const joystickEl = document.getElementById("joystick");
-    const joyKnob = document.getElementById("joyKnob");
-    const jumpBtn = document.getElementById("jumpBtn");
 
     joystickEl.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -977,36 +970,36 @@
     function updateMovement(delta) {
       const input = getMoveInput();
 
-      if (input.jump) {
-        requestJump();
-      }
-
-      if (input.attack) {
-        startAttack();
-      }
+      if (input.jump) requestJump();
+      if (input.attack) startAttack();
 
       const moving = input.magnitude > 0.001;
 
       if (moving) {
-        const worldDir = getCameraRelativeMoveDirection(input.x, input.z);
-        if (worldDir.lengthSq() > 1e-8) {
-          // カメラ基準の進行方向を、プレイヤーの向きに変換
-          const desiredYaw = Math.atan2(worldDir.x, worldDir.z) - Math.PI;
+        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
+
+        if (moveDir.lengthSq() > 1e-8) {
+          // 進みたい方向へ向きを合わせる
+          tempM.lookAt(
+            tempV1.set(0, 0, 0),
+            moveDir,
+            upAxis
+          );
+          tempQ.setFromRotationMatrix(tempM);
+
+          // playerRoot の現在向きから、目標向きへ少しずつ回す
+          playerRoot.quaternion.rotateTowards(tempQ, config.turnSpeed * delta);
+
+          // 向きが合うほど前進速度を出す
+          const desiredYaw = Math.atan2(moveDir.x, moveDir.z);
           const currentYaw = playerRoot.rotation.y;
           const diff = shortestAngleDiff(currentYaw, desiredYaw);
-          const maxTurn = config.turnSpeed * delta;
+          const align = clamp(1 - Math.abs(diff) / 0.75, 0.0, 1.0);
+          const speed = currentSpeed() * input.magnitude * (0.2 + 0.8 * align);
 
-          // まず向きを合わせる
-          playerRoot.rotation.y += clamp(diff, -maxTurn, maxTurn);
-
-          // 向きがかなりズレている時は進みを抑える
-          const align = clamp(1 - Math.abs(diff) / 0.6, 0, 1);
-          const moveFactor = 0.02 + 0.98 * align;
-          const speed = currentSpeed() * input.magnitude * moveFactor;
-
-          const facingYaw = playerRoot.rotation.y + Math.PI;
-          tempV1.set(Math.sin(facingYaw), 0, Math.cos(facingYaw));
-          playerRoot.position.addScaledVector(tempV1, speed * delta);
+          // 実際の前進
+          playerRoot.position.x += moveDir.x * speed * delta;
+          playerRoot.position.z += moveDir.z * speed * delta;
 
           if (!attackPlaying) {
             syncLocomotion(false);
@@ -1037,9 +1030,9 @@
     }
 
     function updateCamera(delta) {
-      const facingYaw = playerRoot.rotation.y + Math.PI;
+      // プレイヤーの向きを基準に、少し右肩寄りのTPS視点にする
       const offset = new THREE.Vector3(1.8, config.cameraHeight, config.cameraDistance);
-      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), facingYaw);
+      offset.applyQuaternion(playerRoot.quaternion);
 
       const desiredCameraPos = new THREE.Vector3().copy(playerRoot.position).add(offset);
       const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
