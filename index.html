@@ -231,6 +231,9 @@
     const TREE_URL = "./tree.glb";
     const BOAR_URL = "./boar.glb";
 
+    // このキャラは見た目の正面がずれていることがあるので、ここで補正
+    const MODEL_LOCAL_YAW_OFFSET = Math.PI;
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
     scene.fog = new THREE.Fog(0x9fd3ff, 45, 220);
@@ -305,6 +308,7 @@
     let attackPlaying = false;
     let dashMode = false;
     let dashHeld = false;
+    let playerYaw = 0;
 
     const keys = new Set();
 
@@ -331,7 +335,7 @@
       cameraSmooth: 8.5,
       targetHeight: 1.5,
       modelHeight: 2.45,
-      turnSpeed: 10.0,
+      turnSpeed: 9.0,
       attackDamage: 50,
       attackRange: 4.5,
       attackConeDot: 0.45,
@@ -347,7 +351,6 @@
     const tempV4 = new THREE.Vector3();
     const tempV5 = new THREE.Vector3();
     const tempQ = new THREE.Quaternion();
-    const tempM = new THREE.Matrix4();
     const upAxis = new THREE.Vector3(0, 1, 0);
 
     function setStatus(text) {
@@ -402,7 +405,6 @@
       model.position.z -= center3.z;
       model.position.y -= minY;
 
-      // ここでは余計な180度フリップを入れない
       model.rotation.set(0, 0, 0);
       return model;
     }
@@ -431,10 +433,33 @@
       return model;
     }
 
+    function sanitizeClip(clip, rootNames = []) {
+      if (!clip) return null;
+      const c = clip.clone();
+
+      c.tracks = c.tracks.filter((track) => {
+        const trackName = track.name || "";
+        const dot = trackName.lastIndexOf(".");
+        if (dot === -1) return true;
+
+        const nodeName = trackName.slice(0, dot);
+        const prop = trackName.slice(dot + 1);
+        if (!["position", "quaternion", "scale"].includes(prop)) return true;
+
+        return !rootNames.some((root) =>
+          root &&
+          (nodeName === root || nodeName.startsWith(root + ".") || nodeName.startsWith(root + "_"))
+        );
+      });
+
+      return c;
+    }
+
     async function loadBaseModel() {
       const base = await fbxLoader.loadAsync(WALK_FBX_URL);
       visualRoot = base;
       fitAndGround(visualRoot);
+      visualRoot.rotation.y = MODEL_LOCAL_YAW_OFFSET;
       playerRoot.add(visualRoot);
     }
 
@@ -450,9 +475,15 @@
         fbxLoader.loadAsync(ATTACK_FBX_URL)
       ]);
 
-      const walkClip = firstClip(walkFBX);
-      const runClip = firstClip(runFBX);
-      const attackClip = firstClip(attackFBX);
+      const rootNames = [
+        visualRoot?.name,
+        visualRoot?.children?.[0]?.name,
+        "Armature"
+      ].filter(Boolean);
+
+      const walkClip = sanitizeClip(firstClip(walkFBX), rootNames);
+      const runClip = sanitizeClip(firstClip(runFBX), rootNames);
+      const attackClip = sanitizeClip(firstClip(attackFBX), rootNames);
 
       mixer = new THREE.AnimationMixer(visualRoot);
 
@@ -563,7 +594,7 @@
     function getCameraRelativeMoveDirection(inputX, inputZ) {
       camera.getWorldDirection(tempV1);
       tempV1.y = 0;
-      if (tempV1.lengthSq() < 1e-6) tempV1.set(0, 0, -1);
+      if (tempV1.lengthSq() < 1e-8) tempV1.set(0, 0, -1);
       tempV1.normalize(); // camera forward
 
       tempV2.crossVectors(tempV1, upAxis).normalize(); // camera right
@@ -577,8 +608,8 @@
     }
 
     function getCharacterForwardVector() {
-      // lookAt 系で合わせたときの前方は -Z
-      return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+      // playerRoot.rotation.y が向きそのもの
+      return new THREE.Vector3(-Math.sin(playerYaw), 0, -Math.cos(playerYaw)).normalize();
     }
 
     function applyAttackDamage() {
@@ -599,8 +630,7 @@
         if (dist > config.attackRange) continue;
 
         const dir = tempV3.clone().normalize();
-        const dot = forward.dot(dir);
-        if (dot < config.attackConeDot) continue;
+        if (forward.dot(dir) < config.attackConeDot) continue;
 
         boar.hp -= config.attackDamage;
 
@@ -663,10 +693,6 @@
       }
     }
 
-    const joystickEl = document.getElementById("joystick");
-    const joyKnob = document.getElementById("joyKnob");
-    const jumpBtn = document.getElementById("jumpBtn");
-
     function updateJoystickVisual() {
       const px = stick.x * stick.radius;
       const py = stick.y * stick.radius;
@@ -680,6 +706,10 @@
       stick.y = 0;
       updateJoystickVisual();
     }
+
+    const joystickEl = document.getElementById("joystick");
+    const joyKnob = document.getElementById("joyKnob");
+    const jumpBtn = document.getElementById("jumpBtn");
 
     joystickEl.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -977,29 +1007,21 @@
 
       if (moving) {
         const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
-
         if (moveDir.lengthSq() > 1e-8) {
-          // 進みたい方向へ向きを合わせる
-          tempM.lookAt(
-            tempV1.set(0, 0, 0),
-            moveDir,
-            upAxis
-          );
-          tempQ.setFromRotationMatrix(tempM);
+          const desiredYaw = Math.atan2(moveDir.x, moveDir.z) + Math.PI;
+          const diff = shortestAngleDiff(playerYaw, desiredYaw);
+          const maxTurn = config.turnSpeed * delta;
 
-          // playerRoot の現在向きから、目標向きへ少しずつ回す
-          playerRoot.quaternion.rotateTowards(tempQ, config.turnSpeed * delta);
+          // 体の向きをまず合わせる
+          playerYaw += clamp(diff, -maxTurn, maxTurn);
+          playerRoot.rotation.y = playerYaw;
 
-          // 向きが合うほど前進速度を出す
-          const desiredYaw = Math.atan2(moveDir.x, moveDir.z);
-          const currentYaw = playerRoot.rotation.y;
-          const diff = shortestAngleDiff(currentYaw, desiredYaw);
-          const align = clamp(1 - Math.abs(diff) / 0.75, 0.0, 1.0);
-          const speed = currentSpeed() * input.magnitude * (0.2 + 0.8 * align);
+          // 方向が合っているほど前に出る。ズレている間はほぼその場で回る
+          const align = clamp(1 - Math.abs(diff) / 0.65, 0, 1);
+          const moveScale = align * align;
 
-          // 実際の前進
-          playerRoot.position.x += moveDir.x * speed * delta;
-          playerRoot.position.z += moveDir.z * speed * delta;
+          const forward = new THREE.Vector3(-Math.sin(playerYaw), 0, -Math.cos(playerYaw));
+          playerRoot.position.addScaledVector(forward, currentSpeed() * input.magnitude * moveScale * delta);
 
           if (!attackPlaying) {
             syncLocomotion(false);
@@ -1030,9 +1052,8 @@
     }
 
     function updateCamera(delta) {
-      // プレイヤーの向きを基準に、少し右肩寄りのTPS視点にする
       const offset = new THREE.Vector3(1.8, config.cameraHeight, config.cameraDistance);
-      offset.applyQuaternion(playerRoot.quaternion);
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerYaw);
 
       const desiredCameraPos = new THREE.Vector3().copy(playerRoot.position).add(offset);
       const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
