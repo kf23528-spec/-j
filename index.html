@@ -295,10 +295,10 @@
     const dashBtn = document.getElementById("dashBtn");
     const attackBtn = document.getElementById("attackBtn");
 
-    const player = new THREE.Group();
-    scene.add(player);
+    const playerRoot = new THREE.Group();
+    scene.add(playerRoot);
 
-    let modelRoot = null;
+    let visualRoot = null;
     let mixer = null;
 
     const actions = {
@@ -337,11 +337,12 @@
       cameraSmooth: 8.5,
       targetHeight: 1.5,
       modelHeight: 2.45,
-      turnSpeed: 10.5,
+      turnSpeed: 9.5,
       attackDamage: 50,
       attackRange: 4.5,
       attackConeDot: 0.45,
-      boarHp: 100
+      boarHp: 100,
+      modelYawOffset: Math.PI
     };
 
     const clock = new THREE.Clock();
@@ -406,7 +407,7 @@
       model.position.z -= center3.z;
       model.position.y -= minY;
 
-      model.rotation.y = Math.PI;
+      model.rotation.y = config.modelYawOffset;
       return model;
     }
 
@@ -436,9 +437,12 @@
 
     async function loadBaseModel() {
       const base = await fbxLoader.loadAsync(WALK_FBX_URL);
-      modelRoot = base;
-      fitAndGround(modelRoot);
-      player.add(modelRoot);
+      visualRoot = base;
+      fitAndGround(visualRoot);
+      playerRoot.add(visualRoot);
+
+      // 見た目と親の回転を分けるため、見た目の向き補正は内側だけに固定
+      visualRoot.rotation.y = config.modelYawOffset;
     }
 
     function firstClip(fbx) {
@@ -457,7 +461,7 @@
       const runClip = firstClip(runFBX);
       const attackClip = firstClip(attackFBX);
 
-      mixer = new THREE.AnimationMixer(modelRoot);
+      mixer = new THREE.AnimationMixer(visualRoot);
 
       if (walkClip) {
         actions.walk = mixer.clipAction(walkClip);
@@ -564,7 +568,7 @@
     }
 
     function getCharacterForwardVector() {
-      const yaw = player.rotation.y + Math.PI;
+      const yaw = playerRoot.rotation.y + Math.PI;
       return new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
     }
 
@@ -572,12 +576,12 @@
       camera.getWorldDirection(tempV1);
       tempV1.y = 0;
       if (tempV1.lengthSq() < 1e-6) tempV1.set(0, 0, -1);
-      tempV1.normalize(); // camera forward (camera -> target)
+      tempV1.normalize(); // camera forward
 
       tempV2.crossVectors(tempV1, upAxis).normalize(); // right
 
       tempV3.copy(tempV2).multiplyScalar(inputX);
-      tempV4.copy(tempV1).multiplyScalar(-inputZ); // up on stick => away from camera
+      tempV4.copy(tempV1).multiplyScalar(-inputZ); // 上に倒す = カメラの奥
 
       tempV5.copy(tempV3).add(tempV4);
       if (tempV5.lengthSq() < 1e-8) return tempV5.set(0, 0, 0);
@@ -587,7 +591,7 @@
     function applyAttackDamage() {
       if (!boars.length) return;
 
-      const playerPos = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
+      const playerPos = new THREE.Vector3(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
       const forward = getCharacterForwardVector().normalize();
 
       for (let i = boars.length - 1; i >= 0; i--) {
@@ -986,22 +990,23 @@
       if (moving) {
         const worldDir = getCameraRelativeMoveDirection(input.x, input.z);
         if (worldDir.lengthSq() > 1e-8) {
+          // カメラ基準の進行方向を、プレイヤーの向きに変換
           const desiredYaw = Math.atan2(worldDir.x, worldDir.z) - Math.PI;
-          const currentYaw = player.rotation.y;
+          const currentYaw = playerRoot.rotation.y;
           const diff = shortestAngleDiff(currentYaw, desiredYaw);
           const maxTurn = config.turnSpeed * delta;
 
           // まず向きを合わせる
-          player.rotation.y += clamp(diff, -maxTurn, maxTurn);
+          playerRoot.rotation.y += clamp(diff, -maxTurn, maxTurn);
 
-          // 向きが合うほど進む。完全に後ろ向きへ行く時はほぼ止まって回転優先
-          const align = clamp(1 - Math.abs(diff) / 0.9, 0, 1);
-          const moveFactor = 0.15 + 0.85 * align;
+          // 向きがかなりズレている時は進みを抑える
+          const align = clamp(1 - Math.abs(diff) / 0.6, 0, 1);
+          const moveFactor = 0.02 + 0.98 * align;
           const speed = currentSpeed() * input.magnitude * moveFactor;
 
-          const facingYaw = player.rotation.y + Math.PI;
+          const facingYaw = playerRoot.rotation.y + Math.PI;
           tempV1.set(Math.sin(facingYaw), 0, Math.cos(facingYaw));
-          player.position.addScaledVector(tempV1, speed * delta);
+          playerRoot.position.addScaledVector(tempV1, speed * delta);
 
           if (!attackPlaying) {
             syncLocomotion(false);
@@ -1014,10 +1019,10 @@
       }
 
       physics.vy += config.gravity * delta;
-      player.position.y += physics.vy * delta;
+      playerRoot.position.y += physics.vy * delta;
 
-      if (player.position.y <= 0) {
-        player.position.y = 0;
+      if (playerRoot.position.y <= 0) {
+        playerRoot.position.y = 0;
         physics.vy = 0;
         physics.onGround = true;
       }
@@ -1032,18 +1037,18 @@
     }
 
     function updateCamera(delta) {
-      const facingYaw = player.rotation.y + Math.PI;
-      const offset = new THREE.Vector3(0, config.cameraHeight, config.cameraDistance);
+      const facingYaw = playerRoot.rotation.y + Math.PI;
+      const offset = new THREE.Vector3(1.8, config.cameraHeight, config.cameraDistance);
       offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), facingYaw);
 
-      const desiredCameraPos = new THREE.Vector3().copy(player.position).add(offset);
+      const desiredCameraPos = new THREE.Vector3().copy(playerRoot.position).add(offset);
       const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
       camera.position.lerp(desiredCameraPos, lerpAlpha);
 
       camera.lookAt(
-        player.position.x,
-        player.position.y + config.targetHeight,
-        player.position.z
+        playerRoot.position.x,
+        playerRoot.position.y + config.targetHeight,
+        playerRoot.position.z
       );
     }
 
