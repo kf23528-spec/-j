@@ -57,11 +57,6 @@
       font-size: 15px;
       margin-bottom: 4px;
     }
-    #meta {
-      font-size: 12px;
-      opacity: 0.82;
-      word-break: break-word;
-    }
     #status {
       margin-top: 8px;
       font-size: 13px;
@@ -240,6 +235,134 @@
     }
     #jumpBtn:active { transform: scale(0.97); }
 
+    #sideButtons {
+      position: fixed;
+      right: 18px;
+      bottom: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 35;
+      pointer-events: auto;
+    }
+    .sideBtn {
+      width: 120px;
+      height: 60px;
+      border: 0;
+      border-radius: 18px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.16);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    #captureBtn {
+      background: linear-gradient(180deg, #ffb14d, #ff7b1f);
+    }
+    #inventoryBtn {
+      background: linear-gradient(180deg, #4e92ff, #2f67d6);
+    }
+    .sideBtn:active { transform: scale(0.97); }
+
+    #inventoryModal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 18, 30, 0.48);
+      backdrop-filter: blur(6px);
+      pointer-events: auto;
+    }
+    #inventoryModal.open {
+      display: flex;
+    }
+    #inventoryPanel {
+      width: min(92vw, 420px);
+      max-height: min(72vh, 560px);
+      overflow: auto;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+      padding: 18px;
+      color: #1a2740;
+    }
+    #inventoryTitle {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+    #inventoryInfo {
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      color: #3a4c73;
+    }
+    #inventoryList {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .inventoryItem {
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: #f3f7ff;
+      border: 1px solid rgba(47, 103, 214, 0.12);
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .inventoryEmpty {
+      padding: 14px;
+      border-radius: 14px;
+      background: #f3f7ff;
+      border: 1px dashed rgba(47, 103, 214, 0.22);
+      font-weight: 800;
+      font-size: 14px;
+      color: #516383;
+    }
+    #closeInventoryBtn {
+      width: 100%;
+      height: 46px;
+      border: 0;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #4e92ff, #2f67d6);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      top: 14px;
+      transform: translateX(-50%);
+      z-index: 60;
+      max-width: min(92vw, 520px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(18, 24, 34, 0.82);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #toast.show {
+      opacity: 1;
+    }
+
     @media (max-width: 700px) {
       #ui {
         min-width: 0;
@@ -261,6 +384,14 @@
         margin-left: -24px;
         margin-top: -24px;
       }
+      #sideButtons {
+        bottom: 138px;
+      }
+      .sideBtn {
+        width: 108px;
+        height: 52px;
+        font-size: 13px;
+      }
       .boarTag {
         min-width: 100px;
       }
@@ -281,16 +412,10 @@
 </head>
 <body>
   <div id="loading">読み込み中…</div>
+  <div id="toast"></div>
 
   <div id="ui">
     <div id="title">Forest TPS Game</div>
-    <div id="meta">
-      歩き: <span id="walkName">Meshy_AI_biped_Animation_Walking_withSkin.fbx</span><br>
-      走り: <span id="runName">Meshy_AI_biped_Animation_Running_withSkin.fbx</span><br>
-      攻撃: <span id="attackName">Meshy_AI_biped_Animation_Attack_withSkin.fbx</span><br>
-      木: <span id="treeName">tree.glb</span><br>
-      猪: <span id="boarName">boar.glb</span>
-    </div>
 
     <div id="playerHud">
       <div class="hudRow">
@@ -315,6 +440,20 @@
 
   <div id="worldUI"></div>
 
+  <div id="sideButtons">
+    <button id="captureBtn" class="sideBtn">捕獲（ゲット）</button>
+    <button id="inventoryBtn" class="sideBtn">インベントリ</button>
+  </div>
+
+  <div id="inventoryModal" aria-hidden="true">
+    <div id="inventoryPanel">
+      <div id="inventoryTitle">インベントリ</div>
+      <div id="inventoryInfo">0 / 10 体</div>
+      <div id="inventoryList"></div>
+      <button id="closeInventoryBtn">閉じる</button>
+    </div>
+  </div>
+
   <div id="joystick" aria-label="joystick">
     <div id="joyKnob"></div>
   </div>
@@ -330,6 +469,9 @@
     const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
     const TREE_URL = "./tree.glb";
     const BOAR_URL = "./boar.glb";
+
+    const STORAGE_KEY = "forest_tps_inventory_v2";
+    const INVENTORY_LIMIT = 10;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
@@ -391,6 +533,14 @@
     const playerHpText = document.getElementById("playerHpText");
     const playerHpFill = document.getElementById("playerHpFill");
     const worldUI = document.getElementById("worldUI");
+    const toastEl = document.getElementById("toast");
+
+    const inventoryModal = document.getElementById("inventoryModal");
+    const inventoryList = document.getElementById("inventoryList");
+    const inventoryInfo = document.getElementById("inventoryInfo");
+    const closeInventoryBtn = document.getElementById("closeInventoryBtn");
+    const inventoryBtn = document.getElementById("inventoryBtn");
+    const captureBtn = document.getElementById("captureBtn");
 
     const playerRoot = new THREE.Group();
     scene.add(playerRoot);
@@ -470,6 +620,8 @@
 
     const trees = [];
     const boars = [];
+    const inventory = [];
+
     const clock = new THREE.Clock();
 
     const tmp = {
@@ -483,6 +635,9 @@
     };
     const upAxis = new THREE.Vector3(0, 1, 0);
 
+    let boarTemplate = null;
+    let boarUsesFallback = false;
+
     function clamp(v, min, max) {
       return Math.max(min, Math.min(max, v));
     }
@@ -493,6 +648,15 @@
 
     function setStatus(text) {
       uiStatus.textContent = text;
+    }
+
+    function showToast(text, duration = 1800) {
+      toastEl.textContent = text;
+      toastEl.classList.add("show");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        toastEl.classList.remove("show");
+      }, duration);
     }
 
     function updatePlayerHud() {
@@ -506,6 +670,68 @@
       } else {
         playerHpFill.style.background = "linear-gradient(90deg, #ff6b6b, #d91f1f)";
       }
+    }
+
+    function safeLoadInventory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return;
+        inventory.splice(0, inventory.length);
+        for (const item of parsed) {
+          if (!item || typeof item !== "object") continue;
+          if (typeof item.species !== "string") continue;
+          const level = Number(item.level);
+          if (!Number.isFinite(level)) continue;
+          inventory.push({
+            species: item.species,
+            level: Math.max(1, Math.floor(level)),
+            capturedAt: item.capturedAt || Date.now()
+          });
+        }
+      } catch (e) {
+        console.warn("inventory load failed", e);
+      }
+    }
+
+    function saveInventory() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+      } catch (e) {
+        console.warn("inventory save failed", e);
+      }
+    }
+
+    function renderInventoryModal() {
+      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体`;
+      inventoryList.innerHTML = "";
+
+      if (!inventory.length) {
+        const empty = document.createElement("div");
+        empty.className = "inventoryEmpty";
+        empty.textContent = "まだ捕まえたキャラクターはいません。";
+        inventoryList.appendChild(empty);
+        return;
+      }
+
+      inventory.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "inventoryItem";
+        row.textContent = `${index + 1}. ${item.species} Lv.${item.level}`;
+        inventoryList.appendChild(row);
+      });
+    }
+
+    function openInventoryModal() {
+      renderInventoryModal();
+      inventoryModal.classList.add("open");
+      inventoryModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeInventoryModal() {
+      inventoryModal.classList.remove("open");
+      inventoryModal.setAttribute("aria-hidden", "true");
     }
 
     function applyShadowsAndFixMaterials(object3D) {
@@ -651,6 +877,10 @@
       }
     }
 
+    function currentSpeed() {
+      return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
+    }
+
     async function loadBaseModel() {
       const base = await fbxLoader.loadAsync(WALK_FBX_URL);
       visualRoot = base;
@@ -732,10 +962,6 @@
       next.setEffectiveWeight(1);
       next.fadeIn(fade).play();
       currentActionName = name;
-    }
-
-    function currentSpeed() {
-      return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
     }
 
     function getKeyboardMoveVector() {
@@ -1039,7 +1265,7 @@
     };
 
     function startCameraDrag(e) {
-      if (e.button !== undefined && e.pointerType === "mouse" && e.button !== 0) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
       cameraDrag.active = true;
       cameraDrag.pointerId = e.pointerId;
       cameraDrag.lastX = e.clientX;
@@ -1136,13 +1362,6 @@
       boar.tag.text.textContent = `HP ${Math.ceil(boar.hp)} / ${Math.ceil(boar.hpMax)}`;
     }
 
-    function killBoar(boar, index) {
-      boar.dead = true;
-      if (boar.root.parent) boar.root.parent.remove(boar.root);
-      if (boar.tag?.el?.parentNode) boar.tag.el.parentNode.removeChild(boar.tag.el);
-      boars.splice(index, 1);
-    }
-
     function getBoarStats(level) {
       const mult = Math.pow(1.5, level - 1);
       return {
@@ -1217,11 +1436,10 @@
       if (boar.dead) return;
 
       boar.stateTime += delta;
-
       const root = boar.root;
       const parts = boar.parts;
       const t = boar.stateTime;
-      const isCombat = boar.state === "combat";
+      const isCombat = boar.state === "chase";
 
       const bobAmp = isCombat ? 0.08 : 0.04;
       const bobFreq = isCombat ? 12.0 : 7.0;
@@ -1277,6 +1495,92 @@
       }
     }
 
+    function killBoar(boar, index) {
+      boar.dead = true;
+      if (boar.root.parent) boar.root.parent.remove(boar.root);
+      if (boar.tag?.el?.parentNode) boar.tag.el.parentNode.removeChild(boar.tag.el);
+      boars.splice(index, 1);
+    }
+
+    function scheduleRespawn() {
+      const delay = rand(2200, 4200);
+      setTimeout(() => {
+        if (!gameOver) {
+          spawnWildBoar();
+        }
+      }, delay);
+    }
+
+    function addInventoryCreature(species, level) {
+      if (inventory.length >= INVENTORY_LIMIT) return false;
+      inventory.push({
+        species,
+        level: Math.max(1, Math.floor(level)),
+        capturedAt: Date.now()
+      });
+      saveInventory();
+      renderInventoryModal();
+      return true;
+    }
+
+    function findNearestBoar(maxDist = 4.5) {
+      const playerPos = playerRoot.position;
+      let best = null;
+      let bestDist = Infinity;
+      let bestIndex = -1;
+
+      for (let i = 0; i < boars.length; i++) {
+        const boar = boars[i];
+        if (boar.dead || !boar.root.visible) continue;
+        const dx = boar.root.position.x - playerPos.x;
+        const dz = boar.root.position.z - playerPos.z;
+        const d = Math.hypot(dx, dz);
+        if (d < maxDist && d < bestDist) {
+          best = boar;
+          bestDist = d;
+          bestIndex = i;
+        }
+      }
+
+      return best ? { boar: best, index: bestIndex, dist: bestDist } : null;
+    }
+
+    function captureNearestBoar() {
+      if (gameOver) return;
+
+      if (inventory.length >= INVENTORY_LIMIT) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      const found = findNearestBoar(4.5);
+      if (!found) {
+        showToast("近くにイノシシがいない！");
+        setStatus("近くにイノシシがいない");
+        return;
+      }
+
+      const { boar, index } = found;
+      if (boar.hp > boar.hpMax * 0.1) {
+        showToast("体力が多すぎて捕まえられない！");
+        setStatus("体力が多すぎて捕まえられない");
+        return;
+      }
+
+      const ok = addInventoryCreature("イノシシ", boar.level);
+      if (!ok) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
+      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
+      killBoar(boar, index);
+      scheduleRespawn();
+    }
+
     function updateBoars(delta) {
       const playerPos = playerRoot.position;
 
@@ -1285,7 +1589,6 @@
         if (boar.dead) continue;
 
         const pos = boar.root.position;
-
         tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
         const dist = tmp.v1.length();
 
@@ -1328,6 +1631,75 @@
         updateBoarAnimation(boar, delta);
         updateBoarTag(boar);
       }
+    }
+
+    function spawnWildBoar() {
+      const p = randomWorldPosition(20, 105);
+      if (Math.hypot(p.x, p.z) < 18) {
+        return spawnWildBoar();
+      }
+
+      const level = config.boarLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.boarLevelMin + 1));
+      spawnBoarAt({
+        x: p.x,
+        z: p.z,
+        rotY: Math.random() * Math.PI * 2,
+        scale: 0.85 + Math.random() * 0.45,
+        level
+      });
+    }
+
+    function spawnBoarAt({ x, z, rotY, scale, level }) {
+      const stats = getBoarStats(level);
+      const levelVisualScale = 0.95 + (level - 1) * 0.11;
+
+      let root;
+      let parts = null;
+
+      if (!boarUsesFallback && boarTemplate) {
+        root = fitAndGround(boarTemplate.clone(true), BOAR_TARGET_HEIGHT * scale * levelVisualScale, BOAR_GROUND_LIFT);
+      } else {
+        root = createFallbackBoarRig();
+        fitAndGround(root, BOAR_TARGET_HEIGHT * scale * levelVisualScale, BOAR_GROUND_LIFT);
+        parts = root.userData.parts || null;
+      }
+
+      root.position.x = x;
+      root.position.z = z;
+      root.rotation.y = rotY;
+
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      const tag = createBoarTag(level, stats.hpMax, stats.hpMax);
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+
+      scene.add(root);
+      boars.push({
+        root,
+        tag,
+        parts,
+        level,
+        hpMax: stats.hpMax,
+        hp: stats.hpMax,
+        atkDps: stats.atkDps,
+        attackRange: config.boarAttackRange + (level - 1) * 0.08,
+        aggroRange: config.boarAggroRange + (level - 1) * 0.8,
+        moveSpeed: config.boarMoveSpeed * (1 + (level - 1) * 0.08),
+        collisionRadius: Math.max(size.x, size.z) * 0.22 + 0.35,
+        uiOffset: Math.max(1.6, size.y * 1.15),
+        state: "move",
+        stateTime: 0,
+        wanderYaw: Math.random() * Math.PI * 2,
+        wanderTimer: rand(0.8, 2.6),
+        baseY: root.position.y,
+        dead: false
+      });
     }
 
     async function addForestTrees() {
@@ -1417,116 +1789,15 @@
       }
     }
 
-    function createFallbackBoar() {
-      const boar = createFallbackBoarRig();
-      return boar;
-    }
-
-    async function addBoars() {
-      const positions = [];
-      const count = 15;
-
-      for (let i = 0; i < count; i++) {
-        const p = randomWorldPosition(20, 105);
-        if (Math.hypot(p.x, p.z) < 18) {
-          i--;
-          continue;
-        }
-
-        const level = config.boarLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.boarLevelMin + 1));
-        positions.push({
-          x: p.x,
-          z: p.z,
-          rotY: Math.random() * Math.PI * 2,
-          scale: 0.85 + Math.random() * 0.45,
-          level
-        });
-      }
-
+    async function loadBoarTemplate() {
       try {
         const boarGLTF = await gltfLoader.loadAsync(BOAR_URL);
-        const template = boarGLTF.scene;
-
-        for (const p of positions) {
-          const stats = getBoarStats(p.level);
-          const levelVisualScale = 0.95 + (p.level - 1) * 0.11;
-          const boarRoot = fitAndGround(template.clone(true), BOAR_TARGET_HEIGHT * p.scale * levelVisualScale, BOAR_GROUND_LIFT);
-
-          boarRoot.position.x = p.x;
-          boarRoot.position.z = p.z;
-          boarRoot.rotation.y = p.rotY;
-
-          boarRoot.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-
-          const tag = createBoarTag(p.level, stats.hpMax, stats.hpMax);
-          const box = new THREE.Box3().setFromObject(boarRoot);
-          const size = box.getSize(new THREE.Vector3());
-
-          scene.add(boarRoot);
-          boars.push({
-            root: boarRoot,
-            tag,
-            parts: null,
-            level: p.level,
-            hpMax: stats.hpMax,
-            hp: stats.hpMax,
-            atkDps: stats.atkDps,
-            attackRange: config.boarAttackRange + (p.level - 1) * 0.08,
-            aggroRange: config.boarAggroRange + (p.level - 1) * 0.8,
-            moveSpeed: config.boarMoveSpeed * (1 + (p.level - 1) * 0.08),
-            collisionRadius: Math.max(size.x, size.z) * 0.22 + 0.35,
-            uiOffset: Math.max(1.6, size.y * 1.15),
-            state: "move",
-            stateTime: 0,
-            wanderYaw: Math.random() * Math.PI * 2,
-            wanderTimer: rand(0.8, 2.6),
-            baseY: boarRoot.position.y,
-            dead: false
-          });
-        }
-      } catch (err) {
-        console.warn("boar.glb load failed, using fallback boars.", err);
-
-        for (const p of positions) {
-          const stats = getBoarStats(p.level);
-          const boarRoot = createFallbackBoar();
-          fitAndGround(boarRoot, BOAR_TARGET_HEIGHT * p.scale * (0.95 + (p.level - 1) * 0.11), BOAR_GROUND_LIFT);
-
-          boarRoot.position.x = p.x;
-          boarRoot.position.z = p.z;
-          boarRoot.rotation.y = p.rotY;
-
-          const tag = createBoarTag(p.level, stats.hpMax, stats.hpMax);
-          const box = new THREE.Box3().setFromObject(boarRoot);
-          const size = box.getSize(new THREE.Vector3());
-
-          scene.add(boarRoot);
-          boars.push({
-            root: boarRoot,
-            tag,
-            parts: boarRoot.userData.parts,
-            level: p.level,
-            hpMax: stats.hpMax,
-            hp: stats.hpMax,
-            atkDps: stats.atkDps,
-            attackRange: config.boarAttackRange + (p.level - 1) * 0.08,
-            aggroRange: config.boarAggroRange + (p.level - 1) * 0.8,
-            moveSpeed: config.boarMoveSpeed * (1 + (p.level - 1) * 0.08),
-            collisionRadius: Math.max(size.x, size.z) * 0.22 + 0.35,
-            uiOffset: Math.max(1.6, size.y * 1.15),
-            state: "move",
-            stateTime: 0,
-            wanderYaw: Math.random() * Math.PI * 2,
-            wanderTimer: rand(0.8, 2.6),
-            baseY: boarRoot.position.y,
-            dead: false
-          });
-        }
+        boarTemplate = boarGLTF.scene;
+        boarUsesFallback = false;
+      } catch (e) {
+        console.warn("boar.glb load failed, using fallback boars.", e);
+        boarTemplate = null;
+        boarUsesFallback = true;
       }
     }
 
@@ -1553,7 +1824,6 @@
           playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
 
           const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
-
           const align = clamp(currentForward.dot(moveDir), 0, 1);
           const moveScale = align * align;
 
@@ -1630,12 +1900,16 @@
 
     async function bootstrap() {
       try {
+        safeLoadInventory();
         updatePlayerHud();
         setStatus("モデルを読み込み中…");
         await loadBaseModel();
         await loadAnimations();
+        await loadBoarTemplate();
         await addForestTrees();
-        await addBoars();
+        for (let i = 0; i < 15; i++) {
+          spawnWildBoar();
+        }
         loading.classList.add("hidden");
         setStatus("待機中");
       } catch (err) {
@@ -1660,6 +1934,13 @@
       updateCamera(delta);
       renderer.render(scene, camera);
     }
+
+    captureBtn.addEventListener("click", captureNearestBoar);
+    inventoryBtn.addEventListener("click", openInventoryModal);
+    closeInventoryBtn.addEventListener("click", closeInventoryModal);
+    inventoryModal.addEventListener("click", (e) => {
+      if (e.target === inventoryModal) closeInventoryModal();
+    });
 
     window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
