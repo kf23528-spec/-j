@@ -309,7 +309,7 @@
     </div>
     <div id="help">
       WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
-      スティックはカメラ基準。ドラッグでカメラを回せます。
+      空いている場所をスライドすると視点移動できます。
     </div>
   </div>
 
@@ -612,14 +612,18 @@
       return tmp.v3.normalize();
     }
 
-    function wouldCollideAt(candidatePos) {
+    function treeCollisionAt(candidatePos, radius) {
       for (const tree of trees) {
-        const radius = config.playerCollisionRadius + (tree.userData.collisionRadius || 1.5);
+        const tr = tree.userData.collisionRadius || 1.5;
         const dx = candidatePos.x - tree.position.x;
         const dz = candidatePos.z - tree.position.z;
-        if ((dx * dx) + (dz * dz) < radius * radius) return true;
+        if ((dx * dx) + (dz * dz) < (radius + tr) * (radius + tr)) return true;
       }
       return false;
+    }
+
+    function wouldCollideAt(candidatePos) {
+      return treeCollisionAt(candidatePos, config.playerCollisionRadius);
     }
 
     function moveWithCollision(dx, dz) {
@@ -1027,25 +1031,27 @@
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = false;
     });
 
-    let cameraDragging = false;
-    let cameraPointerId = null;
-    let cameraLastX = 0;
-    let cameraLastY = 0;
+    const cameraDrag = {
+      active: false,
+      pointerId: null,
+      lastX: 0,
+      lastY: 0
+    };
 
     function startCameraDrag(e) {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      cameraDragging = true;
-      cameraPointerId = e.pointerId;
-      cameraLastX = e.clientX;
-      cameraLastY = e.clientY;
+      if (e.button !== undefined && e.pointerType === "mouse" && e.button !== 0) return;
+      cameraDrag.active = true;
+      cameraDrag.pointerId = e.pointerId;
+      cameraDrag.lastX = e.clientX;
+      cameraDrag.lastY = e.clientY;
       renderer.domElement.setPointerCapture(e.pointerId);
     }
 
     function moveCameraDrag(e) {
-      if (!cameraDragging || e.pointerId !== cameraPointerId) return;
+      if (!cameraDrag.active || e.pointerId !== cameraDrag.pointerId) return;
 
-      const dx = e.clientX - cameraLastX;
-      const dy = e.clientY - cameraLastY;
+      const dx = e.clientX - cameraDrag.lastX;
+      const dy = e.clientY - cameraDrag.lastY;
 
       cameraYaw -= dx * config.cameraYawSensitivity;
       cameraPitch = clamp(
@@ -1054,14 +1060,14 @@
         config.cameraPitchMax
       );
 
-      cameraLastX = e.clientX;
-      cameraLastY = e.clientY;
+      cameraDrag.lastX = e.clientX;
+      cameraDrag.lastY = e.clientY;
     }
 
     function endCameraDrag(e) {
-      if (e.pointerId !== cameraPointerId) return;
-      cameraDragging = false;
-      cameraPointerId = null;
+      if (e.pointerId !== cameraDrag.pointerId) return;
+      cameraDrag.active = false;
+      cameraDrag.pointerId = null;
     }
 
     renderer.domElement.addEventListener("pointerdown", startCameraDrag);
@@ -1069,8 +1075,8 @@
     renderer.domElement.addEventListener("pointerup", endCameraDrag);
     renderer.domElement.addEventListener("pointercancel", endCameraDrag);
     renderer.domElement.addEventListener("lostpointercapture", () => {
-      cameraDragging = false;
-      cameraPointerId = null;
+      cameraDrag.active = false;
+      cameraDrag.pointerId = null;
     });
 
     function randomWorldPosition(minR = 18, maxR = 95) {
@@ -1196,7 +1202,6 @@
       }
 
       boar.add(body, head, snout, ear1, ear2);
-
       boar.userData.parts = {
         body,
         head,
@@ -1216,8 +1221,8 @@
       const root = boar.root;
       const parts = boar.parts;
       const t = boar.stateTime;
-
       const isCombat = boar.state === "combat";
+
       const bobAmp = isCombat ? 0.08 : 0.04;
       const bobFreq = isCombat ? 12.0 : 7.0;
       root.position.y = boar.baseY + Math.sin(t * bobFreq) * bobAmp;
@@ -1247,6 +1252,31 @@
       }
     }
 
+    function moveBoarWithCollision(boar, dx, dz) {
+      const current = boar.root.position.clone();
+      const radius = boar.collisionRadius || 0.6;
+
+      const full = current.clone();
+      full.x += dx;
+      full.z += dz;
+      if (!treeCollisionAt(full, radius)) {
+        boar.root.position.copy(full);
+        return;
+      }
+
+      const xOnly = current.clone();
+      xOnly.x += dx;
+      if (!treeCollisionAt(xOnly, radius)) {
+        boar.root.position.x = xOnly.x;
+      }
+
+      const zOnly = current.clone();
+      zOnly.z += dz;
+      if (!treeCollisionAt(zOnly, radius)) {
+        boar.root.position.z = zOnly.z;
+      }
+    }
+
     function updateBoars(delta) {
       const playerPos = playerRoot.position;
 
@@ -1255,23 +1285,24 @@
         if (boar.dead) continue;
 
         const pos = boar.root.position;
+
         tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
         const dist = tmp.v1.length();
 
         boar.stateTime += delta;
 
-        if (dist < config.boarAggroRange) {
-          boar.state = "combat";
+        if (dist <= boar.aggroRange) {
+          boar.state = "chase";
         } else {
           boar.state = "move";
         }
 
-        if (boar.state === "combat") {
+        if (boar.state === "chase") {
           const dir = tmp.v1.clone().normalize();
 
           if (dist > boar.attackRange * 0.95) {
-            pos.x += dir.x * boar.moveSpeed * 1.25 * delta;
-            pos.z += dir.z * boar.moveSpeed * 1.25 * delta;
+            const speed = boar.moveSpeed * 1.4;
+            moveBoarWithCollision(boar, dir.x * speed * delta, dir.z * speed * delta);
           }
 
           const targetYaw = Math.atan2(dir.x, dir.z);
@@ -1288,8 +1319,7 @@
           }
 
           const dir = new THREE.Vector3(Math.cos(boar.wanderYaw), 0, Math.sin(boar.wanderYaw));
-          pos.x += dir.x * boar.moveSpeed * 0.35 * delta;
-          pos.z += dir.z * boar.moveSpeed * 0.35 * delta;
+          moveBoarWithCollision(boar, dir.x * boar.moveSpeed * 0.35 * delta, dir.z * boar.moveSpeed * 0.35 * delta);
 
           const targetYaw = Math.atan2(dir.x, dir.z);
           boar.root.rotation.y = THREE.MathUtils.lerp(boar.root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
@@ -1389,7 +1419,6 @@
 
     function createFallbackBoar() {
       const boar = createFallbackBoarRig();
-      boar.rotation.y = Math.PI / 2;
       return boar;
     }
 
@@ -1450,6 +1479,7 @@
             attackRange: config.boarAttackRange + (p.level - 1) * 0.08,
             aggroRange: config.boarAggroRange + (p.level - 1) * 0.8,
             moveSpeed: config.boarMoveSpeed * (1 + (p.level - 1) * 0.08),
+            collisionRadius: Math.max(size.x, size.z) * 0.22 + 0.35,
             uiOffset: Math.max(1.6, size.y * 1.15),
             state: "move",
             stateTime: 0,
@@ -1487,6 +1517,7 @@
             attackRange: config.boarAttackRange + (p.level - 1) * 0.08,
             aggroRange: config.boarAggroRange + (p.level - 1) * 0.8,
             moveSpeed: config.boarMoveSpeed * (1 + (p.level - 1) * 0.08),
+            collisionRadius: Math.max(size.x, size.z) * 0.22 + 0.35,
             uiOffset: Math.max(1.6, size.y * 1.15),
             state: "move",
             stateTime: 0,
