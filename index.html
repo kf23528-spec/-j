@@ -96,10 +96,11 @@
 
     #playerHud {
       margin-top: 10px;
-      padding: 10px 10px 9px;
-      border-radius: 12px;
-      background: rgba(240, 246, 255, 0.92);
-      border: 1px solid rgba(29, 95, 192, 0.16);
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
     }
     .hudRow {
       display: flex;
@@ -173,6 +174,91 @@
       border-radius: 999px;
       background: linear-gradient(90deg, #ff5b5b, #e61d1d);
       transition: width 0.08s linear;
+    }
+
+    #miniMapWrap {
+      position: fixed;
+      right: 14px;
+      top: 14px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: rgba(15, 24, 32, 0.72);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+      z-index: 45;
+      pointer-events: auto;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #miniMapCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #fullMapModal {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 18, 30, 0.60);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+    }
+    #fullMapModal.open {
+      display: flex;
+    }
+    #fullMapPanel {
+      position: relative;
+      width: min(92vw, 720px);
+      max-height: min(92vh, 760px);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.30);
+      padding: 16px;
+      color: #1a2740;
+    }
+    #fullMapTitle {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    #fullMapInfo {
+      font-size: 13px;
+      font-weight: 800;
+      color: #4a5c80;
+      margin-bottom: 12px;
+    }
+    #fullMapCanvas {
+      width: min(88vw, 660px);
+      height: min(88vw, 660px);
+      max-width: 660px;
+      max-height: 660px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 18px;
+      background: #17212c;
+    }
+    #fullMapClose {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 46px;
+      height: 46px;
+      border: 0;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ff6c6c, #d92c2c);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.18);
     }
 
     #joystick {
@@ -258,6 +344,10 @@
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
+    }
+    #herbCollectBtn {
+      background: linear-gradient(180deg, #69d66f, #239b3a);
+      display: none;
     }
     #captureBtn {
       background: linear-gradient(180deg, #ffb14d, #ff7b1f);
@@ -378,7 +468,9 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    #toast.show { opacity: 1; }
+    #toast.show {
+      opacity: 1;
+    }
 
     @media (max-width: 700px) {
       #ui {
@@ -418,6 +510,14 @@
       .inventoryItem {
         font-size: 13px;
       }
+      #miniMapWrap {
+        width: 132px;
+        height: 132px;
+      }
+      #fullMapCanvas {
+        width: min(84vw, 560px);
+        height: min(84vw, 560px);
+      }
     }
   </style>
 
@@ -454,13 +554,27 @@
     </div>
     <div id="help">
       WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
-      薬草は近くで薬草本体をタップ / クリックして回収できます。空いている場所をスライドすると視点移動できます。
+      薬草は1m以内で「薬草回収」ボタンが表示されます。ミニマップをタップすると全体マップを開けます。
     </div>
   </div>
 
   <div id="worldUI"></div>
 
+  <div id="miniMapWrap" title="タップで全体マップ">
+    <canvas id="miniMapCanvas"></canvas>
+  </div>
+
+  <div id="fullMapModal" aria-hidden="true">
+    <div id="fullMapPanel">
+      <button id="fullMapClose">×</button>
+      <div id="fullMapTitle">全体マップ</div>
+      <div id="fullMapInfo">緑＝プレイヤー / 赤＝モンスター</div>
+      <canvas id="fullMapCanvas"></canvas>
+    </div>
+  </div>
+
   <div id="sideButtons">
+    <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
     <button id="captureBtn" class="sideBtn">捕獲（ゲット）</button>
     <button id="inventoryBtn" class="sideBtn">インベントリ</button>
   </div>
@@ -495,8 +609,9 @@
     const STORAGE_KEY = "forest_tps_inventory_v3";
     const INVENTORY_LIMIT = 10;
 
-    const WORLD_HALF = 500;            // 1000m × 1000m
-    const ACTIVE_RADIUS = 100;         // 100m以内だけ可視化
+    const WORLD_HALF = 750;     // 1500m × 1500m
+    const WORLD_SIZE = 1500;
+    const ACTIVE_RADIUS = 100;  // 100m以内だけ可視化
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
     const PLAYER_SAFE_RADIUS = 18;
 
@@ -506,9 +621,9 @@
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
-    scene.fog = new THREE.Fog(0x9fd3ff, 60, 260);
+    scene.fog = new THREE.Fog(0x9fd3ff, 70, 320);
 
-    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 600);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 700);
     camera.position.set(0, 2.5, 6.8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -529,27 +644,27 @@
     sun.castShadow = true;
     sun.shadow.mapSize.set(4096, 4096);
     sun.shadow.camera.near = 1;
-    sun.shadow.camera.far = 160;
-    sun.shadow.camera.left = -80;
-    sun.shadow.camera.right = 80;
-    sun.shadow.camera.top = 80;
-    sun.shadow.camera.bottom = -80;
+    sun.shadow.camera.far = 180;
+    sun.shadow.camera.left = -90;
+    sun.shadow.camera.right = 90;
+    sun.shadow.camera.top = 90;
+    sun.shadow.camera.bottom = -90;
     sun.shadow.bias = -0.00015;
     scene.add(sun);
 
-    const fill = new THREE.PointLight(0xffffff, 0.7, 140);
+    const fill = new THREE.PointLight(0xffffff, 0.7, 160);
     fill.position.set(-20, 18, -12);
     scene.add(fill);
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(1000, 1000),
+      new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE),
       new THREE.MeshStandardMaterial({ color: 0x4fa84f, roughness: 1.0, metalness: 0.0 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    const grassGrid = new THREE.GridHelper(1000, 100, 0x3e7f3e, 0x6cbf6c);
+    const grassGrid = new THREE.GridHelper(WORLD_SIZE, 150, 0x3e7f3e, 0x6cbf6c);
     grassGrid.material.transparent = true;
     grassGrid.material.opacity = 0.16;
     scene.add(grassGrid);
@@ -572,10 +687,14 @@
     const closeInventoryBtn = document.getElementById("closeInventoryBtn");
     const inventoryBtn = document.getElementById("inventoryBtn");
     const captureBtn = document.getElementById("captureBtn");
+    const herbCollectBtn = document.getElementById("herbCollectBtn");
 
-    const joystickEl = document.getElementById("joystick");
-    const joyKnob = document.getElementById("joyKnob");
-    const jumpBtn = document.getElementById("jumpBtn");
+    const miniMapWrap = document.getElementById("miniMapWrap");
+    const miniMapCanvas = document.getElementById("miniMapCanvas");
+
+    const fullMapModal = document.getElementById("fullMapModal");
+    const fullMapCanvas = document.getElementById("fullMapCanvas");
+    const fullMapClose = document.getElementById("fullMapClose");
 
     const playerRoot = new THREE.Group();
     scene.add(playerRoot);
@@ -618,8 +737,8 @@
     };
 
     const config = {
-      walkSpeed: 2.0,            // 0.5秒で1m = 秒速2m
-      dashMultiplier: 1.8,
+      walkSpeed: 2.5,
+      dashMultiplier: 2.4, // 2.5 × 2.4 = 6.0 m/s
       gravity: -22.0,
       jumpVelocity: 8.8,
       cameraHeight: 2.55,
@@ -632,8 +751,8 @@
       playerHpMax: 200,
       playerAttackDps: 5,
       playerAttackDuration: 5.0,
-      attackRange: 4.5,
-      attackConeDot: 0.45,
+      attackRange: 5.2,
+      attackConeDot: 0.20,
 
       boarBaseHp: 100,
       boarBaseAttack: 3,
@@ -646,7 +765,7 @@
       boarAttackRange: 2.1,
 
       herbHealAmount: 30,
-      herbCollectRange: 3.0,
+      herbCollectRange: 1.0,
 
       playerCollisionRadius: 0.72,
       cameraYawSensitivity: 0.005,
@@ -690,6 +809,17 @@
     const activeBoars = new Map();
     const companions = [];
     const inventory = [];
+
+    const map2D = {
+      mini: {
+        ctx: miniMapCanvas.getContext("2d"),
+        dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
+      },
+      full: {
+        ctx: fullMapCanvas.getContext("2d"),
+        dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
+      }
+    };
 
     function clamp(v, min, max) {
       return Math.max(min, Math.min(max, v));
@@ -998,6 +1128,7 @@
           rotY: Math.random() * Math.PI * 2,
           scale: 0.95 + Math.random() * 1.1,
           activeObject: null,
+          removed: false,
           collisionRadius: 2.2
         });
       }
@@ -1039,6 +1170,7 @@
           wanderTimer: rand(0.8, 2.6),
           hostileUntil: 0,
           dead: false,
+          respawnToken: 0,
           activeObject: null
         });
       }
@@ -1232,7 +1364,7 @@
     function updateBoarTag(data) {
       const o = data.activeObject;
       if (!o || data.dead || !o.root?.visible) {
-        if (data.activeObject?.tag?.el) data.activeObject.tag.el.style.opacity = "0";
+        if (o?.tag?.el) o.tag.el.style.opacity = "0";
         return;
       }
 
@@ -1420,24 +1552,26 @@
     }
 
     function startAttack() {
-      if (gameOver) return;
-      const a = actions.attack;
-      if (!a || attackPlaying) return;
+      if (gameOver || attackPlaying) return;
 
       attackPlaying = true;
       attackTimer = config.playerAttackDuration;
       attackBtn.classList.add("active");
       stopAllActions(0.05);
 
-      a.reset();
-      a.enabled = true;
-      a.paused = false;
-      a.clampWhenFinished = true;
-      a.setLoop(THREE.LoopOnce, 1);
+      const a = actions.attack;
+      if (a) {
+        a.reset();
+        a.enabled = true;
+        a.paused = false;
+        a.clampWhenFinished = true;
+        a.setLoop(THREE.LoopOnce, 1);
 
-      const clipDuration = a.getClip()?.duration || 1.0;
-      a.timeScale = clipDuration / config.playerAttackDuration;
-      a.play();
+        const clipDuration = a.getClip()?.duration || 1.0;
+        a.timeScale = clipDuration / config.playerAttackDuration;
+        a.play();
+      }
+
       currentActionName = "attack";
     }
 
@@ -1456,16 +1590,20 @@
       if (!attackPlaying) syncLocomotion(true);
     }
 
-    function wouldCollideAt(candidatePos) {
+    function treeCollisionAt(candidatePos, radius) {
       for (const data of activeTrees.values()) {
         const tree = data.activeObject;
         if (!tree) continue;
         const tr = data.collisionRadius || 1.5;
         const dx = candidatePos.x - tree.position.x;
         const dz = candidatePos.z - tree.position.z;
-        if ((dx * dx) + (dz * dz) < (config.playerCollisionRadius + tr) * (config.playerCollisionRadius + tr)) return true;
+        if ((dx * dx) + (dz * dz) < (radius + tr) * (radius + tr)) return true;
       }
       return false;
+    }
+
+    function wouldCollideAt(candidatePos) {
+      return treeCollisionAt(candidatePos, config.playerCollisionRadius);
     }
 
     function moveWithCollision(dx, dz) {
@@ -1476,6 +1614,8 @@
       full.z += dz;
       if (!wouldCollideAt(full)) {
         playerRoot.position.copy(full);
+        playerRoot.position.x = clamp(playerRoot.position.x, -WORLD_HALF + 2, WORLD_HALF - 2);
+        playerRoot.position.z = clamp(playerRoot.position.z, -WORLD_HALF + 2, WORLD_HALF - 2);
         return;
       }
 
@@ -1508,7 +1648,7 @@
 
       const xOnly = current.clone();
       xOnly.x += dx;
-      if (!treeCollisionAt(xOnly, radius)) {
+      if (!treeCollisionAt(xOnly)) {
         rootObj.position.x = xOnly.x;
       }
 
@@ -1517,18 +1657,6 @@
       if (!treeCollisionAt(zOnly, radius)) {
         rootObj.position.z = zOnly.z;
       }
-    }
-
-    function treeCollisionAt(candidatePos, radius) {
-      for (const data of activeTrees.values()) {
-        const tree = data.activeObject;
-        if (!tree) continue;
-        const tr = data.collisionRadius || 1.5;
-        const dx = candidatePos.x - tree.position.x;
-        const dz = candidatePos.z - tree.position.z;
-        if ((dx * dx) + (dz * dz) < (radius + tr) * (radius + tr)) return true;
-      }
-      return false;
     }
 
     function removeTreeData(data) {
@@ -1546,17 +1674,6 @@
       const idx = herbData.findIndex((h) => h.id === data.id);
       if (idx >= 0) herbData.splice(idx, 1);
       activeHerbs.delete(data.id);
-    }
-
-    function removeBoarData(data) {
-      if (!data) return;
-      if (data.activeObject?.tag?.el?.parentNode) data.activeObject.tag.el.parentNode.removeChild(data.activeObject.tag.el);
-      if (data.activeObject?.root?.parent) data.activeObject.root.parent.remove(data.activeObject.root);
-      data.activeObject = null;
-      data.dead = true;
-      const idx = boarData.findIndex((b) => b.id === data.id);
-      if (idx >= 0) boarData.splice(idx, 1);
-      activeBoars.delete(data.id);
     }
 
     function spawnTree(data) {
@@ -1604,6 +1721,63 @@
       activeHerbs.set(data.id, data);
     }
 
+    function scheduleBoarRespawn(data) {
+      const token = (data.respawnToken || 0) + 1;
+      data.respawnToken = token;
+      const delay = rand(2200, 4200);
+      setTimeout(() => {
+        if (gameOver) return;
+        if (data.respawnToken !== token) return;
+        respawnBoar(data);
+      }, delay);
+    }
+
+    function respawnBoar(data) {
+      if (!data) return;
+      const p = randomWorldPoint(20);
+      const d = Math.hypot(p.x, p.z);
+      const level = getBoarLevelForDistance(d);
+      const stats = getStatsByLevel(level);
+
+      data.dead = false;
+      data.x = p.x;
+      data.z = p.z;
+      data.rotY = Math.random() * Math.PI * 2;
+      data.scale = 0.85 + Math.random() * 0.45;
+      data.level = level;
+      data.hpMax = stats.hpMax;
+      data.hp = stats.hpMax;
+      data.atkDps = stats.atkDps;
+      data.attackRange = config.boarAttackRange + (level - 1) * 0.08;
+      data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
+      data.moveSpeed = config.boarMoveSpeed * (1 + (level - 1) * 0.08);
+      data.activeObject = null;
+      data.state = "move";
+      data.stateTime = 0;
+      data.wanderYaw = Math.random() * Math.PI * 2;
+      data.wanderTimer = rand(0.8, 2.6);
+      data.hostileUntil = 0;
+    }
+
+    function removeBoarData(data, shouldRespawn = true) {
+      if (!data || data.dead) return;
+
+      if (data.activeObject?.tag?.el?.parentNode) {
+        data.activeObject.tag.el.parentNode.removeChild(data.activeObject.tag.el);
+      }
+      if (data.activeObject?.root?.parent) {
+        data.activeObject.root.parent.remove(data.activeObject.root);
+      }
+
+      data.activeObject = null;
+      activeBoars.delete(data.id);
+      data.dead = true;
+
+      if (shouldRespawn) {
+        scheduleBoarRespawn(data);
+      }
+    }
+
     function spawnBoar(data) {
       if (data.activeObject || data.dead) return;
 
@@ -1612,7 +1786,7 @@
       root.position.set(data.x, root.position.y, data.z);
       root.rotation.y = data.rotY;
 
-      let parts = root.userData.parts || null;
+      const parts = root.userData.parts || null;
 
       root.traverse((child) => {
         if (child.isMesh) {
@@ -1669,15 +1843,6 @@
       syncStream(boarData, spawnBoar, removeBoarData, activeBoars);
     }
 
-    function updateHerbs(delta) {
-      for (const data of activeHerbs.values()) {
-        if (!data.activeObject) continue;
-        data.animT += delta;
-        data.activeObject.position.y = data.baseY + Math.sin(data.animT * 3.8) * 0.03;
-        data.activeObject.rotation.y += delta * 0.2;
-      }
-    }
-
     function updateWildBoarAnimation(data, delta) {
       if (data.dead || !data.activeObject) return;
 
@@ -1718,8 +1883,9 @@
         if (data.dead || !data.activeObject) continue;
         if ((data.hostileUntil || 0) <= now) continue;
 
-        const dx = data.x - playerPos.x;
-        const dz = data.z - playerPos.z;
+        const pos = data.activeObject.root.position;
+        const dx = pos.x - playerPos.x;
+        const dz = pos.z - playerPos.z;
         const d = Math.hypot(dx, dz);
         if (d < bestDist) {
           bestDist = d;
@@ -1741,8 +1907,9 @@
 
       for (const data of activeBoars.values()) {
         if (data.dead || !data.activeObject) continue;
-        const dx = data.x - playerPos.x;
-        const dz = data.z - playerPos.z;
+        const pos = data.activeObject.root.position;
+        const dx = pos.x - playerPos.x;
+        const dz = pos.z - playerPos.z;
         const d = Math.hypot(dx, dz);
         if (d < maxDist && d < bestDist) {
           best = data;
@@ -1751,45 +1918,6 @@
       }
 
       return best ? { boar: best, dist: bestDist } : null;
-    }
-
-    function killBoar(data) {
-      removeBoarData(data);
-    }
-
-    function collectNearestBoar() {
-      if (gameOver) return;
-
-      if (inventory.length >= INVENTORY_LIMIT) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      const found = findNearestBoar(4.5);
-      if (!found) {
-        showToast("近くにイノシシがいない！");
-        setStatus("近くにイノシシがいない");
-        return;
-      }
-
-      const boar = found.boar;
-      if (boar.hp > boar.hpMax * 0.1) {
-        showToast("体力が多すぎて捕まえられない！");
-        setStatus("体力が多すぎて捕まえられない");
-        return;
-      }
-
-      const ok = addInventoryCreature("イノシシ", boar.level);
-      if (!ok) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
-      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
-      killBoar(boar);
     }
 
     function addInventoryCreature(species, level) {
@@ -1881,6 +2009,61 @@
       scene.add(root);
     }
 
+    function collectNearestBoar() {
+      if (gameOver) return;
+
+      if (inventory.length >= INVENTORY_LIMIT) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      const found = findNearestBoar(4.5);
+      if (!found) {
+        showToast("近くにイノシシがいない！");
+        setStatus("近くにイノシシがいない");
+        return;
+      }
+
+      const boar = found.boar;
+      if (boar.hp > boar.hpMax * 0.1) {
+        showToast("体力が多すぎて捕まえられない！");
+        setStatus("体力が多すぎて捕まえられない");
+        return;
+      }
+
+      const ok = addInventoryCreature("イノシシ", boar.level);
+      if (!ok) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
+      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
+      removeBoarData(boar, true);
+    }
+
+    function findNearestHerb(maxDist = config.herbCollectRange) {
+      const playerPos = playerRoot.position;
+      let best = null;
+      let bestDist = Infinity;
+
+      for (const data of activeHerbs.values()) {
+        if (data.removed || !data.activeObject) continue;
+        const pos = data.activeObject.position;
+        const dx = pos.x - playerPos.x;
+        const dz = pos.z - playerPos.z;
+        const d = Math.hypot(dx, dz);
+        if (d < maxDist && d < bestDist) {
+          best = data;
+          bestDist = d;
+        }
+      }
+
+      return best ? { herb: best, dist: bestDist } : null;
+    }
+
     function collectHerb(data) {
       if (gameOver || !data || data.removed) return;
 
@@ -1902,166 +2085,226 @@
       removeHerbData(data);
     }
 
-    function findNearestHerb(maxDist = config.herbCollectRange) {
-      const playerPos = playerRoot.position;
-      let best = null;
-      let bestDist = Infinity;
+    function collectNearestHerb() {
+      if (gameOver) return;
 
-      for (const data of activeHerbs.values()) {
-        if (data.removed || !data.activeObject) continue;
-        const dx = data.x - playerPos.x;
-        const dz = data.z - playerPos.z;
-        const d = Math.hypot(dx, dz);
-        if (d < maxDist && d < bestDist) {
-          best = data;
-          bestDist = d;
-        }
+      const found = findNearestHerb(1.0);
+      if (!found) {
+        showToast("近くに薬草がない！");
+        setStatus("近くに薬草がない");
+        return;
       }
 
-      return best ? { herb: best, dist: bestDist } : null;
+      collectHerb(found.herb);
     }
 
-    function tryInteractHerbAtScreen(clientX, clientY) {
-      if (gameOver) return false;
-
-      herbPointer.x = (clientX / window.innerWidth) * 2 - 1;
-      herbPointer.y = -(clientY / window.innerHeight) * 2 + 1;
-      herbRaycaster.setFromCamera(herbPointer, camera);
-
-      const targets = [];
-      for (const data of activeHerbs.values()) {
-        if (!data.activeObject || data.removed) continue;
-        targets.push(data.activeObject);
-      }
-
-      const hits = herbRaycaster.intersectObjects(targets, true);
-      if (hits.length) {
-        const herbId = hits[0].object.userData.herbId;
-        const data = activeHerbs.get(herbId);
-        if (!data) return false;
-
-        const dx = data.x - playerRoot.position.x;
-        const dz = data.z - playerRoot.position.z;
-        if (Math.hypot(dx, dz) <= config.herbCollectRange) {
-          collectHerb(data);
-          return true;
-        }
-
-        showToast("薬草に近づいてから回収！");
-        setStatus("薬草が遠い");
-        return true;
-      }
-
-      const near = findNearestHerb(3.0);
-      if (near) {
-        collectHerb(near.herb);
-        return true;
-      }
-
-      return false;
-    }
-
-    function updateWildBoars(delta, now) {
-      const playerPos = playerRoot.position;
-
-      for (const data of activeBoars.values()) {
-        if (data.dead || !data.activeObject) continue;
-
-        const o = data.activeObject;
-        const pos = o.root.position;
-        const dist = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
-
-        if (dist <= data.aggroRange) {
-          data.state = "chase";
-          data.hostileUntil = now + 4500;
-        } else {
-          data.state = "move";
-        }
-
-        if (data.state === "chase") {
-          const dir = tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
-          if (dir.lengthSq() > 1e-8) dir.normalize();
-
-          if (dist > data.attackRange * 0.95) {
-            const speed = data.moveSpeed * 1.4;
-            moveBoarWithCollision(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
-          }
-
-          const targetYaw = Math.atan2(dir.x, dir.z);
-          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
-
-          if (dist <= data.attackRange) {
-            data.hostileUntil = now + 5000;
-            takePlayerDamage(data.atkDps * delta);
-          }
-        } else {
-          data.wanderTimer -= delta;
-          if (data.wanderTimer <= 0) {
-            data.wanderYaw += rand(-1.0, 1.0);
-            data.wanderTimer = rand(1.2, 3.2);
-          }
-
-          const dir = new THREE.Vector3(Math.cos(data.wanderYaw), 0, Math.sin(data.wanderYaw));
-          moveBoarWithCollision(o.root, dir.x * data.moveSpeed * 0.35 * delta, dir.z * data.moveSpeed * 0.35 * delta, data.collisionRadius || 0.7);
-
-          const targetYaw = Math.atan2(dir.x, dir.z);
-          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
-        }
-
-        updateWildBoarAnimation(data, delta);
+    function updateHerbActionUI() {
+      const found = findNearestHerb(1.0);
+      if (found) {
+        herbCollectBtn.style.display = "block";
+        herbCollectBtn.textContent = "薬草回収";
+      } else {
+        herbCollectBtn.style.display = "none";
       }
     }
 
-    function applyPlayerAttackDamage(delta) {
-      if (!activeBoars.size) return;
-
-      const playerPos = tmp.v1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
-      const forward = getCharacterForwardVector();
-      const damage = config.playerAttackDps * delta;
-      const now = performance.now();
-
-      for (const data of Array.from(activeBoars.values())) {
-        if (data.dead || !data.activeObject) continue;
-
-        tmp.v2.set(data.x, data.activeObject.root.position.y, data.z);
-        tmp.v3.copy(tmp.v2).sub(playerPos);
-        tmp.v3.y = 0;
-
-        const dist = tmp.v3.length();
-        if (dist > config.attackRange) continue;
-
-        const dir = tmp.v3.clone().normalize();
-        if (forward.dot(dir) < config.attackConeDot) continue;
-
-        data.hp -= damage;
-        data.hostileUntil = now + 4500;
-
-        if (data.hp <= 0) {
-          data.hp = 0;
-          removeBoarData(data);
-        }
+    function createMiniMapMarkerList() {
+      const markers = [];
+      for (const data of boarData) {
+        if (data.dead) continue;
+        const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+        markers.push({
+          x: pos.x,
+          z: pos.z,
+          level: data.level
+        });
       }
+      return markers;
     }
 
-    function applyBoarDamageToPlayer(delta, now) {
-      if (gameOver || playerHp <= 0) return;
+    function drawWorldMap(canvas, mode) {
+      const ctx = canvas.getContext("2d");
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      const cssW = canvas.clientWidth || 1;
+      const cssH = canvas.clientHeight || 1;
+      const width = Math.floor(cssW * dpr);
+      const height = Math.floor(cssH * dpr);
 
-      const playerPos = tmp.v1.set(playerRoot.position.x, playerRoot.position.y, playerRoot.position.z);
-
-      for (const data of activeBoars.values()) {
-        if (data.dead || !data.activeObject) continue;
-
-        tmp.v2.set(data.x, data.activeObject.root.position.y, data.z);
-        tmp.v3.copy(playerPos).sub(tmp.v2);
-        tmp.v3.y = 0;
-
-        const dist = tmp.v3.length();
-        if (dist > data.attackRange) continue;
-
-        data.hostileUntil = now + 5000;
-        takePlayerDamage(data.atkDps * delta);
-        if (gameOver) return;
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
       }
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const W = cssW;
+      const H = cssH;
+      const cx = W / 2;
+      const cy = H / 2;
+
+      if (mode === "mini") {
+        const radius = Math.min(W, H) / 2;
+        ctx.fillStyle = "rgba(12,18,24,0.86)";
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 2, 0, Math.PI * 2);
+        ctx.clip();
+
+        ctx.fillStyle = "#18301f";
+        ctx.fillRect(0, 0, W, H);
+
+        const range = 180;
+        const scale = (radius * 0.84) / range;
+        const player = { x: playerRoot.position.x, z: playerRoot.position.z };
+
+        ctx.strokeStyle = "rgba(255,255,255,0.10)";
+        ctx.lineWidth = 1;
+        for (let d = -range; d <= range; d += 20) {
+          const x = cx + d * scale;
+          ctx.beginPath();
+          ctx.moveTo(x, cy - range * scale);
+          ctx.lineTo(x, cy + range * scale);
+          ctx.stroke();
+
+          const y = cy + d * scale;
+          ctx.beginPath();
+          ctx.moveTo(cx - range * scale, y);
+          ctx.lineTo(cx + range * scale, y);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, range * scale, 0, Math.PI * 2);
+        ctx.stroke();
+
+        for (const data of boarData) {
+          if (data.dead) continue;
+          const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+          const dx = pos.x - player.x;
+          const dz = pos.z - player.z;
+          if (dx * dx + dz * dz > range * range) continue;
+
+          const x = cx + dx * scale;
+          const y = cy + dz * scale;
+
+          ctx.fillStyle = "#ff5b5b";
+          ctx.beginPath();
+          ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#fff";
+          ctx.font = "10px system-ui, sans-serif";
+          ctx.fillText("M", x - 3, y - 7);
+        }
+
+        const forward = getCharacterForwardVector();
+        const yaw = Math.atan2(forward.x, forward.z);
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(yaw);
+        ctx.fillStyle = "#4cff7e";
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(7, 8);
+        ctx.lineTo(0, 4);
+        ctx.lineTo(-7, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 2, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        const margin = 18;
+        const innerW = W - margin * 2;
+        const innerH = H - margin * 2;
+        const scaleX = innerW / WORLD_SIZE;
+        const scaleY = innerH / WORLD_SIZE;
+
+        ctx.fillStyle = "#0f1720";
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = "#17331f";
+        ctx.fillRect(margin, margin, innerW, innerH);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.lineWidth = 1;
+        for (let x = -WORLD_HALF; x <= WORLD_HALF; x += 100) {
+          const px = margin + (x + WORLD_HALF) * scaleX;
+          ctx.beginPath();
+          ctx.moveTo(px, margin);
+          ctx.lineTo(px, margin + innerH);
+          ctx.stroke();
+        }
+        for (let z = -WORLD_HALF; z <= WORLD_HALF; z += 100) {
+          const py = margin + (z + WORLD_HALF) * scaleY;
+          ctx.beginPath();
+          ctx.moveTo(margin, py);
+          ctx.lineTo(margin + innerW, py);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(margin, margin, innerW, innerH);
+
+        for (const data of boarData) {
+          if (data.dead) continue;
+          const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+          const x = margin + (pos.x + WORLD_HALF) * scaleX;
+          const y = margin + (pos.z + WORLD_HALF) * scaleY;
+
+          ctx.fillStyle = "#ff5b5b";
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#fff";
+          ctx.font = "10px system-ui, sans-serif";
+          ctx.fillText("M", x - 3, y - 6);
+        }
+
+        const player = playerRoot.position;
+        const px = margin + (player.x + WORLD_HALF) * scaleX;
+        const py = margin + (player.z + WORLD_HALF) * scaleY;
+        const forward = getCharacterForwardVector();
+        const yaw = Math.atan2(forward.x, forward.z);
+
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(yaw);
+        ctx.fillStyle = "#4cff7e";
+        ctx.beginPath();
+        ctx.moveTo(0, -12);
+        ctx.lineTo(8, 9);
+        ctx.lineTo(0, 5);
+        ctx.lineTo(-8, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function updateMiniMap() {
+      drawWorldMap(miniMapCanvas, "mini");
+    }
+
+    function updateFullMap() {
+      drawWorldMap(fullMapCanvas, "full");
     }
 
     function startCompanionAttack(companion, target, now) {
@@ -2071,9 +2314,13 @@
       companion.attackTargetId = target.id;
       companion.attackStartPos.copy(companion.root.position);
 
-      const dir = new THREE.Vector3(target.x - companion.root.position.x, 0, target.z - companion.root.position.z);
-      if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
-      else dir.normalize();
+      const targetPos = target.activeObject ? target.activeObject.root.position : { x: target.x, z: target.z };
+      const dir = new THREE.Vector3(targetPos.x - companion.root.position.x, 0, targetPos.z - companion.root.position.z);
+      if (dir.lengthSq() < 1e-8) {
+        dir.set(0, 0, 1);
+      } else {
+        dir.normalize();
+      }
 
       companion.attackDir.copy(dir);
       companion.root.rotation.y = Math.atan2(dir.x, dir.z);
@@ -2084,10 +2331,11 @@
     function applyCompanionHit(companion, target) {
       if (!target || target.dead) return;
       target.hostileUntil = performance.now() + 4500;
+
       target.hp -= companion.atkDps * 1.8;
       if (target.hp <= 0) {
         target.hp = 0;
-        removeBoarData(target);
+        removeBoarData(target, true);
       }
     }
 
@@ -2143,7 +2391,8 @@
       const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
       const hostile = findHostileBoarTarget(now);
 
-      for (const c of companions) {
+      for (let i = companions.length - 1; i >= 0; i--) {
+        const c = companions[i];
         if (c.dead) continue;
 
         c.stateTime += delta;
@@ -2158,8 +2407,9 @@
           const target = findBoarById(c.attackTargetId);
           let dir = c.attackDir.clone();
 
-          if (target && target.activeObject) {
-            const nowDir = new THREE.Vector3(target.x - c.attackStartPos.x, 0, target.z - c.attackStartPos.z);
+          if (target && !target.dead) {
+            const targetPos = target.activeObject ? target.activeObject.root.position : { x: target.x, z: target.z };
+            const nowDir = new THREE.Vector3(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z);
             if (nowDir.lengthSq() > 1e-8) {
               nowDir.normalize();
               dir = nowDir;
@@ -2189,7 +2439,9 @@
         if (target && (target.dead || !target.activeObject)) target = null;
 
         if (target) {
-          const toTarget = new THREE.Vector3(target.x - c.root.position.x, 0, target.z - c.root.position.z);
+          const targetPos = target.activeObject.root.position;
+          const toTarget = targetPos.clone().sub(c.root.position);
+          toTarget.y = 0;
           const dist = toTarget.length();
 
           if (dist > 0.001) {
@@ -2205,7 +2457,7 @@
             }
           }
         } else {
-          const slotIndex = companions.indexOf(c);
+          const slotIndex = i;
           const lane = Math.floor(slotIndex / 2);
           const side = slotIndex % 2 === 0 ? -1 : 1;
 
@@ -2230,6 +2482,115 @@
         }
 
         updateCompanionAnimation(c, delta);
+      }
+    }
+
+    function updateWildBoars(delta, now) {
+      const playerPos = playerRoot.position;
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+
+        const o = data.activeObject;
+        const pos = o.root.position;
+        const dist = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
+
+        if (dist <= data.aggroRange) {
+          data.state = "chase";
+          data.hostileUntil = now + 4500;
+        } else {
+          data.state = "move";
+        }
+
+        if (data.state === "chase") {
+          const dir = tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
+          if (dir.lengthSq() > 1e-8) dir.normalize();
+
+          if (dist > data.attackRange * 0.95) {
+            const speed = data.moveSpeed * 1.4;
+            moveBoarWithCollision(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
+          }
+
+          const targetYaw = Math.atan2(dir.x, dir.z);
+          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
+
+          if (dist <= data.attackRange) {
+            data.hostileUntil = now + 5000;
+            takePlayerDamage(data.atkDps * delta);
+          }
+        } else {
+          data.wanderTimer -= delta;
+          if (data.wanderTimer <= 0) {
+            data.wanderYaw += rand(-1.0, 1.0);
+            data.wanderTimer = rand(1.2, 3.2);
+          }
+
+          const dir = new THREE.Vector3(Math.cos(data.wanderYaw), 0, Math.sin(data.wanderYaw));
+          moveBoarWithCollision(o.root, dir.x * data.moveSpeed * 0.35 * delta, dir.z * data.moveSpeed * 0.35 * delta, data.collisionRadius || 0.7);
+
+          const targetYaw = Math.atan2(dir.x, dir.z);
+          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
+        }
+
+        updateWildBoarAnimation(data, delta);
+
+        data.x = o.root.position.x;
+        data.z = o.root.position.z;
+        data.rotY = o.root.rotation.y;
+      }
+    }
+
+    function applyPlayerAttackDamage(delta) {
+      if (!activeBoars.size) return;
+
+      const playerPos = playerRoot.position;
+      const forward = getCharacterForwardVector();
+      const damage = config.playerAttackDps * delta;
+      const now = performance.now();
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+
+        const pos = data.activeObject.root.position;
+        tmp.v2.set(pos.x, pos.y, pos.z);
+        tmp.v3.copy(tmp.v2).sub(playerPos);
+        tmp.v3.y = 0;
+
+        const dist = tmp.v3.length();
+        if (dist > config.attackRange) continue;
+
+        const dir = tmp.v3.clone().normalize();
+        if (forward.dot(dir) < config.attackConeDot) continue;
+
+        data.hp -= damage;
+        data.hostileUntil = now + 4500;
+
+        if (data.hp <= 0) {
+          data.hp = 0;
+          removeBoarData(data, true);
+        }
+      }
+    }
+
+    function applyBoarDamageToPlayer(delta, now) {
+      if (gameOver || playerHp <= 0) return;
+
+      const playerPos = playerRoot.position;
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+
+        const pos = data.activeObject.root.position;
+        tmp.v2.set(pos.x, pos.y, pos.z);
+        tmp.v3.copy(playerPos).sub(tmp.v2);
+        tmp.v3.y = 0;
+
+        const dist = tmp.v3.length();
+        if (dist > data.attackRange) continue;
+
+        data.hostileUntil = now + 5000;
+        takePlayerDamage(data.atkDps * delta);
+        if (gameOver) return;
       }
     }
 
@@ -2298,6 +2659,7 @@
           applyPlayerAttackDamage(delta);
           if (attackTimer <= 0) finishAttack();
         }
+
         applyBoarDamageToPlayer(delta, now);
       }
 
@@ -2305,6 +2667,16 @@
       updateWildBoars(delta, now);
       updateCompanions(delta, now);
       updateHerbs(delta);
+      updateHerbActionUI();
+    }
+
+    function updateHerbs(delta) {
+      for (const data of activeHerbs.values()) {
+        if (!data.activeObject) continue;
+        data.animT += delta;
+        data.activeObject.position.y = data.baseY + Math.sin(data.animT * 3.8) * 0.03;
+        data.activeObject.rotation.y += delta * 0.2;
+      }
     }
 
     function updateCamera(delta) {
@@ -2342,6 +2714,10 @@
       stick.y = 0;
       updateJoystickVisual();
     }
+
+    const joystickEl = document.getElementById("joystick");
+    const joyKnob = document.getElementById("joyKnob");
+    const jumpBtn = document.getElementById("jumpBtn");
 
     joystickEl.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -2444,7 +2820,7 @@
 
     function shouldIgnoreCameraDragTarget(target) {
       if (!(target instanceof Element)) return false;
-      return !!target.closest("#ui, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
+      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
     }
 
     function startCameraDrag(e) {
@@ -2496,6 +2872,95 @@
       tryInteractHerbAtScreen(e.clientX, e.clientY);
     });
 
+    function randomWorldPosition(minR = 18, maxR = 95) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = rand(minR, maxR);
+      return {
+        x: Math.cos(angle) * dist,
+        z: Math.sin(angle) * dist
+      };
+    }
+
+    function updateBoarsAndCompanions(delta, now) {
+      updateWildBoars(delta, now);
+      updateCompanions(delta, now);
+    }
+
+    function syncHerbButtonState() {
+      updateHerbActionUI();
+    }
+
+    function tryInteractHerbAtScreen(clientX, clientY) {
+      if (gameOver) return false;
+
+      herbPointer.x = (clientX / window.innerWidth) * 2 - 1;
+      herbPointer.y = -(clientY / window.innerHeight) * 2 + 1;
+      herbRaycaster.setFromCamera(herbPointer, camera);
+
+      const targets = [];
+      for (const data of activeHerbs.values()) {
+        if (!data.activeObject || data.removed) continue;
+        targets.push(data.activeObject);
+      }
+
+      const hits = herbRaycaster.intersectObjects(targets, true);
+      if (hits.length) {
+        const herbId = hits[0].object.userData.herbId;
+        const data = activeHerbs.get(herbId);
+        if (!data) return false;
+
+        const pos = data.activeObject.position;
+        const dx = pos.x - playerRoot.position.x;
+        const dz = pos.z - playerRoot.position.z;
+        if (Math.hypot(dx, dz) <= config.herbCollectRange) {
+          collectHerb(data);
+          return true;
+        }
+
+        showToast("薬草に近づいてから回収！");
+        setStatus("薬草が遠い");
+        return true;
+      }
+
+      const near = findNearestHerb(1.0);
+      if (near) {
+        collectHerb(near.herb);
+        return true;
+      }
+
+      return false;
+    }
+
+    function resizeMapCanvases() {
+      drawWorldMap(miniMapCanvas, "mini");
+      if (fullMapModal.classList.contains("open")) {
+        drawWorldMap(fullMapCanvas, "full");
+      }
+    }
+
+    function openFullMap() {
+      fullMapModal.classList.add("open");
+      fullMapModal.setAttribute("aria-hidden", "false");
+      resizeMapCanvases();
+    }
+
+    function closeFullMap() {
+      fullMapModal.classList.remove("open");
+      fullMapModal.setAttribute("aria-hidden", "true");
+    }
+
+    miniMapWrap.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      openFullMap();
+    });
+
+    fullMapClose.addEventListener("click", closeFullMap);
+    fullMapModal.addEventListener("click", (e) => {
+      if (e.target === fullMapModal) closeFullMap();
+    });
+
+    herbCollectBtn.addEventListener("click", collectNearestHerb);
+
     function updateWorldStreaming() {
       syncWorldEntities();
     }
@@ -2539,6 +3004,10 @@
 
       updateCamera(delta);
       updateBoarTags();
+      updateMiniMap();
+      if (fullMapModal.classList.contains("open")) {
+        updateFullMap();
+      }
       renderer.render(scene, camera);
     }
 
@@ -2562,6 +3031,7 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      resizeMapCanvases();
     });
 
     bootstrap();
