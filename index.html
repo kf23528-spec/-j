@@ -570,10 +570,13 @@
 
     let visualRoot = null;
     let mixer = null;
+    let treeTemplate = null;
     let boarTemplate = null;
     let herbTemplate = null;
+    let treeUsesFallback = false;
     let boarUsesFallback = false;
     let herbUsesFallback = false;
+    let treeBaseCollisionRadius = 2.1;
 
     const actions = {
       walk: null,
@@ -604,7 +607,7 @@
     };
 
     const config = {
-      walkSpeed: 4.8,
+      walkSpeed: 2.0,
       dashMultiplier: 2.5,
       gravity: -22.0,
       jumpVelocity: 8.8,
@@ -633,7 +636,7 @@
 
       herbHealAmount: 30,
       herbCollectRange: 4.5,
-      boarDespawnDistance: 190,
+      boarDespawnDistance: 100,
 
       playerCollisionRadius: 0.72,
       cameraYawSensitivity: 0.005,
@@ -649,6 +652,16 @@
     const HERB_TARGET_HEIGHT = 1.35;
     const HERB_GROUND_LIFT = 0.03;
 
+    const WORLD_HALF_SIZE = 500;
+    const ACTIVE_RADIUS = 100;
+    const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
+    const TREE_COUNT = 1000;
+    const HERB_COUNT = 1500;
+    const BOAR_COUNT = 120;
+    const TREE_NEAR_COUNT = 90;
+    const HERB_NEAR_COUNT = 140;
+    const BOAR_NEAR_COUNT = 18;
+
     const PLAIN_SPAWN_RADIUS = 110;
     const WORLD_SPAWN_RADIUS = 230;
 
@@ -661,6 +674,15 @@
     const companions = [];
     const herbs = [];
     const inventory = [];
+
+    const treeData = [];
+    const boarData = [];
+    const herbData = [];
+
+    let treeMasterId = 1;
+    let boarMasterId = 1;
+    let herbMasterId = 1;
+    let worldGenerated = false;
 
     const clock = new THREE.Clock();
     let nextEntityId = 1;
@@ -1008,6 +1030,26 @@
       }
     }
 
+    async function loadTreeTemplate() {
+      try {
+        const gltf = await gltfLoader.loadAsync(TREE_URL);
+        treeTemplate = gltf.scene;
+        treeUsesFallback = false;
+        const sample = fitAndGround(treeTemplate.clone(true), TREE_TARGET_HEIGHT, TREE_GROUND_LIFT);
+        const box = new THREE.Box3().setFromObject(sample);
+        const size = box.getSize(new THREE.Vector3());
+        treeBaseCollisionRadius = Math.max(size.x, size.z) * 0.42;
+      } catch (e) {
+        console.warn("tree.glb load failed, using fallback trees.", e);
+        treeTemplate = null;
+        treeUsesFallback = true;
+        const sample = createFallbackTreeRig();
+        fitAndGround(sample, TREE_TARGET_HEIGHT, TREE_GROUND_LIFT);
+        const box = new THREE.Box3().setFromObject(sample);
+        const size = box.getSize(new THREE.Vector3());
+        treeBaseCollisionRadius = Math.max(size.x, size.z) * 0.42;
+      }
+    }
     async function loadBoarTemplate() {
       try {
         const gltf = await gltfLoader.loadAsync(BOAR_URL);
@@ -1232,12 +1274,7 @@
     }
 
     function scheduleWildBoarRespawn() {
-      const delay = rand(2200, 4200);
-      setTimeout(() => {
-        if (!gameOver) {
-          spawnWildBoar();
-        }
-      }, delay);
+      // 近距離スポーン管理に統合したため、従来の個別リスポーンは行いません。
     }
 
     function findNearestBoar(maxDist = 4.5) {
@@ -1430,9 +1467,13 @@
       setStatus(`薬草を回収 / 体力 +${healed}`);
 
       herb.dead = true;
+      if (herb.masterRef) herb.masterRef.activeRef = null;
       if (herb.root.parent) herb.root.parent.remove(herb.root);
       herbs.splice(index, 1);
-      scheduleHerbRespawn();
+      if (herb.sourceId != null) {
+        const mi = herbData.findIndex((h) => h.id === herb.sourceId);
+        if (mi >= 0) herbData.splice(mi, 1);
+      }
     }
 
     function collectNearestHerb() {
@@ -1626,7 +1667,7 @@
         const dist = tmp.v1.length();
 
         if (dist > config.boarDespawnDistance) {
-          despawnBoar(boar, i, true);
+          despawnBoar(boar, i, false);
           continue;
         }
 
@@ -1653,6 +1694,7 @@
           if (dist <= boar.attackRange) {
             boar.hostileUntil = now + 5000;
             takePlayerDamage(boar.atkDps * delta);
+            if (boar.masterRef) boar.masterRef.hp = boar.hp;
           }
         } else {
           boar.wanderTimer -= delta;
@@ -1890,250 +1932,235 @@
       return config.highLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.highLevelMin + 1));
     }
 
-    function despawnBoar(boar, index, shouldRespawn = true) {
-      boar.dead = true;
-      if (boar.root.parent) boar.root.parent.remove(boar.root);
-      if (boar.tag?.el?.parentNode) boar.tag.el.parentNode.removeChild(boar.tag.el);
-      boars.splice(index, 1);
-      if (shouldRespawn) scheduleWildBoarRespawn();
+    function createFallbackTreeRig() {
+      const tree = new THREE.Group();
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7b4f2a, roughness: 1.0 });
+      const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1.0 });
+
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.38, 3.0, 8), trunkMat);
+      trunk.position.y = 1.5;
+      trunk.castShadow = true;
+      trunk.receiveShadow = true;
+
+      const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.8, 8), leafMat);
+      crown1.position.y = 4.1;
+      crown1.castShadow = true;
+      crown1.receiveShadow = true;
+
+      const crown2 = new THREE.Mesh(new THREE.ConeGeometry(1.25, 3.0, 8), leafMat);
+      crown2.position.y = 5.0;
+      crown2.castShadow = true;
+      crown2.receiveShadow = true;
+
+      tree.add(trunk, crown1, crown2);
+      return tree;
     }
 
-    function spawnBoarAt({ x, z, rotY, scale, level }) {
-      const stats = getStatsByLevel(level);
-      const levelVisualScale = 0.95 + (level - 1) * 0.11;
-
-      let root;
-      let parts = null;
-
-      if (!boarUsesFallback && boarTemplate) {
-        root = fitAndGround(boarTemplate.clone(true), BOAR_TARGET_HEIGHT * scale * levelVisualScale, BOAR_GROUND_LIFT);
-      } else {
-        root = createFallbackBoarRig();
-        fitAndGround(root, BOAR_TARGET_HEIGHT * scale * levelVisualScale, BOAR_GROUND_LIFT);
-        parts = root.userData.parts || null;
-      }
-
-      root.position.x = x;
-      root.position.z = z;
-      root.rotation.y = rotY;
-
-      root.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      const tag = createBoarTag(level, stats.hpMax, stats.hpMax);
-      const box = new THREE.Box3().setFromObject(root);
-      const size = box.getSize(new THREE.Vector3());
-
-      scene.add(root);
-      boars.push({
-        id: nextEntityId++,
-        root,
-        tag,
-        parts,
-        level,
-        hpMax: stats.hpMax,
-        hp: stats.hpMax,
-        atkDps: stats.atkDps,
-        attackRange: config.boarAttackRange + (level - 1) * 0.08,
-        aggroRange: config.boarAggroRange + (level - 1) * 0.8,
-        moveSpeed: config.boarMoveSpeed * (1 + (level - 1) * 0.08),
-        collisionRadius: Math.max(size.x, size.z) * 0.22 + 0.35,
-        uiOffset: Math.max(1.6, size.y * 1.15),
-        state: "move",
-        stateTime: 0,
-        wanderYaw: Math.random() * Math.PI * 2,
-        wanderTimer: rand(0.8, 2.6),
-        baseY: root.position.y,
-        hostileUntil: 0,
-        dead: false
-      });
+    function randomPointInSquare(minDist = 0, maxDist = WORLD_HALF_SIZE) {
+      let x = 0;
+      let z = 0;
+      let attempts = 0;
+      do {
+        x = rand(-maxDist, maxDist);
+        z = rand(-maxDist, maxDist);
+        attempts++;
+      } while (Math.hypot(x, z) < minDist && attempts < 40);
+      return { x, z };
     }
 
-    function spawnWildBoar() {
-      const p = randomWorldPosition(20, WORLD_SPAWN_RADIUS);
-      const distFromCenter = Math.hypot(p.x, p.z);
-      if (distFromCenter < 18) {
-        return spawnWildBoar();
-      }
+    function generateWorldData() {
+      if (worldGenerated) return;
+      worldGenerated = true;
 
-      const level = getBoarLevelForDistance(distFromCenter);
-      spawnBoarAt({
-        x: p.x,
-        z: p.z,
-        rotY: Math.random() * Math.PI * 2,
-        scale: 0.85 + Math.random() * 0.45,
-        level
-      });
-    }
+      treeData.length = 0;
+      boarData.length = 0;
+      herbData.length = 0;
 
-    function spawnHerbAt({ x, z, rotY, scale }) {
-      let root;
-      if (!herbUsesFallback && herbTemplate) {
-        root = fitAndGround(herbTemplate.clone(true), HERB_TARGET_HEIGHT * scale, HERB_GROUND_LIFT);
-      } else {
-        root = createFallbackHerbRig();
-        fitAndGround(root, HERB_TARGET_HEIGHT * scale, HERB_GROUND_LIFT);
-      }
-
-      root.position.x = x;
-      root.position.z = z;
-      root.rotation.y = rotY;
-
-      const herbId = nextEntityId++;
-      root.userData.herbId = herbId;
-      root.traverse((child) => {
-        child.userData.herbId = herbId;
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      scene.add(root);
-      herbs.push({
-        id: herbId,
-        root,
-        dead: false,
-        baseY: root.position.y,
-        animT: Math.random() * 10
-      });
-    }
-
-    function spawnRandomHerb() {
-      const p = randomWorldPosition(16, PLAIN_SPAWN_RADIUS);
-      if (Math.hypot(p.x, p.z) < 10) {
-        return spawnRandomHerb();
-      }
-
-      spawnHerbAt({
-        x: p.x,
-        z: p.z,
-        rotY: Math.random() * Math.PI * 2,
-        scale: 0.85 + Math.random() * 0.45
-      });
-    }
-
-    async function addForestTrees() {
-      const treeGroup = new THREE.Group();
-      scene.add(treeGroup);
-
-      const positions = [];
-      const count = 30;
-
-      for (let i = 0; i < count; i++) {
-        const p = randomWorldPosition(25, PLAIN_SPAWN_RADIUS);
-        if (Math.hypot(p.x, p.z) < 14) {
-          i--;
-          continue;
-        }
-        positions.push({
-          x: p.x,
-          z: p.z,
-          scale: 0.95 + Math.random() * 1.1,
-          rotY: Math.random() * Math.PI * 2
-        });
-      }
-
-      try {
-        const treeGLTF = await gltfLoader.loadAsync(TREE_URL);
-        const template = treeGLTF.scene;
-
-        const sample = fitAndGround(template.clone(true), TREE_TARGET_HEIGHT, TREE_GROUND_LIFT);
-        const box = new THREE.Box3().setFromObject(sample);
-        const size = box.getSize(new THREE.Vector3());
-        const baseRadius = Math.max(size.x, size.z) * 0.42;
-
-        for (const p of positions) {
-          const tree = fitAndGround(template.clone(true), TREE_TARGET_HEIGHT * p.scale, TREE_GROUND_LIFT);
-
-          tree.position.x = p.x;
-          tree.position.z = p.z;
-          tree.rotation.y = p.rotY;
-
-          tree.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-
-          tree.userData.collisionRadius = baseRadius * p.scale + 0.7;
-          treeGroup.add(tree);
-          trees.push(tree);
-        }
-      } catch (err) {
-        console.warn("tree.glb load failed, using fallback trees.", err);
-
-        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7b4f2a, roughness: 1.0 });
-        const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1.0 });
-
-        for (const p of positions) {
-          const tree = new THREE.Group();
-
-          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.38, 3.0, 8), trunkMat);
-          trunk.position.y = 1.5;
-          trunk.castShadow = true;
-          trunk.receiveShadow = true;
-
-          const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.8, 8), leafMat);
-          crown1.position.y = 4.1;
-          crown1.castShadow = true;
-          crown1.receiveShadow = true;
-
-          const crown2 = new THREE.Mesh(new THREE.ConeGeometry(1.25, 3.0, 8), leafMat);
-          crown2.position.y = 5.0;
-          crown2.castShadow = true;
-          crown2.receiveShadow = true;
-
-          tree.add(trunk, crown1, crown2);
-
-          tree.position.x = p.x;
-          tree.position.z = p.z;
-          tree.rotation.y = p.rotY;
-          tree.position.y = TREE_GROUND_LIFT;
-
-          tree.scale.setScalar(1.0 + p.scale * 0.55);
-          tree.userData.collisionRadius = 2.2 * p.scale + 0.6;
-          treeGroup.add(tree);
-          trees.push(tree);
-        }
-      }
-    }
-
-    async function addBoars() {
-      const positions = [];
-      const count = 24;
-
-      for (let i = 0; i < count; i++) {
-        const p = randomWorldPosition(20, WORLD_SPAWN_RADIUS);
-        if (Math.hypot(p.x, p.z) < 18) {
-          i--;
-          continue;
-        }
-
-        const level = getBoarLevelForDistance(Math.hypot(p.x, p.z));
-        positions.push({
+      for (let i = 0; i < TREE_COUNT; i++) {
+        const near = i < TREE_NEAR_COUNT;
+        const p = near ? randomPointInSquare(18, 95) : randomPointInSquare(18, WORLD_HALF_SIZE);
+        const d = Math.hypot(p.x, p.z);
+        treeData.push({
+          id: treeMasterId++,
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
-          scale: 0.85 + Math.random() * 0.45,
-          level
+          scale: near ? rand(0.9, 1.6) : rand(0.85, 1.65),
+          collisionRadius: treeBaseCollisionRadius * (near ? rand(0.95, 1.35) : rand(0.9, 1.45)) + 0.7,
+          activeRef: null
         });
       }
 
-      for (const p of positions) {
-        spawnBoarAt(p);
+      for (let i = 0; i < HERB_COUNT; i++) {
+        const near = i < HERB_NEAR_COUNT;
+        const p = near ? randomPointInSquare(8, 45) : randomPointInSquare(8, WORLD_HALF_SIZE);
+        herbData.push({
+          id: herbMasterId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: near ? rand(0.85, 1.3) : rand(0.75, 1.25),
+          activeRef: null
+        });
+      }
+
+      for (let i = 0; i < BOAR_COUNT; i++) {
+        const near = i < BOAR_NEAR_COUNT;
+        const p = near ? randomPointInSquare(16, 80) : randomPointInSquare(16, WORLD_HALF_SIZE);
+        const dist = Math.hypot(p.x, p.z);
+        const level = getBoarLevelForDistance(dist);
+        boarData.push({
+          id: boarMasterId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: near ? rand(0.85, 1.2) : rand(0.8, 1.35),
+          level,
+          hpMax: getStatsByLevel(level).hpMax,
+          hp: getStatsByLevel(level).hpMax,
+          activeRef: null
+        });
       }
     }
 
-    async function addHerbs() {
-      for (let i = 0; i < 30; i++) {
-        spawnRandomHerb();
+    function spawnTreeAt(data) {
+      if (data.activeRef) return data.activeRef;
+      let root;
+      if (!treeUsesFallback && treeTemplate) {
+        root = fitAndGround(treeTemplate.clone(true), TREE_TARGET_HEIGHT * data.scale, TREE_GROUND_LIFT);
+      } else {
+        root = createFallbackTreeRig();
+        fitAndGround(root, TREE_TARGET_HEIGHT * data.scale, TREE_GROUND_LIFT);
       }
+      root.position.set(data.x, 0, data.z);
+      root.rotation.y = data.rotY;
+      root.userData.treeId = data.id;
+      root.userData.collisionRadius = data.collisionRadius;
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      scene.add(root);
+      data.activeRef = root;
+      trees.push(root);
+      return root;
+    }
+
+    function despawnTreeAt(data) {
+      const root = data.activeRef;
+      if (!root) return;
+      const idx = trees.indexOf(root);
+      if (idx >= 0) trees.splice(idx, 1);
+      if (root.parent) root.parent.remove(root);
+      data.activeRef = null;
+    }
+
+    function syncTrees() {
+      for (const data of treeData) {
+        const dx = playerRoot.position.x - data.x;
+        const dz = playerRoot.position.z - data.z;
+        const within = dx * dx + dz * dz <= ACTIVE_RADIUS_SQ;
+        if (within) {
+          spawnTreeAt(data);
+        } else if (data.activeRef) {
+          despawnTreeAt(data);
+        }
+      }
+    }
+
+    function syncHerbs() {
+      for (const data of herbData) {
+        if (data.activeRef) {
+          const dx = playerRoot.position.x - data.x;
+          const dz = playerRoot.position.z - data.z;
+          if (dx * dx + dz * dz > ACTIVE_RADIUS_SQ) {
+            const herb = data.activeRef;
+            const idx = herbs.indexOf(herb);
+            if (idx >= 0) herbs.splice(idx, 1);
+            if (herb.root?.parent) herb.root.parent.remove(herb.root);
+            data.activeRef = null;
+          }
+        }
+      }
+
+      for (const data of herbData) {
+        if (!data.activeRef) {
+          const dx = playerRoot.position.x - data.x;
+          const dz = playerRoot.position.z - data.z;
+          if (dx * dx + dz * dz <= ACTIVE_RADIUS_SQ) {
+            spawnHerbAt({
+              x: data.x,
+              z: data.z,
+              rotY: data.rotY,
+              scale: data.scale,
+              sourceId: data.id,
+              masterRef: data
+            });
+          }
+        }
+      }
+    }
+
+    function syncBoars() {
+      for (const data of boarData) {
+        if (data.activeRef) {
+          const dx = playerRoot.position.x - data.x;
+          const dz = playerRoot.position.z - data.z;
+          if (dx * dx + dz * dz > ACTIVE_RADIUS_SQ || data.activeRef.dead) {
+            const boar = data.activeRef;
+            const idx = boars.indexOf(boar);
+            if (idx >= 0) boars.splice(idx, 1);
+            if (boar.root?.parent) boar.root.parent.remove(boar.root);
+            if (boar.tag?.el?.parentNode) boar.tag.el.parentNode.removeChild(boar.tag.el);
+            data.activeRef = null;
+          }
+        }
+      }
+
+      for (const data of boarData) {
+        if (!data.activeRef) {
+          const dx = playerRoot.position.x - data.x;
+          const dz = playerRoot.position.z - data.z;
+          if (dx * dx + dz * dz <= ACTIVE_RADIUS_SQ) {
+            spawnBoarAt({
+              x: data.x,
+              z: data.z,
+              rotY: data.rotY,
+              scale: data.scale,
+              level: data.level,
+              sourceId: data.id,
+              masterRef: data
+            });
+          }
+        } else {
+          data.activeRef.hp = Math.max(0, data.activeRef.hp);
+          data.hp = data.activeRef.hp;
+        }
+      }
+    }
+
+    function syncWorldEntities() {
+      if (!worldGenerated) generateWorldData();
+      syncTrees();
+      syncHerbs();
+      syncBoars();
+    }
+
+    async function addForestTrees() {
+      generateWorldData();
+      syncWorldEntities();
+    }
+
+    async function addBoars() {
+      generateWorldData();
+      syncWorldEntities();
+    }
+
+    async function addHerbs() {
+      generateWorldData();
+      syncWorldEntities();
     }
 
     function updateMovement(delta) {
@@ -2219,9 +2246,11 @@
 
         boar.hp -= damage;
         boar.hostileUntil = now + 4500;
+        if (boar.masterRef) boar.masterRef.hp = boar.hp;
 
         if (boar.hp <= 0) {
           boar.hp = 0;
+          if (boar.masterRef) boar.masterRef.hp = 0;
           killBoar(boar, i);
         }
       }
@@ -2245,6 +2274,7 @@
 
         boar.hostileUntil = now + 5000;
         takePlayerDamage(boar.atkDps * delta);
+        if (boar.masterRef) boar.masterRef.hp = boar.hp;
         if (gameOver) return;
       }
     }
@@ -2558,6 +2588,7 @@
         updatePlayerHud();
         setStatus("モデルを読み込み中…");
         await loadBaseModel();
+        await loadTreeTemplate();
         await loadAnimations();
         await loadBoarTemplate();
         await loadHerbTemplate();
@@ -2579,7 +2610,9 @@
       const delta = Math.min(clock.getDelta(), 0.033);
       const now = performance.now();
 
+      syncWorldEntities();
       updateMovement(delta);
+      syncWorldEntities();
       updateCombat(delta, now);
 
       if (mixer) {
