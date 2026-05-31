@@ -552,8 +552,9 @@
     const HERB_COUNT = 1500;
     const ROCK_COUNT = 500;
     const RIVER_COUNT = 10;
-    const BOAR_COUNT = 10;
-
+    const BOAR_SPAWN_CANDIDATE_COUNT = 1000;
+    const MAX_ACTIVE_BOARS = 100;
+   
     const PLAYER_SAFE_RADIUS = 18;
 
     const scene = new THREE.Scene();
@@ -750,7 +751,9 @@
       boarMoveSpeed: 1.2,
       boarAggroRange: 18.0,
       boarAttackRange: 2.1,
-
+     combatInterval: 1.5,
+      companionStatMultiplier: 0.8,
+      
       herbHealAmount: 30,
       herbCollectRange: 1.0,
 
