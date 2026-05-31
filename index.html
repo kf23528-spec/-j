@@ -789,6 +789,7 @@
       v2: new THREE.Vector3(),
       v3: new THREE.Vector3(),
       v4: new THREE.Vector3(),
+      v5: new THREE.Vector3(),
       q: new THREE.Quaternion(),
       m: new THREE.Matrix4()
     };
@@ -806,11 +807,25 @@
     const activeRocks = new Map();
     const activeBoars = new Map();
     const activeRivers = new Map();
+    const streamState = {
+      tree: { cursor: 0 },
+      herb: { cursor: 0 },
+      rock: { cursor: 0 },
+      river: { cursor: 0 },
+      boar: { cursor: 0 },
+      inactiveBoar: { cursor: 0 }
+    };
     const companions = [];
     const inventory = [];
     let collisionCircles = [];
     let collisionRects = [];
 
+    const companionSpawnTmp = {
+      facing: new THREE.Vector3(),
+      right: new THREE.Vector3(),
+      offset: new THREE.Vector3()
+    };
+    
     const map2D = {
       mini: { ctx: miniMapCanvas.getContext("2d") },
       full: { ctx: fullMapCanvas.getContext("2d") }
@@ -1286,7 +1301,7 @@
 
     function generateBoarData() {
       boarData.length = 0;
-      while (boarData.length < BOAR_COUNT) {
+      while (boarData.length < BOAR_SPAWN_CANDIDATE_COUNT) {
         const p = randomWorldPoint(20);
         const d = Math.hypot(p.x, p.z);
         if (d < 22) continue;
@@ -1312,6 +1327,9 @@
           wanderYaw: Math.random() * Math.PI * 2,
           wanderTimer: rand(0.8, 2.6),
           hostileUntil: 0,
+          targetType: null,
+          targetId: null,
+          nextAttackAt: 0,
           dead: false,
           respawnToken: 0,
           isSpawning: false,
@@ -1823,6 +1841,7 @@
     }
 
     function spawnTree(data) {
+      if (!treeTemplate) return;
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
@@ -1865,6 +1884,7 @@
     }
 
     function spawnHerb(data) {
+      if (!herbTemplate) return;
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
@@ -1906,6 +1926,7 @@
     }
 
     function spawnRock(data) {
+      if (!rockTemplate) return;
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
@@ -1965,6 +1986,7 @@
     }
 
     function spawnRiver(data) {
+      if (!riverTemplate) return;
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
@@ -2003,6 +2025,7 @@
     }
 
     function spawnBoar(data) {
+      if (!boarTemplate) return;
       if (data.activeObject || data.isSpawning || data.dead) return;
       data.isSpawning = true;
       try {
@@ -2090,6 +2113,9 @@
       data.wanderYaw = Math.random() * Math.PI * 2;
       data.wanderTimer = rand(0.8, 2.6);
       data.hostileUntil = 0;
+      data.targetType = null;
+      data.targetId = null;
+      data.nextAttackAt = 0;
       data.activeObject = null;
       data.spawnCooldownUntil = 0;
     }
