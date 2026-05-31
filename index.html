@@ -211,9 +211,7 @@
       backdrop-filter: blur(8px);
       pointer-events: auto;
     }
-    #fullMapModal.open {
-      display: flex;
-    }
+    #fullMapModal.open { display: flex; }
     #fullMapPanel {
       position: relative;
       width: min(92vw, 720px);
@@ -468,9 +466,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    #toast.show {
-      opacity: 1;
-    }
+    #toast.show { opacity: 1; }
 
     @media (max-width: 700px) {
       #ui {
@@ -605,23 +601,35 @@
     const TREE_URLS = ["./tree.glb"];
     const BOAR_URLS = ["./boar.glb"];
     const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
+    const STONE_URLS = ["./isi.glb"];
 
     const STORAGE_KEY = "forest_tps_inventory_v3";
     const INVENTORY_LIMIT = 10;
 
-    const WORLD_HALF = 750;     // 1500m × 1500m
+    const WORLD_HALF = 750;
     const WORLD_SIZE = 1500;
-    const ACTIVE_RADIUS = 100;  // 100m以内だけ可視化
+    const ACTIVE_RADIUS = 100;
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
     const PLAYER_SAFE_RADIUS = 18;
 
     const TREE_COUNT = 1000;
     const HERB_COUNT = 1500;
     const BOAR_COUNT = 220;
+    const STONE_COUNT = 500;
+
+    const PLAYER_GROUND_LIFT = 0.03;
+    const TREE_TARGET_HEIGHT = 9.5;
+    const TREE_GROUND_LIFT = 0.18;
+    const BOAR_TARGET_HEIGHT = 2.0;
+    const BOAR_GROUND_LIFT = 0.05;
+    const HERB_TARGET_HEIGHT = 1.35;
+    const HERB_GROUND_LIFT = 0.03;
+    const STONE_TARGET_HEIGHT = 1.05;
+    const STONE_GROUND_LIFT = 0.02;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
-    scene.fog = new THREE.Fog(0x9fd3ff, 70, 320);
+    scene.fog = new THREE.Fog(0x9fd3ff, 70, 340);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 700);
     camera.position.set(0, 2.5, 6.8);
@@ -656,19 +664,6 @@
     fill.position.set(-20, 18, -12);
     scene.add(fill);
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE),
-      new THREE.MeshStandardMaterial({ color: 0x4fa84f, roughness: 1.0, metalness: 0.0 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-    const grassGrid = new THREE.GridHelper(WORLD_SIZE, 150, 0x3e7f3e, 0x6cbf6c);
-    grassGrid.material.transparent = true;
-    grassGrid.material.opacity = 0.16;
-    scene.add(grassGrid);
-
     const fbxLoader = new FBXLoader();
     const gltfLoader = new GLTFLoader();
 
@@ -691,7 +686,6 @@
 
     const miniMapWrap = document.getElementById("miniMapWrap");
     const miniMapCanvas = document.getElementById("miniMapCanvas");
-
     const fullMapModal = document.getElementById("fullMapModal");
     const fullMapCanvas = document.getElementById("fullMapCanvas");
     const fullMapClose = document.getElementById("fullMapClose");
@@ -704,9 +698,10 @@
     let treeTemplate = null;
     let boarTemplate = null;
     let herbTemplate = null;
+    let stoneTemplate = null;
     let boarUsesFallback = false;
     let herbUsesFallback = false;
-    let treeUsesFallback = false;
+    let stoneUsesFallback = false;
 
     const actions = {
       walk: null,
@@ -738,7 +733,7 @@
 
     const config = {
       walkSpeed: 2.5,
-      dashMultiplier: 2.4, // 2.5 × 2.4 = 6.0 m/s
+      dashMultiplier: 2.4,
       gravity: -22.0,
       jumpVelocity: 8.8,
       cameraHeight: 2.55,
@@ -774,13 +769,6 @@
       cameraPitchMax: 0.78
     };
 
-    const TREE_TARGET_HEIGHT = 9.5;
-    const TREE_GROUND_LIFT = 0.18;
-    const BOAR_TARGET_HEIGHT = 2.0;
-    const BOAR_GROUND_LIFT = 0.05;
-    const HERB_TARGET_HEIGHT = 1.35;
-    const HERB_GROUND_LIFT = 0.03;
-
     let playerHp = config.playerHpMax;
     let cameraYaw = Math.PI;
     let cameraPitch = 0.22;
@@ -804,20 +792,21 @@
     const treeData = [];
     const herbData = [];
     const boarData = [];
+    const stoneData = [];
+
     const activeTrees = new Map();
     const activeHerbs = new Map();
     const activeBoars = new Map();
+    const activeStones = new Map();
     const companions = [];
     const inventory = [];
 
     const map2D = {
       mini: {
-        ctx: miniMapCanvas.getContext("2d"),
-        dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
+        ctx: miniMapCanvas.getContext("2d")
       },
       full: {
-        ctx: fullMapCanvas.getContext("2d"),
-        dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
+        ctx: fullMapCanvas.getContext("2d")
       }
     };
 
@@ -1010,6 +999,64 @@
       return c;
     }
 
+    function terrainHeight(x, z) {
+      const r = Math.hypot(x, z);
+      const h =
+        Math.sin(x * 0.008) * 2.9 +
+        Math.cos(z * 0.009) * 2.4 +
+        Math.sin((x + z) * 0.014) * 2.0 +
+        Math.cos((x - z) * 0.012) * 1.6 +
+        Math.sin(r * 0.0045) * 3.4 +
+        Math.sin(x * 0.033 + Math.cos(z * 0.028)) * 0.8 +
+        Math.cos(z * 0.041 + Math.sin(x * 0.024)) * 0.7;
+      return h;
+    }
+
+    function terrainNormalAt(x, z) {
+      const e = 0.5;
+      const hL = terrainHeight(x - e, z);
+      const hR = terrainHeight(x + e, z);
+      const hD = terrainHeight(x, z - e);
+      const hU = terrainHeight(x, z + e);
+      return new THREE.Vector3(hL - hR, 2 * e, hD - hU).normalize();
+    }
+
+    function groundYAt(x, z, lift = 0) {
+      return terrainHeight(x, z) - lift;
+    }
+
+    function placeOnTerrain(obj, x, z, lift = 0) {
+      obj.position.set(x, groundYAt(x, z, lift), z);
+    }
+
+    function createTerrainMesh() {
+      const geometry = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 180, 180);
+      const pos = geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getY(i);
+        pos.setZ(i, terrainHeight(x, z));
+      }
+      geometry.computeVertexNormals();
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x4fa84f,
+        roughness: 1.0,
+        metalness: 0.0
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    const terrainMesh = createTerrainMesh();
+    scene.add(terrainMesh);
+
+    const grassGrid = new THREE.GridHelper(WORLD_SIZE, 150, 0x3e7f3e, 0x6cbf6c);
+    grassGrid.material.transparent = true;
+    grassGrid.material.opacity = 0.12;
+    scene.add(grassGrid);
+
     function getCameraBasis() {
       const forward = new THREE.Vector3(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw)).normalize();
       const right = new THREE.Vector3(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw)).normalize();
@@ -1130,6 +1177,23 @@
           activeObject: null,
           removed: false,
           collisionRadius: 2.2
+        });
+      }
+    }
+
+    function generateStoneData() {
+      stoneData.length = 0;
+      while (stoneData.length < STONE_COUNT) {
+        const p = randomWorldPoint(16);
+        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        stoneData.push({
+          id: nextEntityId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: 0.75 + Math.random() * 0.55,
+          collisionRadius: rand(0.5, 0.8),
+          activeObject: null
         });
       }
     }
@@ -1344,6 +1408,26 @@
       return herb;
     }
 
+    function createFallbackStoneTemplate() {
+      const stone = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0x7d8087, roughness: 1.0, metalness: 0.0 });
+
+      const a = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55, 0), mat);
+      a.scale.set(1.0, 0.75, 0.9);
+      a.castShadow = true;
+      a.receiveShadow = true;
+
+      const b = new THREE.Mesh(new THREE.DodecahedronGeometry(0.32, 0), mat);
+      b.scale.set(1.1, 0.7, 0.95);
+      b.position.set(0.35, 0.08, -0.15);
+      b.rotation.set(0.2, 0.4, 0.1);
+      b.castShadow = true;
+      b.receiveShadow = true;
+
+      stone.add(a, b);
+      return stone;
+    }
+
     function createBoarTag(level, hp, hpMax) {
       const el = document.createElement("div");
       el.className = "boarTag";
@@ -1476,19 +1560,21 @@
     }
 
     async function loadTemplates() {
-      const [treeGLTF, boarGLTF, herbGLTF] = await Promise.all([
+      const [treeGLTF, boarGLTF, herbGLTF, stoneGLTF] = await Promise.all([
         loadFirstAvailable(gltfLoader, TREE_URLS),
         loadFirstAvailable(gltfLoader, BOAR_URLS),
-        loadFirstAvailable(gltfLoader, HERB_URLS)
+        loadFirstAvailable(gltfLoader, HERB_URLS),
+        loadFirstAvailable(gltfLoader, STONE_URLS)
       ]);
 
       treeTemplate = treeGLTF?.scene || createFallbackTreeTemplate();
       boarTemplate = boarGLTF?.scene || createFallbackBoarTemplate();
       herbTemplate = herbGLTF?.scene || createFallbackHerbTemplate();
+      stoneTemplate = stoneGLTF?.scene || createFallbackStoneTemplate();
 
-      treeUsesFallback = !treeGLTF;
       boarUsesFallback = !boarGLTF;
       herbUsesFallback = !herbGLTF;
+      stoneUsesFallback = !stoneGLTF;
     }
 
     function stopAllActions(fade = 0.12) {
@@ -1590,20 +1676,26 @@
       if (!attackPlaying) syncLocomotion(true);
     }
 
-    function treeCollisionAt(candidatePos, radius) {
+    function obstacleCollisionAt(candidatePos, radius) {
       for (const data of activeTrees.values()) {
-        const tree = data.activeObject;
-        if (!tree) continue;
+        const root = data.activeObject;
+        if (!root) continue;
         const tr = data.collisionRadius || 1.5;
-        const dx = candidatePos.x - tree.position.x;
-        const dz = candidatePos.z - tree.position.z;
+        const dx = candidatePos.x - root.position.x;
+        const dz = candidatePos.z - root.position.z;
         if ((dx * dx) + (dz * dz) < (radius + tr) * (radius + tr)) return true;
       }
-      return false;
-    }
 
-    function wouldCollideAt(candidatePos) {
-      return treeCollisionAt(candidatePos, config.playerCollisionRadius);
+      for (const data of activeStones.values()) {
+        const root = data.activeObject;
+        if (!root) continue;
+        const tr = data.collisionRadius || 0.6;
+        const dx = candidatePos.x - root.position.x;
+        const dz = candidatePos.z - root.position.z;
+        if ((dx * dx) + (dz * dz) < (radius + tr) * (radius + tr)) return true;
+      }
+
+      return false;
     }
 
     function moveWithCollision(dx, dz) {
@@ -1612,7 +1704,7 @@
       const full = current.clone();
       full.x += dx;
       full.z += dz;
-      if (!wouldCollideAt(full)) {
+      if (!obstacleCollisionAt(full, config.playerCollisionRadius)) {
         playerRoot.position.copy(full);
         playerRoot.position.x = clamp(playerRoot.position.x, -WORLD_HALF + 2, WORLD_HALF - 2);
         playerRoot.position.z = clamp(playerRoot.position.z, -WORLD_HALF + 2, WORLD_HALF - 2);
@@ -1621,13 +1713,13 @@
 
       const xOnly = current.clone();
       xOnly.x += dx;
-      if (!wouldCollideAt(xOnly)) {
+      if (!obstacleCollisionAt(xOnly, config.playerCollisionRadius)) {
         playerRoot.position.x = xOnly.x;
       }
 
       const zOnly = current.clone();
       zOnly.z += dz;
-      if (!wouldCollideAt(zOnly)) {
+      if (!obstacleCollisionAt(zOnly, config.playerCollisionRadius)) {
         playerRoot.position.z = zOnly.z;
       }
 
@@ -1641,46 +1733,60 @@
       const full = current.clone();
       full.x += dx;
       full.z += dz;
-      if (!treeCollisionAt(full, radius)) {
+      if (!obstacleCollisionAt(full, radius)) {
         rootObj.position.copy(full);
         return;
       }
 
       const xOnly = current.clone();
       xOnly.x += dx;
-      if (!treeCollisionAt(xOnly)) {
+      if (!obstacleCollisionAt(xOnly, radius)) {
         rootObj.position.x = xOnly.x;
       }
 
       const zOnly = current.clone();
       zOnly.z += dz;
-      if (!treeCollisionAt(zOnly, radius)) {
+      if (!obstacleCollisionAt(zOnly, radius)) {
         rootObj.position.z = zOnly.z;
       }
     }
 
-    function removeTreeData(data) {
+    function streamDespawnTree(data) {
       if (!data || !data.activeObject) return;
       if (data.activeObject.parent) data.activeObject.parent.remove(data.activeObject);
       data.activeObject = null;
       activeTrees.delete(data.id);
     }
 
-    function removeHerbData(data) {
-      if (!data) return;
-      if (data.activeObject && data.activeObject.parent) data.activeObject.parent.remove(data.activeObject);
+    function streamDespawnStone(data) {
+      if (!data || !data.activeObject) return;
+      if (data.activeObject.parent) data.activeObject.parent.remove(data.activeObject);
       data.activeObject = null;
-      data.removed = true;
-      const idx = herbData.findIndex((h) => h.id === data.id);
-      if (idx >= 0) herbData.splice(idx, 1);
+      activeStones.delete(data.id);
+    }
+
+    function streamDespawnHerb(data) {
+      if (!data || !data.activeObject) return;
+      if (data.activeObject.parent) data.activeObject.parent.remove(data.activeObject);
+      data.activeObject = null;
       activeHerbs.delete(data.id);
+    }
+
+    function streamDespawnBoar(data) {
+      if (!data || !data.activeObject) return;
+      if (data.activeObject.tag?.el?.parentNode) data.activeObject.tag.el.parentNode.removeChild(data.activeObject.tag.el);
+      if (data.activeObject.root?.parent) data.activeObject.root.parent.remove(data.activeObject.root);
+      data.activeObject = null;
+      activeBoars.delete(data.id);
+      data.state = "move";
+      data.stateTime = 0;
     }
 
     function spawnTree(data) {
       if (data.activeObject || data.removed) return;
 
       const root = fitAndGround(treeTemplate.clone(true), TREE_TARGET_HEIGHT * data.scale, TREE_GROUND_LIFT);
-      root.position.set(data.x, root.position.y, data.z);
+      placeOnTerrain(root, data.x, data.z, TREE_GROUND_LIFT);
       root.rotation.y = data.rotY;
       root.traverse((child) => {
         if (child.isMesh) {
@@ -1698,11 +1804,29 @@
       activeTrees.set(data.id, data);
     }
 
+    function spawnStone(data) {
+      if (data.activeObject) return;
+
+      const root = fitAndGround(stoneTemplate.clone(true), STONE_TARGET_HEIGHT * data.scale, STONE_GROUND_LIFT);
+      placeOnTerrain(root, data.x, data.z, STONE_GROUND_LIFT);
+      root.rotation.y = data.rotY;
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      data.activeObject = root;
+      scene.add(root);
+      activeStones.set(data.id, data);
+    }
+
     function spawnHerb(data) {
       if (data.activeObject || data.removed) return;
 
       const root = fitAndGround(herbTemplate.clone(true), HERB_TARGET_HEIGHT * data.scale, HERB_GROUND_LIFT);
-      root.position.set(data.x, root.position.y, data.z);
+      placeOnTerrain(root, data.x, data.z, HERB_GROUND_LIFT);
       root.rotation.y = data.rotY;
 
       const herbId = data.id;
@@ -1719,6 +1843,40 @@
       data.baseY = root.position.y;
       scene.add(root);
       activeHerbs.set(data.id, data);
+    }
+
+    function spawnBoar(data) {
+      if (data.activeObject || data.dead) return;
+
+      const levelVisualScale = 0.95 + (data.level - 1) * 0.11;
+      const root = fitAndGround(boarTemplate.clone(true), BOAR_TARGET_HEIGHT * data.scale * levelVisualScale, BOAR_GROUND_LIFT);
+      placeOnTerrain(root, data.x, data.z, BOAR_GROUND_LIFT);
+      root.rotation.y = data.rotY;
+
+      const parts = root.userData.parts || null;
+
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      const tag = createBoarTag(data.level, data.hpMax, data.hpMax);
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+
+      data.uiOffset = Math.max(1.6, size.y * 1.15);
+      data.collisionRadius = Math.max(size.x, size.z) * 0.22 + 0.35;
+      data.activeObject = {
+        root,
+        tag,
+        parts,
+        baseY: root.position.y
+      };
+
+      scene.add(root);
+      activeBoars.set(data.id, data);
     }
 
     function scheduleBoarRespawn(data) {
@@ -1751,65 +1909,19 @@
       data.attackRange = config.boarAttackRange + (level - 1) * 0.08;
       data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
       data.moveSpeed = config.boarMoveSpeed * (1 + (level - 1) * 0.08);
-      data.activeObject = null;
       data.state = "move";
       data.stateTime = 0;
       data.wanderYaw = Math.random() * Math.PI * 2;
       data.wanderTimer = rand(0.8, 2.6);
       data.hostileUntil = 0;
-    }
-
-    function removeBoarData(data, shouldRespawn = true) {
-      if (!data || data.dead) return;
-
-      if (data.activeObject?.tag?.el?.parentNode) {
-        data.activeObject.tag.el.parentNode.removeChild(data.activeObject.tag.el);
-      }
-      if (data.activeObject?.root?.parent) {
-        data.activeObject.root.parent.remove(data.activeObject.root);
-      }
-
       data.activeObject = null;
-      activeBoars.delete(data.id);
-      data.dead = true;
-
-      if (shouldRespawn) {
-        scheduleBoarRespawn(data);
-      }
     }
 
-    function spawnBoar(data) {
-      if (data.activeObject || data.dead) return;
-
-      const levelVisualScale = 0.95 + (data.level - 1) * 0.11;
-      const root = fitAndGround(boarTemplate.clone(true), BOAR_TARGET_HEIGHT * data.scale * levelVisualScale, BOAR_GROUND_LIFT);
-      root.position.set(data.x, root.position.y, data.z);
-      root.rotation.y = data.rotY;
-
-      const parts = root.userData.parts || null;
-
-      root.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      const tag = createBoarTag(data.level, data.hpMax, data.hpMax);
-      const box = new THREE.Box3().setFromObject(root);
-      const size = box.getSize(new THREE.Vector3());
-
-      data.uiOffset = Math.max(1.6, size.y * 1.15);
-      data.collisionRadius = Math.max(size.x, size.z) * 0.22 + 0.35;
-      data.activeObject = {
-        root,
-        tag,
-        parts,
-        baseY: root.position.y
-      };
-
-      scene.add(root);
-      activeBoars.set(data.id, data);
+    function killBoar(data) {
+      if (!data || data.dead) return;
+      streamDespawnBoar(data);
+      data.dead = true;
+      scheduleBoarRespawn(data);
     }
 
     function syncStream(masterArray, spawnFn, despawnFn, activeMap) {
@@ -1838,9 +1950,10 @@
     }
 
     function syncWorldEntities() {
-      syncStream(treeData, spawnTree, removeTreeData, activeTrees);
-      syncStream(herbData, spawnHerb, removeHerbData, activeHerbs);
-      syncStream(boarData, spawnBoar, removeBoarData, activeBoars);
+      syncStream(treeData, spawnTree, streamDespawnTree, activeTrees);
+      syncStream(herbData, spawnHerb, streamDespawnHerb, activeHerbs);
+      syncStream(boarData, spawnBoar, streamDespawnBoar, activeBoars);
+      syncStream(stoneData, spawnStone, streamDespawnStone, activeStones);
     }
 
     function updateWildBoarAnimation(data, delta) {
@@ -1875,7 +1988,6 @@
     }
 
     function findHostileBoarTarget(now) {
-      const playerPos = playerRoot.position;
       let best = null;
       let bestDist = Infinity;
 
@@ -1884,8 +1996,8 @@
         if ((data.hostileUntil || 0) <= now) continue;
 
         const pos = data.activeObject.root.position;
-        const dx = pos.x - playerPos.x;
-        const dz = pos.z - playerPos.z;
+        const dx = pos.x - playerRoot.position.x;
+        const dz = pos.z - playerRoot.position.z;
         const d = Math.hypot(dx, dz);
         if (d < bestDist) {
           bestDist = d;
@@ -1967,7 +2079,7 @@
 
       root.position.set(
         playerRoot.position.x + offset.x,
-        root.position.y,
+        groundYAt(playerRoot.position.x + offset.x, playerRoot.position.z + offset.z, BOAR_GROUND_LIFT),
         playerRoot.position.z + offset.z
       );
       root.rotation.y = Math.atan2(facing.x, facing.z);
@@ -2009,41 +2121,6 @@
       scene.add(root);
     }
 
-    function collectNearestBoar() {
-      if (gameOver) return;
-
-      if (inventory.length >= INVENTORY_LIMIT) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      const found = findNearestBoar(4.5);
-      if (!found) {
-        showToast("近くにイノシシがいない！");
-        setStatus("近くにイノシシがいない");
-        return;
-      }
-
-      const boar = found.boar;
-      if (boar.hp > boar.hpMax * 0.1) {
-        showToast("体力が多すぎて捕まえられない！");
-        setStatus("体力が多すぎて捕まえられない");
-        return;
-      }
-
-      const ok = addInventoryCreature("イノシシ", boar.level);
-      if (!ok) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
-      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
-      removeBoarData(boar, true);
-    }
-
     function findNearestHerb(maxDist = config.herbCollectRange) {
       const playerPos = playerRoot.position;
       let best = null;
@@ -2082,7 +2159,13 @@
 
       showToast(`薬草を回収！ 体力 +${healed}`);
       setStatus(`薬草を回収 / 体力 +${healed}`);
-      removeHerbData(data);
+
+      if (data.activeObject && data.activeObject.parent) data.activeObject.parent.remove(data.activeObject);
+      data.activeObject = null;
+      data.removed = true;
+      const idx = herbData.findIndex((h) => h.id === data.id);
+      if (idx >= 0) herbData.splice(idx, 1);
+      activeHerbs.delete(data.id);
     }
 
     function collectNearestHerb() {
@@ -2100,17 +2183,72 @@
 
     function updateHerbActionUI() {
       const found = findNearestHerb(1.0);
-      if (found) {
-        herbCollectBtn.style.display = "block";
-        herbCollectBtn.textContent = "薬草回収";
-      } else {
-        herbCollectBtn.style.display = "none";
-      }
+      herbCollectBtn.style.display = found ? "block" : "none";
+    }
+
+    function spawnWildBoar() {
+      const p = randomWorldPosition(20, WORLD_HALF - 40);
+      const d = Math.hypot(p.x, p.z);
+      if (d < 18) return spawnWildBoar();
+
+      const level = getBoarLevelForDistance(d);
+      spawnBoarDataPoint({
+        x: p.x,
+        z: p.z,
+        rotY: Math.random() * Math.PI * 2,
+        scale: 0.85 + Math.random() * 0.45,
+        level
+      });
+    }
+
+    function spawnBoarDataPoint(p) {
+      const stats = getStatsByLevel(p.level);
+      boarData.push({
+        id: nextEntityId++,
+        x: p.x,
+        z: p.z,
+        rotY: p.rotY,
+        scale: p.scale,
+        level: p.level,
+        hpMax: stats.hpMax,
+        hp: stats.hpMax,
+        atkDps: stats.atkDps,
+        attackRange: config.boarAttackRange + (p.level - 1) * 0.08,
+        aggroRange: config.boarAggroRange + (p.level - 1) * 0.8,
+        moveSpeed: config.boarMoveSpeed * (1 + (p.level - 1) * 0.08),
+        collisionRadius: 0.7,
+        uiOffset: 2.0,
+        state: "move",
+        stateTime: 0,
+        wanderYaw: Math.random() * Math.PI * 2,
+        wanderTimer: rand(0.8, 2.6),
+        hostileUntil: 0,
+        dead: false,
+        respawnToken: 0,
+        activeObject: null
+      });
+    }
+
+    function spawnRandomHerb() {
+      const p = randomWorldPoint(16);
+      if (Math.hypot(p.x, p.z) < 10) return spawnRandomHerb();
+
+      herbData.push({
+        id: nextEntityId++,
+        x: p.x,
+        z: p.z,
+        rotY: Math.random() * Math.PI * 2,
+        scale: 0.85 + Math.random() * 0.45,
+        activeObject: null,
+        removed: false,
+        animT: Math.random() * 10,
+        baseY: 0
+      });
     }
 
     function createMiniMapMarkerList() {
       const markers = [];
-      for (const data of boarData) {
+      for (const data of activeBoars.values()) {
         if (data.dead) continue;
         const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
         markers.push({
@@ -2183,9 +2321,9 @@
         ctx.arc(cx, cy, range * scale, 0, Math.PI * 2);
         ctx.stroke();
 
-        for (const data of boarData) {
-          if (data.dead) continue;
-          const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+        for (const data of activeBoars.values()) {
+          if (data.dead || !data.activeObject) continue;
+          const pos = data.activeObject.root.position;
           const dx = pos.x - player.x;
           const dz = pos.z - player.z;
           if (dx * dx + dz * dz > range * range) continue;
@@ -2260,9 +2398,9 @@
         ctx.lineWidth = 2;
         ctx.strokeRect(margin, margin, innerW, innerH);
 
-        for (const data of boarData) {
-          if (data.dead) continue;
-          const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+        for (const data of activeBoars.values()) {
+          if (data.dead || !data.activeObject) continue;
+          const pos = data.activeObject.root.position;
           const x = margin + (pos.x + WORLD_HALF) * scaleX;
           const y = margin + (pos.z + WORLD_HALF) * scaleY;
 
@@ -2335,7 +2473,7 @@
       target.hp -= companion.atkDps * 1.8;
       if (target.hp <= 0) {
         target.hp = 0;
-        removeBoarData(target, true);
+        killBoar(target);
       }
     }
 
@@ -2537,6 +2675,7 @@
         data.x = o.root.position.x;
         data.z = o.root.position.z;
         data.rotY = o.root.rotation.y;
+        o.baseY = groundYAt(data.x, data.z, BOAR_GROUND_LIFT);
       }
     }
 
@@ -2567,7 +2706,7 @@
 
         if (data.hp <= 0) {
           data.hp = 0;
-          removeBoarData(data, true);
+          killBoar(data);
         }
       }
     }
@@ -2591,6 +2730,25 @@
         data.hostileUntil = now + 5000;
         takePlayerDamage(data.atkDps * delta);
         if (gameOver) return;
+      }
+    }
+
+    function updatePlayerGroundAndPhysics(delta) {
+      const groundY = groundYAt(playerRoot.position.x, playerRoot.position.z, PLAYER_GROUND_LIFT);
+
+      if (physics.onGround) {
+        playerRoot.position.y = groundY;
+        physics.vy = 0;
+        return;
+      }
+
+      physics.vy += config.gravity * delta;
+      playerRoot.position.y += physics.vy * delta;
+
+      if (playerRoot.position.y <= groundY) {
+        playerRoot.position.y = groundY;
+        physics.vy = 0;
+        physics.onGround = true;
       }
     }
 
@@ -2634,14 +2792,7 @@
         currentActionName = "idle";
       }
 
-      physics.vy += config.gravity * delta;
-      playerRoot.position.y += physics.vy * delta;
-
-      if (playerRoot.position.y <= 0) {
-        playerRoot.position.y = 0;
-        physics.vy = 0;
-        physics.onGround = true;
-      }
+      updatePlayerGroundAndPhysics(delta);
 
       setStatus(
         attackPlaying
@@ -2650,6 +2801,15 @@
             ? (moving ? (dashMode || dashHeld ? "ダッシュ中" : "移動中") : "待機中")
             : (moving ? "移動中 / ジャンプ中" : "ジャンプ中")
       );
+    }
+
+    function updateHerbs(delta) {
+      for (const data of activeHerbs.values()) {
+        if (!data.activeObject) continue;
+        data.animT += delta;
+        data.activeObject.position.y = data.baseY + Math.sin(data.animT * 3.8) * 0.03;
+        data.activeObject.rotation.y += delta * 0.2;
+      }
     }
 
     function updateCombat(delta, now) {
@@ -2668,15 +2828,6 @@
       updateCompanions(delta, now);
       updateHerbs(delta);
       updateHerbActionUI();
-    }
-
-    function updateHerbs(delta) {
-      for (const data of activeHerbs.values()) {
-        if (!data.activeObject) continue;
-        data.animT += delta;
-        data.activeObject.position.y = data.baseY + Math.sin(data.animT * 3.8) * 0.03;
-        data.activeObject.rotation.y += delta * 0.2;
-      }
     }
 
     function updateCamera(delta) {
@@ -2881,15 +3032,6 @@
       };
     }
 
-    function updateBoarsAndCompanions(delta, now) {
-      updateWildBoars(delta, now);
-      updateCompanions(delta, now);
-    }
-
-    function syncHerbButtonState() {
-      updateHerbActionUI();
-    }
-
     function tryInteractHerbAtScreen(clientX, clientY) {
       if (gameOver) return false;
 
@@ -2931,17 +3073,14 @@
       return false;
     }
 
-    function resizeMapCanvases() {
-      drawWorldMap(miniMapCanvas, "mini");
-      if (fullMapModal.classList.contains("open")) {
-        drawWorldMap(fullMapCanvas, "full");
-      }
+    function updateWorldStreaming() {
+      syncWorldEntities();
     }
 
     function openFullMap() {
       fullMapModal.classList.add("open");
       fullMapModal.setAttribute("aria-hidden", "false");
-      resizeMapCanvases();
+      updateFullMap();
     }
 
     function closeFullMap() {
@@ -2961,8 +3100,15 @@
 
     herbCollectBtn.addEventListener("click", collectNearestHerb);
 
-    function updateWorldStreaming() {
-      syncWorldEntities();
+    function spawnInitialData() {
+      generateTreeData();
+      generateStoneData();
+      generateBoarData();
+      generateHerbData();
+    }
+
+    function updatePlayerStartPosition() {
+      playerRoot.position.set(0, groundYAt(0, 0, PLAYER_GROUND_LIFT), 0);
     }
 
     async function bootstrap() {
@@ -2971,13 +3117,14 @@
         updatePlayerHud();
         setStatus("モデルを読み込み中…");
 
-        generateTreeData();
-        generateBoarData();
-        generateHerbData();
+        spawnInitialData();
 
         await loadPlayerRig();
         await loadAnimations();
         await loadTemplates();
+
+        updatePlayerStartPosition();
+        syncWorldEntities();
 
         loading.classList.add("hidden");
         setStatus("待機中");
@@ -2985,6 +3132,13 @@
         console.error(err);
         loading.classList.add("hidden");
         setStatus("読み込み失敗");
+      }
+    }
+
+    function updateMiniMapAndFullMap() {
+      updateMiniMap();
+      if (fullMapModal.classList.contains("open")) {
+        updateFullMap();
       }
     }
 
@@ -3004,14 +3158,45 @@
 
       updateCamera(delta);
       updateBoarTags();
-      updateMiniMap();
-      if (fullMapModal.classList.contains("open")) {
-        updateFullMap();
-      }
+      updateMiniMapAndFullMap();
       renderer.render(scene, camera);
     }
 
-    captureBtn.addEventListener("click", collectNearestBoar);
+    captureBtn.addEventListener("click", () => {
+      if (gameOver) return;
+
+      if (inventory.length >= INVENTORY_LIMIT) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      const found = findNearestBoar(4.5);
+      if (!found) {
+        showToast("近くにイノシシがいない！");
+        setStatus("近くにイノシシがいない");
+        return;
+      }
+
+      const boar = found.boar;
+      if (boar.hp > boar.hpMax * 0.1) {
+        showToast("体力が多すぎて捕まえられない！");
+        setStatus("体力が多すぎて捕まえられない");
+        return;
+      }
+
+      const ok = addInventoryCreature("イノシシ", boar.level);
+      if (!ok) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
+      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
+      killBoar(boar);
+    });
+
     inventoryBtn.addEventListener("click", openInventoryModal);
     closeInventoryBtn.addEventListener("click", closeInventoryModal);
     inventoryModal.addEventListener("click", (e) => {
@@ -3031,7 +3216,7 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      resizeMapCanvases();
+      updateMiniMapAndFullMap();
     });
 
     bootstrap();
