@@ -538,6 +538,7 @@
     const BOAR_URLS = ["./boar.glb"];
     const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
     const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
+    const RIVER_URLS = ["./river.glb"];
 
     const STORAGE_KEY = "forest_tps_inventory_v3";
     const INVENTORY_LIMIT = 10;
@@ -550,7 +551,8 @@
     const TREE_COUNT = 1000;
     const HERB_COUNT = 1500;
     const ROCK_COUNT = 500;
-    const BOAR_COUNT = 220;
+    const RIVER_COUNT = 10;
+    const BOAR_COUNT = 10;
 
     const PLAYER_SAFE_RADIUS = 18;
 
@@ -595,17 +597,35 @@
       return Number.isFinite(v) ? v : fallback;
     }
 
+    const MOUNTAIN_PEAKS = [
+      { x: -420, z: -360, height: 26, radius: 50 },
+      { x: -120, z: 310, height: 30, radius: 50 },
+      { x: 220, z: -260, height: 24, radius: 50 },
+      { x: 410, z: 180, height: 28, radius: 50 },
+      { x: 60, z: 470, height: 22, radius: 50 }
+    ];
+
     function getTerrainHeight(x, z) {
       x = safeNum(x, 0);
       z = safeNum(z, 0);
 
       const r = Math.hypot(x, z);
       let h =
-        Math.sin(x * 0.010) * 7.5 +
-        Math.cos(z * 0.011) * 6.8 +
-        Math.sin((x + z) * 0.006) * 4.4 +
-        Math.cos(r * 0.012) * 3.2 +
-        Math.sin(x * 0.021) * Math.cos(z * 0.019) * 2.0;
+        Math.sin(x * 0.010) * 10.5 +
+        Math.cos(z * 0.011) * 9.2 +
+        Math.sin((x + z) * 0.006) * 7.4 +
+        Math.cos(r * 0.012) * 5.8 +
+        Math.sin(x * 0.024) * Math.cos(z * 0.021) * 4.5 +
+        Math.sin((x - z) * 0.034) * 2.1;
+
+      for (const peak of MOUNTAIN_PEAKS) {
+        const dx = x - peak.x;
+        const dz = z - peak.z;
+        const dist = Math.hypot(dx, dz);
+        const gaussian = peak.height * Math.exp(-(dist * dist) / (2 * peak.radius * peak.radius * 0.42));
+        const cone = Math.max(0, 1 - dist / peak.radius) * peak.height * 0.65;
+        h += Math.max(gaussian, cone);
+      }
 
       if (!Number.isFinite(h)) h = 0;
       return h;
@@ -672,10 +692,12 @@
     let boarTemplate = null;
     let herbTemplate = null;
     let rockTemplate = null;
+    let riverTemplate = null;
     let treeUsesFallback = false;
     let boarUsesFallback = false;
     let herbUsesFallback = false;
     let rockUsesFallback = false;
+    let riverUsesFallback = false;
 
     const actions = { walk: null, run: null, attack: null };
     let currentActionName = "idle";
@@ -725,7 +747,7 @@
       boarLevelMax: 20,
       lowLevelMax: 10,
       highLevelMin: 11,
-      boarMoveSpeed: 1.6,
+      boarMoveSpeed: 1.2,
       boarAggroRange: 18.0,
       boarAttackRange: 2.1,
 
@@ -745,8 +767,13 @@
     const BOAR_GROUND_LIFT = 0.05;
     const HERB_TARGET_HEIGHT = 1.35;
     const HERB_GROUND_LIFT = 0.03;
-    const ROCK_TARGET_HEIGHT = 1.45;
+    const ROCK_TARGET_HEIGHT = 2.0;
     const ROCK_GROUND_LIFT = 0.02;
+    const ROCK_COLLISION_RADIUS = 2.0;
+    const RIVER_LENGTH = 50;
+    const RIVER_WIDTH = 10;
+    const RIVER_THICKNESS = 1;
+    const RIVER_GROUND_LIFT = 0.01;
 
     const clock = new THREE.Clock();
     let nextEntityId = 1;
@@ -770,13 +797,16 @@
     const herbData = [];
     const rockData = [];
     const boarData = [];
+    const riverData = [];
     const activeTrees = new Map();
     const activeHerbs = new Map();
     const activeRocks = new Map();
     const activeBoars = new Map();
+    const activeRivers = new Map();
     const companions = [];
     const inventory = [];
     let collisionCircles = [];
+    let collisionRects = [];
 
     const map2D = {
       mini: { ctx: miniMapCanvas.getContext("2d") },
@@ -1079,7 +1109,7 @@
 
       const z =
         (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) +
-        (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+        (keys.has("KeyS") || keys.has("ArrowDown") ? -1 : 0);
 
       return { x, z };
     }
@@ -1168,7 +1198,7 @@
           activeObject: null,
           removed: false,
           isSpawning: false,
-          isDespawning: false,
+                    isDespawning: false,
           spawnCooldownUntil: 0,
           terrainLift: 0,
           collisionRadius: 2.2
@@ -1209,14 +1239,37 @@
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
-          scale: 0.8 + Math.random() * 0.8,
+          scale: 1.5 + Math.random() * 0.5,
           activeObject: null,
           removed: false,
           isSpawning: false,
           isDespawning: false,
           spawnCooldownUntil: 0,
           terrainLift: 0,
-          collisionRadius: 1.0
+          collisionRadius: ROCK_COLLISION_RADIUS
+        });
+      }
+    }
+
+    function generateRiverData() {
+      riverData.length = 0;
+      while (riverData.length < RIVER_COUNT) {
+        const p = randomWorldPoint(40);
+        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS + 35) continue;
+        riverData.push({
+          id: nextEntityId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          length: RIVER_LENGTH,
+          width: RIVER_WIDTH,
+          thickness: RIVER_THICKNESS,
+          activeObject: null,
+          removed: false,
+          isSpawning: false,
+          isDespawning: false,
+          spawnCooldownUntil: 0,
+          terrainLift: RIVER_GROUND_LIFT
         });
       }
     }
@@ -1248,7 +1301,7 @@
           atkDps: stats.atkDps,
           attackRange: config.boarAttackRange + (level - 1) * 0.08,
           aggroRange: config.boarAggroRange + (level - 1) * 0.8,
-          moveSpeed: config.boarMoveSpeed * (1 + (level - 1) * 0.08),
+          moveSpeed: config.boarMoveSpeed,
           collisionRadius: 0.7,
           uiOffset: 2.0,
           state: "move",
@@ -1435,6 +1488,30 @@
       return rock;
     }
 
+    function createFallbackRiverTemplate() {
+      const river = new THREE.Group();
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x1f8fff,
+        roughness: 0.28,
+        metalness: 0.0,
+        transparent: true,
+        opacity: 0.74
+      });
+      const foamMat = new THREE.MeshStandardMaterial({ color: 0xbdefff, roughness: 0.4, transparent: true, opacity: 0.65 });
+
+      const water = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), waterMat);
+      water.castShadow = false;
+      water.receiveShadow = true;
+
+      const foam1 = new THREE.Mesh(new THREE.BoxGeometry(1, 0.05, 0.08), foamMat);
+      foam1.position.set(0, 0.53, -0.38);
+      const foam2 = foam1.clone();
+      foam2.position.z = 0.38;
+
+      river.add(water, foam1, foam2);
+      return river;
+    }
+
     function createBoarTag(level, hp, hpMax) {
       const el = document.createElement("div");
       el.className = "boarTag";
@@ -1497,6 +1574,7 @@
 
     function refreshCollisionCircles() {
       collisionCircles.length = 0;
+      collisionRects.length = 0;
       for (const data of activeTrees.values()) {
         if (!data.activeObject?.root) continue;
         const p = data.activeObject.root.position;
@@ -1505,8 +1583,50 @@
       for (const data of activeRocks.values()) {
         if (!data.activeObject?.root) continue;
         const p = data.activeObject.root.position;
-        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || 1.0 });
+        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || ROCK_COLLISION_RADIUS });
       }
+      for (const data of activeRivers.values()) {
+        collisionRects.push(getRiverCollisionRect(data));
+      }
+    }
+
+    function getMutablePosition(target) {
+      return target?.isObject3D ? target.position : target;
+    }
+
+    function getRiverCollisionRect(data) {
+      return {
+        x: data.x,
+        z: data.z,
+        halfLength: (data.length || RIVER_LENGTH) * 0.5,
+        halfWidth: (data.width || RIVER_WIDTH) * 0.5,
+        yaw: data.rotY || 0
+      };
+    }
+
+    function pointInRiverRect(x, z, radius, rect) {
+      const c = Math.cos(-rect.yaw);
+      const s = Math.sin(-rect.yaw);
+      const dx = x - rect.x;
+      const dz = z - rect.z;
+      const lx = dx * c - dz * s;
+      const lz = dx * s + dz * c;
+      return Math.abs(lx) <= rect.halfLength + radius && Math.abs(lz) <= rect.halfWidth + radius;
+    }
+
+    function collidesWithRiverRects(x, z, radius, rects = collisionRects) {
+      for (const rect of rects) {
+        if (pointInRiverRect(x, z, radius, rect)) return true;
+      }
+      return false;
+    }
+
+    function collidesAtXZ(x, z, radius) {
+      for (const circle of collisionCircles) {
+        const rr = radius + circle.r;
+        if ((x - circle.x) ** 2 + (z - circle.z) ** 2 <= rr * rr) return true;
+      }
+      return collidesWithRiverRects(x, z, radius);
     }
 
     function segmentCircleHitT(startX, startZ, endX, endZ, cx, cz, radius) {
@@ -1533,8 +1653,11 @@
     }
 
     function moveWithStrictCollision(obj3D, dx, dz, radius) {
-      const sx = obj3D.x;
-      const sz = obj3D.z;
+      const pos = getMutablePosition(obj3D);
+      if (!pos) return false;
+
+      const sx = pos.x;
+      const sz = pos.z;
       const ex = sx + dx;
       const ez = sz + dz;
 
@@ -1549,16 +1672,34 @@
         }
       }
 
+      if (collidesWithRiverRects(ex, ez, radius)) {
+        hit = true;
+      }
+
       if (hit) {
         const safeT = Math.max(0, bestT - 0.02);
-        obj3D.x = sx + dx * safeT;
-        obj3D.z = sz + dz * safeT;
+        const safeX = sx + dx * safeT;
+        const safeZ = sz + dz * safeT;
+        if (!collidesWithRiverRects(safeX, safeZ, radius)) {
+          pos.x = safeX;
+          pos.z = safeZ;
+        } else {
+          pos.x = sx;
+          pos.z = sz;
+        }
         return false;
       }
 
-      obj3D.x = ex;
-      obj3D.z = ez;
+      pos.x = ex;
+      pos.z = ez;
       return true;
+    }
+
+    function randomizeBoarAvoidance(data, reverse = true) {
+      const base = reverse ? (data.wanderYaw || 0) + Math.PI : Math.random() * Math.PI * 2;
+      data.wanderYaw = base + rand(-0.9, 0.9);
+      data.wanderTimer = rand(0.8, 1.8);
+      data.state = "move";
     }
 
     function updatePlayerTerrainAndJump(delta) {
@@ -1606,10 +1747,16 @@
           const speed = currentSpeed() * input.magnitude * moveScale;
           const dx = currentForward.x * speed * delta;
           const dz = currentForward.z * speed * delta;
+          const prevX = playerRoot.position.x;
+          const prevZ = playerRoot.position.z;
 
-          moveWithStrictCollision(playerRoot.position, dx, dz, config.playerCollisionRadius);
+          const moved = moveWithStrictCollision(playerRoot.position, dx, dz, config.playerCollisionRadius);
           playerRoot.position.x = clamp(playerRoot.position.x, -WORLD_HALF + 2, WORLD_HALF - 2);
           playerRoot.position.z = clamp(playerRoot.position.z, -WORLD_HALF + 2, WORLD_HALF - 2);
+          if (!moved || collidesAtXZ(playerRoot.position.x, playerRoot.position.z, config.playerCollisionRadius)) {
+            playerRoot.position.x = prevX;
+            playerRoot.position.z = prevZ;
+          }
 
           if (!attackPlaying) syncLocomotion(false);
         }
@@ -1652,6 +1799,7 @@
       for (const data of activeTrees.values()) syncDataObjectToTerrain(data);
       for (const data of activeHerbs.values()) syncDataObjectToTerrain(data);
       for (const data of activeRocks.values()) syncDataObjectToTerrain(data);
+      for (const data of activeRivers.values()) syncDataObjectToTerrain(data);
       for (const data of activeBoars.values()) syncDataObjectToTerrain(data);
 
       for (const c of companions) {
@@ -1771,7 +1919,7 @@
         });
         const box = new THREE.Box3().setFromObject(root);
         const size = box.getSize(new THREE.Vector3());
-        data.collisionRadius = Math.max(size.x, size.z) * 0.45 + 0.35;
+        data.collisionRadius = ROCK_COLLISION_RADIUS;
         data.activeObject = { root };
         scene.add(root);
         activeRocks.set(data.id, data);
@@ -1789,6 +1937,62 @@
         disposeObject3D(root);
         data.activeObject = null;
         activeRocks.delete(data.id);
+        data.spawnCooldownUntil = now + 300;
+      } finally {
+        data.isDespawning = false;
+      }
+    }
+
+    function fitRiverModel(root, length = RIVER_LENGTH, width = RIVER_WIDTH, thickness = RIVER_THICKNESS) {
+      applyShadowsAndFixMaterials(root);
+      root.updateWorldMatrix(true, true);
+      const box1 = new THREE.Box3().setFromObject(root);
+      const size1 = box1.getSize(new THREE.Vector3());
+      const scaleX = length / Math.max(size1.x, 0.0001);
+      const scaleY = thickness / Math.max(size1.y, 0.0001);
+      const scaleZ = width / Math.max(size1.z, 0.0001);
+      root.scale.set(root.scale.x * scaleX, root.scale.y * scaleY, root.scale.z * scaleZ);
+      root.updateWorldMatrix(true, true);
+      const box2 = new THREE.Box3().setFromObject(root);
+      const center2 = box2.getCenter(new THREE.Vector3());
+      root.position.x -= center2.x;
+      root.position.z -= center2.z;
+      root.position.y += (-box2.min.y) + RIVER_GROUND_LIFT;
+      return root;
+    }
+
+    function spawnRiver(data) {
+      if (data.activeObject || data.isSpawning || data.removed) return;
+      data.isSpawning = true;
+      try {
+        const root = deepCloneUnique(riverTemplate);
+        fitRiverModel(root, data.length || RIVER_LENGTH, data.width || RIVER_WIDTH, data.thickness || RIVER_THICKNESS);
+        data.terrainLift = root.position.y;
+        placeOnTerrain(root, data.x, data.z, data.terrainLift);
+        root.rotation.y = data.rotY;
+        root.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = false;
+            child.receiveShadow = true;
+          }
+        });
+        data.activeObject = { root };
+        scene.add(root);
+        activeRivers.set(data.id, data);
+      } finally {
+        data.isSpawning = false;
+      }
+    }
+
+    function despawnRiver(data, now = performance.now()) {
+      if (!data?.activeObject || data.isDespawning) return;
+      data.isDespawning = true;
+      try {
+        const root = data.activeObject.root;
+        if (root?.parent) root.parent.remove(root);
+        disposeObject3D(root);
+        data.activeObject = null;
+        activeRivers.delete(data.id);
         data.spawnCooldownUntil = now + 300;
       } finally {
         data.isDespawning = false;
@@ -2294,7 +2498,7 @@
           const targetPos = target.activeObject.root.position;
           const toTarget = targetPos.clone().sub(c.root.position);
           toTarget.y = 0;
-          const dist = toTarget.length();
+                    const dist = toTarget.length();
 
           if (dist > 0.001) {
             const dir = toTarget.clone().normalize();
@@ -2337,6 +2541,30 @@
       }
     }
 
+    function updateInactiveBoarWander(delta) {
+      const allRiverRects = riverData.map(getRiverCollisionRect);
+      for (const data of boarData) {
+        if (data.dead || data.activeObject) continue;
+        data.wanderTimer -= delta;
+        if (data.wanderTimer <= 0) {
+          data.wanderYaw = Math.random() * Math.PI * 2;
+          data.wanderTimer = rand(1.2, 3.2);
+        }
+
+        const dx = Math.cos(data.wanderYaw) * data.moveSpeed * delta;
+        const dz = Math.sin(data.wanderYaw) * data.moveSpeed * delta;
+        const nx = clamp(data.x + dx, -WORLD_HALF + 4, WORLD_HALF - 4);
+        const nz = clamp(data.z + dz, -WORLD_HALF + 4, WORLD_HALF - 4);
+        if (collidesWithRiverRects(nx, nz, data.collisionRadius || 0.7, allRiverRects)) {
+          randomizeBoarAvoidance(data, true);
+        } else {
+          data.x = nx;
+          data.z = nz;
+          data.rotY = data.wanderYaw;
+        }
+      }
+    }
+
     function updateWildBoars(delta, now) {
       const playerPos = playerRoot.position;
 
@@ -2345,6 +2573,7 @@
 
         const o = data.activeObject;
         const pos = o.root.position;
+        pos.y = getTerrainHeight(pos.x, pos.z) + (data.terrainLift || 0);
         const dist = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
 
         if (dist <= data.aggroRange) {
@@ -2359,8 +2588,9 @@
           if (dir.lengthSq() > 1e-8) dir.normalize();
 
           if (dist > data.attackRange * 0.95) {
-            const speed = data.moveSpeed * 1.4;
-            moveWithStrictCollision(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
+            const speed = data.moveSpeed * 1.15;
+            const moved = moveWithStrictCollision(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
+            if (!moved) randomizeBoarAvoidance(data, true);
           }
 
           const targetYaw = Math.atan2(dir.x, dir.z);
@@ -2373,17 +2603,21 @@
         } else {
           data.wanderTimer -= delta;
           if (data.wanderTimer <= 0) {
-            data.wanderYaw += rand(-1.0, 1.0);
+            data.wanderYaw = Math.random() * Math.PI * 2;
             data.wanderTimer = rand(1.2, 3.2);
           }
 
           const dir = new THREE.Vector3(Math.cos(data.wanderYaw), 0, Math.sin(data.wanderYaw));
-          moveWithStrictCollision(o.root, dir.x * data.moveSpeed * 0.35 * delta, dir.z * data.moveSpeed * 0.35 * delta, data.collisionRadius || 0.7);
+          const moved = moveWithStrictCollision(o.root, dir.x * data.moveSpeed * delta, dir.z * data.moveSpeed * delta, data.collisionRadius || 0.7);
+          if (!moved) randomizeBoarAvoidance(data, true);
 
           const targetYaw = Math.atan2(dir.x, dir.z);
-          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
+          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-3.2 * delta));
         }
 
+        o.root.position.x = clamp(o.root.position.x, -WORLD_HALF + 4, WORLD_HALF - 4);
+        o.root.position.z = clamp(o.root.position.z, -WORLD_HALF + 4, WORLD_HALF - 4);
+        o.root.position.y = getTerrainHeight(o.root.position.x, o.root.position.z) + (data.terrainLift || 0);
         updateWildBoarAnimation(data, delta);
         data.x = o.root.position.x;
         data.z = o.root.position.z;
@@ -2636,6 +2870,18 @@
         ctx.arc(cx, cy, range * scale, 0, Math.PI * 2);
         ctx.stroke();
 
+        for (const data of riverData) {
+          const dx = data.x - player.x;
+          const dz = data.z - player.z;
+          if (dx * dx + dz * dz > (range + RIVER_LENGTH) * (range + RIVER_LENGTH)) continue;
+          ctx.save();
+          ctx.translate(cx + dx * scale, cy + dz * scale);
+          ctx.rotate(data.rotY || 0);
+          ctx.fillStyle = "rgba(40,160,255,0.72)";
+          ctx.fillRect(-RIVER_LENGTH * 0.5 * scale, -RIVER_WIDTH * 0.5 * scale, RIVER_LENGTH * scale, RIVER_WIDTH * scale);
+          ctx.restore();
+        }
+
         for (const data of boarData) {
           if (data.dead) continue;
           const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
@@ -2713,6 +2959,30 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(margin, margin, innerW, innerH);
 
+      for (const peak of MOUNTAIN_PEAKS) {
+        const x = margin + (peak.x + WORLD_HALF) * scaleX;
+        const y = margin + (peak.z + WORLD_HALF) * scaleY;
+        ctx.fillStyle = "rgba(120,95,60,0.62)";
+        ctx.beginPath();
+        ctx.arc(x, y, peak.radius * scaleX, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.72)";
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(3, peak.radius * scaleX * 0.24), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (const data of riverData) {
+        const x = margin + (data.x + WORLD_HALF) * scaleX;
+        const y = margin + (data.z + WORLD_HALF) * scaleY;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(data.rotY || 0);
+        ctx.fillStyle = "rgba(40,160,255,0.72)";
+        ctx.fillRect(-(data.length || RIVER_LENGTH) * 0.5 * scaleX, -(data.width || RIVER_WIDTH) * 0.5 * scaleY, (data.length || RIVER_LENGTH) * scaleX, (data.width || RIVER_WIDTH) * scaleY);
+        ctx.restore();
+      }
+
       for (const data of boarData) {
         if (data.dead) continue;
         const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
@@ -2784,6 +3054,7 @@
       syncStream(treeData, spawnTree, despawnTree, now);
       syncStream(herbData, spawnHerb, despawnHerb, now);
       syncStream(rockData, spawnRock, despawnRock, now);
+      syncStream(riverData, spawnRiver, despawnRiver, now);
       syncStream(boarData, spawnBoar, despawnBoarForStream, now);
     }
 
@@ -3058,7 +3329,7 @@
         });
         const box = new THREE.Box3().setFromObject(root);
         const size = box.getSize(new THREE.Vector3());
-        data.collisionRadius = Math.max(size.x, size.z) * 0.45 + 0.35;
+        data.collisionRadius = ROCK_COLLISION_RADIUS;
         data.activeObject = { root };
         scene.add(root);
         activeRocks.set(data.id, data);
@@ -3115,6 +3386,7 @@
       for (const d of activeTrees.values()) updateTreeStreamingPosition(d);
       for (const d of activeHerbs.values()) updateHerbStreamingPosition(d);
       for (const d of activeRocks.values()) updateRockStreamingPosition(d);
+      for (const d of activeRivers.values()) syncDataObjectToTerrain(d);
       for (const d of activeBoars.values()) updateBoarStreamingPosition(d);
       for (const c of companions) {
         if (!c?.root) continue;
@@ -3132,9 +3404,10 @@
     function despawnBoarWrapper(data, now) { despawnBoarForStream(data, now); }
 
     function updateMovementAndWorld(delta, now) {
-      updateMovement(delta);
+      updateInactiveBoarWander(delta);
       syncWorldEntities(now);
       refreshCollisionCircles();
+      updateMovement(delta);
       updateAllActiveTerrainAlignment();
       updateCombat(delta, now);
       updateCamera(delta);
@@ -3150,22 +3423,25 @@
     }
 
     async function loadTemplates() {
-      const [treeGLTF, boarGLTF, herbGLTF, rockGLTF] = await Promise.all([
+      const [treeGLTF, boarGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
         loadGLTFWithFallback(TREE_URLS, createFallbackTreeTemplate),
         loadGLTFWithFallback(BOAR_URLS, createFallbackBoarTemplate),
         loadGLTFWithFallback(HERB_URLS, createFallbackHerbTemplate),
-        loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate)
+        loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate),
+        loadGLTFWithFallback(RIVER_URLS, createFallbackRiverTemplate)
       ]);
 
       treeTemplate = treeGLTF.scene;
       boarTemplate = boarGLTF.scene;
       herbTemplate = herbGLTF.scene;
       rockTemplate = rockGLTF.scene;
+      riverTemplate = riverGLTF.scene;
 
       treeUsesFallback = treeGLTF.fallback;
       boarUsesFallback = boarGLTF.fallback;
       herbUsesFallback = herbGLTF.fallback;
       rockUsesFallback = rockGLTF.fallback;
+      riverUsesFallback = riverGLTF.fallback;
 
       forceRegroundAllLoaded();
     }
@@ -3237,6 +3513,7 @@
         generateTreeData();
         generateHerbData();
         generateRockData();
+        generateRiverData();
         generateBoarData();
 
         await loadPlayerRig();
