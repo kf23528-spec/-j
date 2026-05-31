@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Forest Open World Game</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <title>Forest TPS Open World</title>
   <style>
     html, body {
       width: 100%;
@@ -19,7 +19,7 @@
     #loading {
       position: fixed;
       inset: 0;
-      z-index: 60;
+      z-index: 40;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -30,10 +30,7 @@
       font-weight: 800;
       transition: opacity 0.25s ease;
     }
-    #loading.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
 
     #ui {
       position: fixed;
@@ -41,34 +38,20 @@
       top: 12px;
       z-index: 30;
       min-width: 280px;
-      max-width: min(92vw, 520px);
+      max-width: min(92vw, 500px);
       padding: 12px 14px;
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.82);
+      background: rgba(255,255,255,0.84);
       backdrop-filter: blur(10px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
       color: #222;
       line-height: 1.5;
       font-size: 14px;
       user-select: none;
     }
-    #title {
-      font-weight: 800;
-      font-size: 15px;
-      margin-bottom: 4px;
-    }
-    #status {
-      margin-top: 8px;
-      font-size: 13px;
-      font-weight: 800;
-      color: #1d3f7a;
-    }
-    #buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
+    #title { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+    #status { margin-top: 8px; font-size: 13px; font-weight: 800; color: #1d3f7a; }
+    #buttons { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .modeBtn {
       border: 0;
       border-radius: 12px;
@@ -78,13 +61,10 @@
       color: #fff;
       cursor: pointer;
       background: #2f82ff;
-      box-shadow: 0 8px 18px rgba(47, 130, 255, 0.22);
+      box-shadow: 0 8px 18px rgba(47,130,255,0.22);
     }
     .modeBtn.active { background: #1d5fc0; }
-    .modeBtn.attack {
-      background: #ff6a2c;
-      box-shadow: 0 8px 18px rgba(255, 106, 44, 0.22);
-    }
+    .modeBtn.attack { background: #ff6a2c; box-shadow: 0 8px 18px rgba(255,106,44,0.22); }
     .modeBtn.attack.active { background: #cc4e1d; }
 
     #help {
@@ -97,8 +77,9 @@
     #playerHud {
       margin-top: 10px;
       padding: 0;
-      border: 0;
+      border-radius: 0;
       background: transparent;
+      border: 0;
       box-shadow: none;
     }
     .hudRow {
@@ -116,7 +97,7 @@
       height: 12px;
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(28, 51, 89, 0.12);
+      background: rgba(28,51,89,0.12);
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
     }
     .barFill {
@@ -154,11 +135,7 @@
       background: rgba(0,0,0,0.50);
       margin-bottom: 5px;
     }
-    .boarHpText {
-      margin-top: 4px;
-      font-size: 11px;
-      opacity: 0.95;
-    }
+    .boarHpText { margin-top: 4px; font-size: 11px; opacity: 0.95; }
     .boarBarWrap {
       width: 120px;
       height: 10px;
@@ -175,155 +152,78 @@
       transition: width 0.08s linear;
     }
 
-    #sideButtons {
+    #miniMapWrap {
       position: fixed;
-      right: 18px;
-      bottom: 150px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 35;
+      right: 14px;
+      top: 14px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: rgba(15,24,32,0.72);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+      z-index: 45;
       pointer-events: auto;
-    }
-    .sideBtn {
-      width: 124px;
-      height: 60px;
-      border: 0;
-      border-radius: 18px;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 900;
-      box-shadow: 0 10px 22px rgba(0,0,0,0.16);
+      touch-action: none;
       cursor: pointer;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: none;
     }
-    #herbCollectBtn {
-      background: linear-gradient(180deg, #69d66f, #239b3a);
-      display: none;
+    #miniMapCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
-    #captureBtn {
-      background: linear-gradient(180deg, #ffb14d, #ff7b1f);
-    }
-    #inventoryBtn {
-      background: linear-gradient(180deg, #4e92ff, #2f67d6);
-    }
-    .sideBtn:active { transform: scale(0.97); }
 
-    #inventoryModal {
+    #fullMapModal {
       position: fixed;
       inset: 0;
-      z-index: 50;
+      z-index: 70;
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(10, 18, 30, 0.48);
-      backdrop-filter: blur(6px);
+      background: rgba(10,18,30,0.60);
+      backdrop-filter: blur(8px);
       pointer-events: auto;
     }
-    #inventoryModal.open {
-      display: flex;
-    }
-    #inventoryPanel {
-      width: min(92vw, 420px);
-      max-height: min(72vh, 560px);
-      overflow: auto;
+    #fullMapModal.open { display: flex; }
+    #fullMapPanel {
+      position: relative;
+      width: min(92vw, 720px);
+      max-height: min(92vh, 760px);
       border-radius: 22px;
       background: rgba(255,255,255,0.96);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.28);
-      padding: 18px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.30);
+      padding: 16px;
       color: #1a2740;
     }
-    #inventoryTitle {
-      font-size: 18px;
-      font-weight: 900;
-      margin-bottom: 10px;
+    #fullMapTitle { font-size: 18px; font-weight: 900; margin-bottom: 8px; }
+    #fullMapInfo { font-size: 13px; font-weight: 800; color: #4a5c80; margin-bottom: 12px; }
+    #fullMapCanvas {
+      width: min(88vw, 660px);
+      height: min(88vw, 660px);
+      max-width: 660px;
+      max-height: 660px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 18px;
+      background: #17212c;
     }
-    #inventoryInfo {
-      font-size: 13px;
-      font-weight: 800;
-      margin-bottom: 14px;
-      color: #3a4c73;
-    }
-    #inventoryList {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-    .inventoryItem {
-      padding: 11px 12px;
-      border-radius: 14px;
-      background: #f3f7ff;
-      border: 1px solid rgba(47, 103, 214, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-weight: 800;
-      font-size: 14px;
-    }
-    .inventoryItemText {
-      min-width: 0;
-      word-break: break-word;
-    }
-    .deployBtn {
-      border: 0;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #ff8f4d, #ff6a2c);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 900;
-      padding: 8px 10px;
-      cursor: pointer;
-      flex: 0 0 auto;
-    }
-    .inventoryEmpty {
-      padding: 14px;
-      border-radius: 14px;
-      background: #f3f7ff;
-      border: 1px dashed rgba(47, 103, 214, 0.22);
-      font-weight: 800;
-      font-size: 14px;
-      color: #516383;
-    }
-    #closeInventoryBtn {
-      width: 100%;
+    #fullMapClose {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 46px;
       height: 46px;
       border: 0;
-      border-radius: 14px;
-      background: linear-gradient(180deg, #4e92ff, #2f67d6);
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ff6c6c, #d92c2c);
       color: #fff;
-      font-size: 15px;
+      font-size: 22px;
       font-weight: 900;
       cursor: pointer;
-    }
-
-    #toast {
-      position: fixed;
-      left: 50%;
-      top: 14px;
-      transform: translateX(-50%);
-      z-index: 70;
-      max-width: min(92vw, 520px);
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(18, 24, 34, 0.82);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.2);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.18s ease;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    #toast.show {
-      opacity: 1;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.18);
     }
 
     #joystick {
@@ -333,8 +233,8 @@
       width: 132px;
       height: 132px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.22);
-      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.45);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.08);
       backdrop-filter: blur(8px);
       pointer-events: auto;
@@ -359,9 +259,9 @@
       margin-left: -27px;
       margin-top: -27px;
       border-radius: 50%;
-      background: rgba(47, 130, 255, 0.9);
-      box-shadow: 0 8px 18px rgba(47, 130, 255, 0.25);
-      transform: translate(0, 0);
+      background: rgba(47,130,255,0.9);
+      box-shadow: 0 8px 18px rgba(47,130,255,0.25);
+      transform: translate(0,0);
     }
 
     #jumpBtn {
@@ -377,7 +277,7 @@
       font-size: 18px;
       font-weight: 900;
       letter-spacing: 0.03em;
-      box-shadow: 0 10px 24px rgba(255, 106, 44, 0.28);
+      box-shadow: 0 10px 24px rgba(255,106,44,0.28);
       pointer-events: auto;
       touch-action: none;
       user-select: none;
@@ -385,6 +285,132 @@
       z-index: 35;
     }
     #jumpBtn:active { transform: scale(0.97); }
+
+    #sideButtons {
+      position: fixed;
+      right: 18px;
+      bottom: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 35;
+      pointer-events: auto;
+    }
+    .sideBtn {
+      width: 120px;
+      height: 60px;
+      border: 0;
+      border-radius: 18px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.16);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    #herbCollectBtn {
+      background: linear-gradient(180deg, #69d66f, #239b3a);
+      display: none;
+    }
+    #captureBtn { background: linear-gradient(180deg, #ffb14d, #ff7b1f); }
+    #inventoryBtn { background: linear-gradient(180deg, #4e92ff, #2f67d6); }
+    .sideBtn:active { transform: scale(0.97); }
+
+    #inventoryModal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10,18,30,0.48);
+      backdrop-filter: blur(6px);
+      pointer-events: auto;
+    }
+    #inventoryModal.open { display: flex; }
+    #inventoryPanel {
+      width: min(92vw, 420px);
+      max-height: min(72vh, 560px);
+      overflow: auto;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+      padding: 18px;
+      color: #1a2740;
+    }
+    #inventoryTitle { font-size: 18px; font-weight: 900; margin-bottom: 10px; }
+    #inventoryInfo { font-size: 13px; font-weight: 800; margin-bottom: 14px; color: #3a4c73; }
+    #inventoryList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .inventoryItem {
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: #f3f7ff;
+      border: 1px solid rgba(47,103,214,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .inventoryItemText { min-width: 0; word-break: break-word; }
+    .deployBtn {
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #ff8f4d, #ff6a2c);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 8px 10px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .inventoryEmpty {
+      padding: 14px;
+      border-radius: 14px;
+      background: #f3f7ff;
+      border: 1px dashed rgba(47,103,214,0.22);
+      font-weight: 800;
+      font-size: 14px;
+      color: #516383;
+    }
+    #closeInventoryBtn {
+      width: 100%;
+      height: 46px;
+      border: 0;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #4e92ff, #2f67d6);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      top: 14px;
+      transform: translateX(-50%);
+      z-index: 60;
+      max-width: min(92vw, 520px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(18,24,34,0.82);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #toast.show { opacity: 1; }
 
     @media (max-width: 700px) {
       #ui {
@@ -407,22 +433,22 @@
         margin-left: -24px;
         margin-top: -24px;
       }
-      #sideButtons {
-        bottom: 138px;
-      }
+      #sideButtons { bottom: 138px; }
       .sideBtn {
         width: 108px;
         height: 52px;
         font-size: 13px;
       }
-      .boarTag {
-        min-width: 100px;
+      .boarTag { min-width: 100px; }
+      .boarBarWrap { width: 100px; }
+      .inventoryItem { font-size: 13px; }
+      #miniMapWrap {
+        width: 132px;
+        height: 132px;
       }
-      .boarBarWrap {
-        width: 100px;
-      }
-      .inventoryItem {
-        font-size: 13px;
+      #fullMapCanvas {
+        width: min(84vw, 560px);
+        height: min(84vw, 560px);
       }
     }
   </style>
@@ -441,7 +467,7 @@
   <div id="toast"></div>
 
   <div id="ui">
-    <div id="title">Forest Open World Game</div>
+    <div id="title">Forest TPS Open World</div>
 
     <div id="playerHud">
       <div class="hudRow">
@@ -459,13 +485,25 @@
       <button id="attackBtn" class="modeBtn attack">攻撃</button>
     </div>
     <div id="help">
-      WASD / 矢印 / スティックで移動<br>
-      薬草は1m以内で回収ボタン表示 / タップ回収<br>
-      イノシシは攻撃でHPを削って10%以下で捕獲できます
+      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
+      薬草は1m以内で「薬草回収」ボタンが表示されます。ミニマップをタップすると全体マップを開けます。
     </div>
   </div>
 
   <div id="worldUI"></div>
+
+  <div id="miniMapWrap" title="タップで全体マップ">
+    <canvas id="miniMapCanvas"></canvas>
+  </div>
+
+  <div id="fullMapModal" aria-hidden="true">
+    <div id="fullMapPanel">
+      <button id="fullMapClose">×</button>
+      <div id="fullMapTitle">全体マップ</div>
+      <div id="fullMapInfo">緑＝プレイヤー / 赤＝モンスター</div>
+      <canvas id="fullMapCanvas"></canvas>
+    </div>
+  </div>
 
   <div id="sideButtons">
     <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
@@ -489,8 +527,20 @@
 
   <script type="module">
     import * as THREE from "three";
-    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
     import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    const WALK_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
+    const ATTACK_FBX_URL = "./Meshy_AI_biped_Animation_Attack_withSkin.fbx";
+    const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
+
+    const TREE_URLS = ["./tree.glb"];
+    const BOAR_URLS = ["./boar.glb"];
+    const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
+    const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
+
+    const STORAGE_KEY = "forest_tps_inventory_v3";
+    const INVENTORY_LIMIT = 10;
 
     const WORLD_SIZE = 1200;
     const WORLD_HALF = WORLD_SIZE / 2;
@@ -499,23 +549,16 @@
 
     const TREE_COUNT = 1000;
     const HERB_COUNT = 1500;
+    const ROCK_COUNT = 500;
     const BOAR_COUNT = 220;
-    const STONE_COUNT = 500;
 
-    const INVENTORY_LIMIT = 10;
-    const STORAGE_KEY = "forest_open_world_inventory_v1";
-
-    const TREE_URLS = ["./tree.glb"];
-    const BOAR_URLS = ["./boar.glb"];
-    const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
-    const STONE_URLS = ["./isi.glb", "./iwa.glb"];
-    const PLAYER_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
+    const PLAYER_SAFE_RADIUS = 18;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
     scene.fog = new THREE.Fog(0x9fd3ff, 70, 320);
 
-    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 800);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 700);
     camera.position.set(0, 2.5, 6.8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -523,7 +566,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.25;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.style.touchAction = "none";
@@ -548,6 +591,54 @@
     fill.position.set(-20, 18, -12);
     scene.add(fill);
 
+    function safeNum(v, fallback = 0) {
+      return Number.isFinite(v) ? v : fallback;
+    }
+
+    function getTerrainHeight(x, z) {
+      x = safeNum(x, 0);
+      z = safeNum(z, 0);
+
+      const r = Math.hypot(x, z);
+      let h =
+        Math.sin(x * 0.010) * 7.5 +
+        Math.cos(z * 0.011) * 6.8 +
+        Math.sin((x + z) * 0.006) * 4.4 +
+        Math.cos(r * 0.012) * 3.2 +
+        Math.sin(x * 0.021) * Math.cos(z * 0.019) * 2.0;
+
+      if (!Number.isFinite(h)) h = 0;
+      return h;
+    }
+
+    const terrainGeometry = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 240, 240);
+    terrainGeometry.rotateX(-Math.PI / 2);
+    {
+      const pos = terrainGeometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        pos.setY(i, getTerrainHeight(x, z));
+      }
+      pos.needsUpdate = true;
+      terrainGeometry.computeVertexNormals();
+    }
+
+    const ground = new THREE.Mesh(
+      terrainGeometry,
+      new THREE.MeshStandardMaterial({ color: 0x4fa84f, roughness: 1.0, metalness: 0.0 })
+    );
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const grassGrid = new THREE.GridHelper(WORLD_SIZE, 120, 0x3e7f3e, 0x6cbf6c);
+    grassGrid.material.transparent = true;
+    grassGrid.material.opacity = 0.16;
+    scene.add(grassGrid);
+
+    const fbxLoader = new FBXLoader();
+    const gltfLoader = new GLTFLoader();
+
     const uiStatus = document.getElementById("status");
     const loading = document.getElementById("loading");
     const dashBtn = document.getElementById("dashBtn");
@@ -556,110 +647,43 @@
     const playerHpFill = document.getElementById("playerHpFill");
     const worldUI = document.getElementById("worldUI");
     const toastEl = document.getElementById("toast");
-    const herbCollectBtn = document.getElementById("herbCollectBtn");
-    const captureBtn = document.getElementById("captureBtn");
-    const inventoryBtn = document.getElementById("inventoryBtn");
+
     const inventoryModal = document.getElementById("inventoryModal");
     const inventoryList = document.getElementById("inventoryList");
     const inventoryInfo = document.getElementById("inventoryInfo");
     const closeInventoryBtn = document.getElementById("closeInventoryBtn");
+    const inventoryBtn = document.getElementById("inventoryBtn");
+    const captureBtn = document.getElementById("captureBtn");
+    const herbCollectBtn = document.getElementById("herbCollectBtn");
 
-    const joystickEl = document.getElementById("joystick");
-    const joyKnob = document.getElementById("joyKnob");
-    const jumpBtn = document.getElementById("jumpBtn");
+    const miniMapWrap = document.getElementById("miniMapWrap");
+    const miniMapCanvas = document.getElementById("miniMapCanvas");
 
-    const terrainGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 240, 240);
-    terrainGeo.rotateX(-Math.PI / 2);
-
-    function safeNum(v, fallback = 0) {
-      return Number.isFinite(v) ? v : fallback;
-    }
-
-    function clamp(v, min, max) {
-      return Math.max(min, Math.min(max, v));
-    }
-
-    function rand(min, max) {
-      return min + Math.random() * (max - min);
-    }
-
-    function makeId() {
-      return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    }
-
-    function getTerrainHeight(x, z) {
-      const px = safeNum(x, 0);
-      const pz = safeNum(z, 0);
-      let h = 0;
-      h += Math.sin(px * 0.0062) * 7.8;
-      h += Math.cos(pz * 0.0054) * 6.5;
-      h += Math.sin((px + pz) * 0.0031) * 4.7;
-      h += Math.cos(Math.hypot(px, pz) * 0.0092) * 3.8;
-      h += Math.sin(px * 0.017) * Math.cos(pz * 0.014) * 1.8;
-      h = safeNum(h, 0);
-      return clamp(h, -28, 32);
-    }
-
-    function buildTerrain() {
-      const pos = terrainGeo.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const x = pos.getX(i);
-        const z = pos.getZ(i);
-        const y = getTerrainHeight(x, z);
-        pos.setY(i, y);
-      }
-      pos.needsUpdate = true;
-      terrainGeo.computeVertexNormals();
-
-      const terrainMat = new THREE.MeshStandardMaterial({
-        color: 0x4fa84f,
-        roughness: 1.0,
-        metalness: 0.0
-      });
-
-      const terrain = new THREE.Mesh(terrainGeo, terrainMat);
-      terrain.receiveShadow = true;
-      scene.add(terrain);
-
-      const grid = new THREE.GridHelper(WORLD_SIZE, 120, 0x3e7f3e, 0x6cbf6c);
-      grid.material.transparent = true;
-      grid.material.opacity = 0.16;
-      scene.add(grid);
-    }
-
-    buildTerrain();
-
-    const gltfLoader = new GLTFLoader();
-    const fbxLoader = new FBXLoader();
+    const fullMapModal = document.getElementById("fullMapModal");
+    const fullMapCanvas = document.getElementById("fullMapCanvas");
+    const fullMapClose = document.getElementById("fullMapClose");
 
     const playerRoot = new THREE.Group();
     scene.add(playerRoot);
 
     let visualRoot = null;
+    let mixer = null;
+    let treeTemplate = null;
+    let boarTemplate = null;
+    let herbTemplate = null;
+    let rockTemplate = null;
+    let treeUsesFallback = false;
+    let boarUsesFallback = false;
+    let herbUsesFallback = false;
+    let rockUsesFallback = false;
+
+    const actions = { walk: null, run: null, attack: null };
     let currentActionName = "idle";
-
-    const assets = {
-      player: null,
-      tree: null,
-      boar: null,
-      herb: null,
-      stone: null
-    };
-
-    const data = {
-      trees: [],
-      herbs: [],
-      boars: [],
-      stones: [],
-      inventory: []
-    };
-
-    const active = {
-      trees: new Map(),
-      herbs: new Map(),
-      boars: new Map(),
-      stones: new Map()
-    };
+    let attackPlaying = false;
+    let attackTimer = 0;
+    let dashMode = false;
+    let dashHeld = false;
+    let gameOver = false;
 
     const keys = new Set();
 
@@ -671,24 +695,15 @@
       radius: 40
     };
 
-    const state = {
-      dashMode: false,
-      dashHeld: false,
-      attackPlaying: false,
-      attackTimer: 0,
-      jumpY: 0,
-      jumpV: 0,
+    const physics = {
+      vy: 0,
       onGround: true,
-      gameOver: false,
-      hp: 200,
-      hpMax: 200,
-      cameraYaw: Math.PI,
-      cameraPitch: 0.22
+      jumpOffset: 0
     };
 
     const config = {
       walkSpeed: 2.5,
-      dashSpeed: 6.0,
+      dashMultiplier: 2.4,
       gravity: -22.0,
       jumpVelocity: 8.8,
       cameraHeight: 2.55,
@@ -698,13 +713,14 @@
       modelHeight: 2.45,
       turnSpeed: 9.0,
 
-      playerAttackDps: 22,
-      playerAttackDuration: 0.55,
-      attackRange: 5.2,
-      attackFrontDot: -1.0,
+      playerHpMax: 200,
+      playerAttackDps: 5,
+      playerAttackDuration: 5.0,
+      attackRange: 5.6,
+      attackConeDot: -0.15,
 
       boarBaseHp: 100,
-      boarBaseAttack: 4,
+      boarBaseAttack: 3,
       boarLevelMin: 1,
       boarLevelMax: 20,
       lowLevelMax: 10,
@@ -723,6 +739,21 @@
       cameraPitchMax: 0.78
     };
 
+    const TREE_TARGET_HEIGHT = 9.5;
+    const TREE_GROUND_LIFT = 0.18;
+    const BOAR_TARGET_HEIGHT = 2.0;
+    const BOAR_GROUND_LIFT = 0.05;
+    const HERB_TARGET_HEIGHT = 1.35;
+    const HERB_GROUND_LIFT = 0.03;
+    const ROCK_TARGET_HEIGHT = 1.45;
+    const ROCK_GROUND_LIFT = 0.02;
+
+    const clock = new THREE.Clock();
+    let nextEntityId = 1;
+    let cameraYaw = Math.PI;
+    let cameraPitch = 0.22;
+    let playerHp = config.playerHpMax;
+
     const tmp = {
       v1: new THREE.Vector3(),
       v2: new THREE.Vector3(),
@@ -734,7 +765,35 @@
     const upAxis = new THREE.Vector3(0, 1, 0);
     const herbRaycaster = new THREE.Raycaster();
     const herbPointer = new THREE.Vector2();
-    const clock = new THREE.Clock();
+
+    const treeData = [];
+    const herbData = [];
+    const rockData = [];
+    const boarData = [];
+    const activeTrees = new Map();
+    const activeHerbs = new Map();
+    const activeRocks = new Map();
+    const activeBoars = new Map();
+    const companions = [];
+    const inventory = [];
+    let collisionCircles = [];
+
+    const map2D = {
+      mini: { ctx: miniMapCanvas.getContext("2d") },
+      full: { ctx: fullMapCanvas.getContext("2d") }
+    };
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function makeId() {
+      return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
 
     function setStatus(text) {
       uiStatus.textContent = text;
@@ -748,13 +807,16 @@
     }
 
     function updatePlayerHud() {
-      const pct = (state.hp / state.hpMax) * 100;
-      playerHpText.textContent = `${Math.max(0, Math.ceil(state.hp))} / ${state.hpMax}`;
+      const pct = (playerHp / config.playerHpMax) * 100;
+      playerHpText.textContent = `${Math.max(0, Math.ceil(playerHp))} / ${config.playerHpMax}`;
       playerHpFill.style.width = `${clamp(pct, 0, 100)}%`;
-
-      if (pct > 60) playerHpFill.style.background = "linear-gradient(90deg, #4fd06f, #19a54f)";
-      else if (pct > 25) playerHpFill.style.background = "linear-gradient(90deg, #ffd24d, #ff9f1a)";
-      else playerHpFill.style.background = "linear-gradient(90deg, #ff6b6b, #d91f1f)";
+      if (pct > 60) {
+        playerHpFill.style.background = "linear-gradient(90deg, #4fd06f, #19a54f)";
+      } else if (pct > 25) {
+        playerHpFill.style.background = "linear-gradient(90deg, #ffd24d, #ff9f1a)";
+      } else {
+        playerHpFill.style.background = "linear-gradient(90deg, #ff6b6b, #d91f1f)";
+      }
     }
 
     function safeLoadInventory() {
@@ -763,13 +825,13 @@
         if (!raw) return;
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed)) return;
-        data.inventory.length = 0;
+        inventory.splice(0, inventory.length);
         for (const item of parsed) {
           if (!item || typeof item !== "object") continue;
           if (typeof item.species !== "string") continue;
           const level = Number(item.level);
           if (!Number.isFinite(level)) continue;
-          data.inventory.push({
+          inventory.push({
             id: typeof item.id === "string" ? item.id : makeId(),
             species: item.species,
             level: Math.max(1, Math.floor(level)),
@@ -777,49 +839,432 @@
           });
         }
       } catch (e) {
-        console.warn(e);
+        console.warn("inventory load failed", e);
       }
     }
 
     function saveInventory() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.inventory));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
       } catch (e) {
-        console.warn(e);
+        console.warn("inventory save failed", e);
       }
     }
 
-    function renderInventory() {
-      inventoryInfo.textContent = `${data.inventory.length} / ${INVENTORY_LIMIT} 体`;
+    function renderInventoryModal() {
+      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体`;
       inventoryList.innerHTML = "";
-      if (!data.inventory.length) {
+      if (!inventory.length) {
         const empty = document.createElement("div");
         empty.className = "inventoryEmpty";
-        empty.textContent = "まだ捕まえたイノシシはいません。";
+        empty.textContent = "まだ捕まえたキャラクターはいません。";
         inventoryList.appendChild(empty);
         return;
       }
 
-      for (const item of data.inventory) {
+      inventory.forEach((item) => {
         const row = document.createElement("div");
         row.className = "inventoryItem";
+
         const label = document.createElement("div");
         label.className = "inventoryItemText";
         label.textContent = `${item.species} Lv.${item.level}`;
+
+        const btn = document.createElement("button");
+        btn.className = "deployBtn";
+        btn.textContent = "出撃";
+        btn.dataset.deployId = item.id;
+
         row.appendChild(label);
+        row.appendChild(btn);
         inventoryList.appendChild(row);
-      }
+      });
     }
 
-    function openInventory() {
-      renderInventory();
+    function openInventoryModal() {
+      renderInventoryModal();
       inventoryModal.classList.add("open");
       inventoryModal.setAttribute("aria-hidden", "false");
     }
 
-    function closeInventory() {
+    function closeInventoryModal() {
       inventoryModal.classList.remove("open");
       inventoryModal.setAttribute("aria-hidden", "true");
+    }
+
+    function applyShadowsAndFixMaterials(object3D) {
+      object3D.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          for (const mat of mats) {
+            if (!mat) continue;
+            mat.side = THREE.DoubleSide;
+            mat.needsUpdate = true;
+          }
+        }
+      });
+    }
+
+    function fitAndGround(model, targetHeight = config.modelHeight, groundLift = 0.0) {
+      applyShadowsAndFixMaterials(model);
+      model.updateWorldMatrix(true, true);
+
+      const box1 = new THREE.Box3().setFromObject(model);
+      const size1 = box1.getSize(new THREE.Vector3());
+      const scale = targetHeight / Math.max(size1.y, 0.0001);
+      model.scale.setScalar(scale);
+
+      model.updateWorldMatrix(true, true);
+
+      const box2 = new THREE.Box3().setFromObject(model);
+      const center2 = box2.getCenter(new THREE.Vector3());
+
+      model.position.x -= center2.x;
+      model.position.z -= center2.z;
+      model.position.y += (-box2.min.y) + groundLift;
+
+      model.updateWorldMatrix(true, true);
+      return model;
+    }
+
+    function cloneMaterialDeep(material) {
+      if (!material) return material;
+      if (Array.isArray(material)) return material.map(cloneMaterialDeep);
+      const cloned = material.clone();
+      for (const key of Object.keys(cloned)) {
+        const value = cloned[key];
+        if (value && value.isTexture) {
+          cloned[key] = value.clone();
+        }
+      }
+      return cloned;
+    }
+
+    function deepCloneUnique(root) {
+      const clone = root.clone(true);
+      clone.traverse((obj) => {
+        if (obj.isMesh) {
+          if (obj.geometry) obj.geometry = obj.geometry.clone();
+          obj.material = cloneMaterialDeep(obj.material);
+        }
+      });
+      return clone;
+    }
+
+    function disposeMaterial(material) {
+      if (!material) return;
+      const materials = Array.isArray(material) ? material : [material];
+      for (const mat of materials) {
+        if (!mat) continue;
+        const seen = new Set();
+        for (const key of Object.keys(mat)) {
+          const value = mat[key];
+          if (value && value.isTexture && !seen.has(value)) {
+            seen.add(value);
+            value.dispose();
+          }
+        }
+        mat.dispose?.();
+      }
+    }
+
+    function disposeObject3D(root) {
+      if (!root) return;
+      root.traverse((obj) => {
+        if (obj.isMesh) {
+          obj.geometry?.dispose?.();
+          disposeMaterial(obj.material);
+        }
+      });
+    }
+
+    function collectRootNames(root) {
+      const names = new Set();
+      root.traverse((obj) => {
+        if (!obj?.name) return;
+        if (/^Armature$/i.test(obj.name) || /^RootNode$/i.test(obj.name) || /^Scene$/i.test(obj.name)) {
+          names.add(obj.name);
+        }
+        if ((obj.isBone || obj.type === "Bone") && (!obj.parent || !obj.parent.isBone)) {
+          names.add(obj.name);
+        }
+      });
+      return [...names];
+    }
+
+    function stripRootMotionTracks(clip, rootNames) {
+      if (!clip) return null;
+      const c = clip.clone();
+      c.tracks = c.tracks.filter((track) => {
+        const name = track.name || "";
+        const dot = name.lastIndexOf(".");
+        if (dot === -1) return true;
+        const target = name.slice(0, dot);
+        const prop = name.slice(dot + 1);
+        if (rootNames.some((r) => target === r || target.startsWith(r + ".") || target.startsWith(r + "_"))) {
+          if (prop === "position" || prop === "quaternion" || prop === "scale") return false;
+        }
+        if (/Hips|hips|mixamorigHips|Pelvis|pelvis/i.test(target) && prop === "position") return false;
+        return true;
+      });
+      return c;
+    }
+
+    function firstClip(fbx) {
+      if (!fbx?.animations?.length) return null;
+      return fbx.animations[0];
+    }
+
+    function loadGLTFWithFallback(urls, fallbackFactory) {
+      return new Promise((resolve) => {
+        const tryAt = (index) => {
+          if (index >= urls.length) {
+            resolve({ scene: fallbackFactory(), fallback: true, url: null });
+            return;
+          }
+          gltfLoader.load(
+            urls[index],
+            (gltf) => resolve({ scene: gltf.scene, fallback: false, url: urls[index] }),
+            undefined,
+            () => tryAt(index + 1)
+          );
+        };
+        tryAt(0);
+      });
+    }
+
+    function loadFBXWithFallback(urls) {
+      return new Promise((resolve) => {
+        const tryAt = (index) => {
+          if (index >= urls.length) {
+            resolve(null);
+            return;
+          }
+          fbxLoader.load(
+            urls[index],
+            (fbx) => resolve(fbx),
+            undefined,
+            () => tryAt(index + 1)
+          );
+        };
+        tryAt(0);
+      });
+    }
+
+    function getCameraBasis() {
+      const forward = new THREE.Vector3(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw)).normalize();
+      const right = new THREE.Vector3(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw)).normalize();
+      return { forward, right };
+    }
+
+    function getCameraRelativeMoveDirection(inputX, inputZ) {
+      const { forward, right } = getCameraBasis();
+      tmp.v1.copy(right).multiplyScalar(inputX);
+      tmp.v2.copy(forward).multiplyScalar(inputZ);
+      tmp.v3.copy(tmp.v1).add(tmp.v2);
+      if (tmp.v3.lengthSq() < 1e-8) return tmp.v3.set(0, 0, 0);
+      return tmp.v3.normalize();
+    }
+
+    function currentSpeed() {
+      return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
+    }
+
+    function getKeyboardMoveVector() {
+      const x =
+        (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) +
+        (keys.has("KeyA") || keys.has("ArrowLeft") ? -1 : 0);
+
+      const z =
+        (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) +
+        (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+
+      return { x, z };
+    }
+
+    function getMoveInput() {
+      const k = getKeyboardMoveVector();
+      let x = clamp(k.x + stick.x, -1, 1);
+      let z = clamp(k.z + (-stick.y), -1, 1);
+      const len = Math.hypot(x, z);
+      if (len > 1) {
+        x /= len;
+        z /= len;
+      }
+      return {
+        x, z,
+        magnitude: Math.hypot(x, z),
+        jump: keys.has("Space"),
+        attack: keys.has("KeyJ") || keys.has("KeyK")
+      };
+    }
+
+    function requestJump() {
+      if (gameOver) return;
+      if (!physics.onGround) return;
+      physics.vy = config.jumpVelocity;
+      physics.jumpOffset = 0.02;
+      physics.onGround = false;
+    }
+
+    function getCharacterForwardVector() {
+      return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+    }
+
+    function takePlayerDamage(amount) {
+      if (gameOver) return;
+      playerHp = Math.max(0, playerHp - amount);
+      updatePlayerHud();
+      if (playerHp <= 0) {
+        playerHp = 0;
+        gameOver = true;
+        attackPlaying = false;
+        attackTimer = 0;
+        hardStopAction("walk");
+        hardStopAction("run");
+        hardStopAction("attack");
+        currentActionName = "idle";
+        setStatus("ゲームオーバー");
+      }
+    }
+
+    function healPlayer(amount) {
+      if (gameOver) return 0;
+      const before = playerHp;
+      playerHp = Math.min(config.playerHpMax, playerHp + amount);
+      updatePlayerHud();
+      return playerHp - before;
+    }
+
+    function getStatsByLevel(level) {
+      const mult = Math.pow(1.5, level - 1);
+      return {
+        level,
+        hpMax: config.boarBaseHp * mult,
+        atkDps: config.boarBaseAttack * mult
+      };
+    }
+
+    function randomWorldPoint(margin = 18) {
+      return {
+        x: rand(-WORLD_HALF + margin, WORLD_HALF - margin),
+        z: rand(-WORLD_HALF + margin, WORLD_HALF - margin)
+      };
+    }
+
+    function generateTreeData() {
+      treeData.length = 0;
+      while (treeData.length < TREE_COUNT) {
+        const p = randomWorldPoint(20);
+        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        treeData.push({
+          id: nextEntityId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: 0.95 + Math.random() * 1.1,
+          activeObject: null,
+          removed: false,
+          isSpawning: false,
+          isDespawning: false,
+          spawnCooldownUntil: 0,
+          terrainLift: 0,
+          collisionRadius: 2.2
+        });
+      }
+    }
+
+    function generateHerbData() {
+      herbData.length = 0;
+      while (herbData.length < HERB_COUNT) {
+        const p = randomWorldPoint(16);
+        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        herbData.push({
+          id: nextEntityId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: 0.85 + Math.random() * 0.45,
+          activeObject: null,
+          removed: false,
+          isSpawning: false,
+          isDespawning: false,
+          spawnCooldownUntil: 0,
+          animT: Math.random() * 10,
+          terrainLift: 0,
+          baseY: 0
+        });
+      }
+    }
+
+    function generateRockData() {
+      rockData.length = 0;
+      while (rockData.length < ROCK_COUNT) {
+        const p = randomWorldPoint(20);
+        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        rockData.push({
+          id: nextEntityId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: 0.8 + Math.random() * 0.8,
+          activeObject: null,
+          removed: false,
+          isSpawning: false,
+          isDespawning: false,
+          spawnCooldownUntil: 0,
+          terrainLift: 0,
+          collisionRadius: 1.0
+        });
+      }
+    }
+
+    function getBoarLevelForDistance(distanceFromCenter) {
+      if (distanceFromCenter <= 180) {
+        return config.boarLevelMin + Math.floor(Math.random() * (config.lowLevelMax - config.boarLevelMin + 1));
+      }
+      return config.highLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.highLevelMin + 1));
+    }
+
+    function generateBoarData() {
+      boarData.length = 0;
+      while (boarData.length < BOAR_COUNT) {
+        const p = randomWorldPoint(20);
+        const d = Math.hypot(p.x, p.z);
+        if (d < 22) continue;
+        const level = getBoarLevelForDistance(d);
+        const stats = getStatsByLevel(level);
+        boarData.push({
+          id: nextEntityId++,
+          x: p.x,
+          z: p.z,
+          rotY: Math.random() * Math.PI * 2,
+          scale: 0.85 + Math.random() * 0.45,
+          level,
+          hpMax: stats.hpMax,
+          hp: stats.hpMax,
+          atkDps: stats.atkDps,
+          attackRange: config.boarAttackRange + (level - 1) * 0.08,
+          aggroRange: config.boarAggroRange + (level - 1) * 0.8,
+          moveSpeed: config.boarMoveSpeed * (1 + (level - 1) * 0.08),
+          collisionRadius: 0.7,
+          uiOffset: 2.0,
+          state: "move",
+          stateTime: 0,
+          wanderYaw: Math.random() * Math.PI * 2,
+          wanderTimer: rand(0.8, 2.6),
+          hostileUntil: 0,
+          dead: false,
+          respawnToken: 0,
+          isSpawning: false,
+          isDespawning: false,
+          spawnCooldownUntil: 0,
+          terrainLift: 0,
+          activeObject: null
+        });
+      }
     }
 
     function createFallbackPlayerRig() {
@@ -839,10 +1284,10 @@
       head.receiveShadow = true;
 
       const legGeo = new THREE.CylinderGeometry(0.09, 0.11, 0.72, 6);
-      const legPos = [[-0.18, 0.4, 0.11], [0.18, 0.4, 0.11], [-0.18, 0.4, -0.11], [0.18, 0.4, -0.11]];
-      for (const [x, y, z] of legPos) {
+      const legPos = [[-0.18,0.4,0.11],[0.18,0.4,0.11],[-0.18,0.4,-0.11],[0.18,0.4,-0.11]];
+      for (const [x,y,z] of legPos) {
         const leg = new THREE.Mesh(legGeo, darkMat);
-        leg.position.set(x, y, z);
+        leg.position.set(x,y,z);
         leg.castShadow = true;
         leg.receiveShadow = true;
         root.add(leg);
@@ -852,19 +1297,21 @@
       const arm1 = new THREE.Mesh(armGeo, darkMat);
       arm1.position.set(-0.48, 1.48, 0);
       arm1.rotation.z = 0.14;
+      arm1.castShadow = true;
+      arm1.receiveShadow = true;
+
       const arm2 = arm1.clone();
       arm2.position.x = 0.48;
       arm2.rotation.z = -0.14;
-      arm1.castShadow = arm2.castShadow = true;
-      arm1.receiveShadow = arm2.receiveShadow = true;
+      arm2.castShadow = true;
+      arm2.receiveShadow = true;
 
       root.add(body, head, arm1, arm2);
-      root.userData.ownsResources = true;
       return root;
     }
 
-    function createFallbackTree() {
-      const root = new THREE.Group();
+    function createFallbackTreeTemplate() {
+      const tree = new THREE.Group();
       const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7b4f2a, roughness: 1.0 });
       const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1.0 });
 
@@ -883,12 +1330,11 @@
       crown2.castShadow = true;
       crown2.receiveShadow = true;
 
-      root.add(trunk, crown1, crown2);
-      root.userData.ownsResources = true;
-      return root;
+      tree.add(trunk, crown1, crown2);
+      return tree;
     }
 
-    function createFallbackBoar() {
+    function createFallbackBoarTemplate() {
       const boar = new THREE.Group();
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b4b2b, roughness: 1.0 });
       const snoutMat = new THREE.MeshStandardMaterial({ color: 0x7f6044, roughness: 1.0 });
@@ -920,22 +1366,23 @@
       ear2.position.z = -0.22;
 
       const legGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6);
-      const offsets = [[-0.6, 0.25, 0.3], [-0.6, 0.25, -0.3], [0.5, 0.25, 0.3], [0.5, 0.25, -0.3]];
-      for (const [x, y, z] of offsets) {
+      const legs = [];
+      const legOffsets = [[-0.6,0.25,0.3],[-0.6,0.25,-0.3],[0.5,0.25,0.3],[0.5,0.25,-0.3]];
+      for (const [x, y, z] of legOffsets) {
         const leg = new THREE.Mesh(legGeo, bodyMat);
         leg.position.set(x, y, z);
         leg.castShadow = true;
         leg.receiveShadow = true;
         boar.add(leg);
+        legs.push(leg);
       }
 
       boar.add(body, head, snout, ear1, ear2);
-      boar.userData.parts = { body, head, snout, ears: [ear1, ear2] };
-      boar.userData.ownsResources = true;
+      boar.userData.parts = { body, head, snout, ears: [ear1, ear2], legs };
       return boar;
     }
 
-    function createFallbackHerb() {
+    function createFallbackHerbTemplate() {
       const herb = new THREE.Group();
       const stemMat = new THREE.MeshStandardMaterial({ color: 0x2f8f3e, roughness: 1.0 });
       const leafMat = new THREE.MeshStandardMaterial({ color: 0x5ecb60, roughness: 1.0 });
@@ -954,6 +1401,8 @@
       const leaf2 = leaf1.clone();
       leaf2.position.set(-0.1, 0.62, 0.1);
       leaf2.rotation.z = -0.7;
+      leaf2.castShadow = true;
+      leaf2.receiveShadow = true;
 
       const leaf3 = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 5), stemMat);
       leaf3.position.set(0.0, 0.95, 0.0);
@@ -962,960 +1411,177 @@
       leaf3.receiveShadow = true;
 
       herb.add(stem, leaf1, leaf2, leaf3);
-      herb.userData.ownsResources = true;
       return herb;
     }
 
-    function createFallbackStone() {
-      const stone = new THREE.Group();
-      const mats = [
-        new THREE.MeshStandardMaterial({ color: 0x8e9198, roughness: 1.0 }),
-        new THREE.MeshStandardMaterial({ color: 0x7f8288, roughness: 1.0 }),
-        new THREE.MeshStandardMaterial({ color: 0xa1a4aa, roughness: 1.0 })
-      ];
-      const geo1 = new THREE.DodecahedronGeometry(0.75, 0);
-      const geo2 = new THREE.DodecahedronGeometry(0.55, 0);
-      const geo3 = new THREE.DodecahedronGeometry(0.42, 0);
-
-      const m1 = new THREE.Mesh(geo1, mats[0]);
-      m1.position.set(0, 0.5, 0);
-      m1.castShadow = true;
-      m1.receiveShadow = true;
-
-      const m2 = new THREE.Mesh(geo2, mats[1]);
-      m2.position.set(0.3, 0.7, -0.15);
-      m2.castShadow = true;
-      m2.receiveShadow = true;
-
-      const m3 = new THREE.Mesh(geo3, mats[2]);
-      m3.position.set(-0.25, 0.42, 0.2);
-      m3.castShadow = true;
-      m3.receiveShadow = true;
-
-      stone.add(m1, m2, m3);
-      stone.userData.ownsResources = true;
-      return stone;
+    function createFallbackRockTemplate() {
+      const rock = new THREE.Group();
+      const mat1 = new THREE.MeshStandardMaterial({ color: 0x8d8d8d, roughness: 1.0 });
+      const mat2 = new THREE.MeshStandardMaterial({ color: 0x6f6f6f, roughness: 1.0 });
+      const base = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0, 0), mat1);
+      base.castShadow = true;
+      base.receiveShadow = true;
+      const bump1 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.74, 0), mat2);
+      bump1.position.set(0.2, 0.25, -0.1);
+      bump1.rotation.set(0.3, 0.4, 0.1);
+      bump1.castShadow = true;
+      bump1.receiveShadow = true;
+      const bump2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.48, 0), mat1);
+      bump2.position.set(-0.32, 0.18, 0.2);
+      bump2.rotation.set(0.6, 0.2, 0.1);
+      bump2.castShadow = true;
+      bump2.receiveShadow = true;
+      rock.add(base, bump1, bump2);
+      return rock;
     }
 
-    function disposeObject3D(root) {
-      if (!root || !root.userData || !root.userData.ownsResources) return;
-      const geometries = new Set();
-      const materials = new Set();
-
-      root.traverse((obj) => {
-        if (!obj.isMesh) return;
-        if (obj.geometry) geometries.add(obj.geometry);
-        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-        for (const mat of mats) {
-          if (mat) materials.add(mat);
-        }
-      });
-
-      for (const geo of geometries) geo.dispose();
-      for (const mat of materials) mat.dispose();
-    }
-
-    function applyShadows(root) {
-      root.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          for (const mat of mats) {
-            if (!mat) continue;
-            mat.side = THREE.DoubleSide;
-            mat.needsUpdate = true;
-          }
-        }
-      });
-    }
-
-    function fitAndGround(model, targetHeight = 2.0, groundLift = 0.0) {
-      applyShadows(model);
-      model.updateWorldMatrix(true, true);
-
-      const box1 = new THREE.Box3().setFromObject(model);
-      const size1 = box1.getSize(new THREE.Vector3());
-      const scale = targetHeight / Math.max(size1.y, 0.0001);
-      model.scale.setScalar(scale);
-
-      model.updateWorldMatrix(true, true);
-      const box2 = new THREE.Box3().setFromObject(model);
-      const center2 = box2.getCenter(new THREE.Vector3());
-
-      model.position.x -= center2.x;
-      model.position.z -= center2.z;
-      model.position.y += (-box2.min.y) + groundLift;
-
-      model.updateWorldMatrix(true, true);
-      return model;
-    }
-
-    function cloneOrCreate(asset) {
-      if (asset.useFactory) {
-        const obj = asset.factory();
-        obj.userData.ownsResources = true;
-        return obj;
-      }
-      const root = asset.template.clone(true);
-      root.userData.ownsResources = false;
-      return root;
-    }
-
-    function loadGLTFOne(url) {
-      return new Promise((resolve) => {
-        gltfLoader.load(
-          url,
-          (gltf) => resolve({ ok: true, gltf }),
-          undefined,
-          () => resolve({ ok: false, gltf: null })
-        );
-      });
-    }
-
-    async function loadGLTFTemplate(urls, fallbackFactory) {
-      for (const url of urls) {
-        try {
-          const res = await loadGLTFOne(url);
-          if (res.ok && res.gltf && res.gltf.scene) {
-            return {
-              useFactory: false,
-              template: res.gltf.scene,
-              factory: fallbackFactory
-            };
-          }
-        } catch (e) {
-          console.warn(`GLTF load failed: ${url}`, e);
-        }
-      }
-      return {
-        useFactory: true,
-        template: null,
-        factory: fallbackFactory
-      };
-    }
-
-    function loadFBX(url) {
-      return new Promise((resolve) => {
-        fbxLoader.load(
-          url,
-          (fbx) => resolve({ ok: true, fbx }),
-          undefined,
-          () => resolve({ ok: false, fbx: null })
-        );
-      });
-    }
-
-    function getBaseStatsByLevel(level) {
-      const mult = Math.pow(1.5, level - 1);
-      return {
-        hpMax: config.boarBaseHp * mult,
-        atkDps: config.boarBaseAttack * mult
-      };
-    }
-
-    function randomWorldPoint(minR = 18, maxR = WORLD_HALF - 18) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = rand(minR, maxR);
-      return {
-        x: Math.cos(angle) * dist,
-        z: Math.sin(angle) * dist
-      };
-    }
-
-    function generateTreeData() {
-      data.trees.length = 0;
-      while (data.trees.length < TREE_COUNT) {
-        const p = randomWorldPoint(20);
-        if (Math.hypot(p.x, p.z) < 18) continue;
-        data.trees.push({
-          id: makeId(),
-          x: p.x,
-          z: p.z,
-          rotY: Math.random() * Math.PI * 2,
-          scale: 0.95 + Math.random() * 1.1,
-          activeObject: null,
-          spawnState: "idle",
-          spawnLockUntil: 0,
-          collisionRadius: 2.2
-        });
-      }
-    }
-
-    function getBoarLevelForDistance(distanceFromCenter) {
-      if (distanceFromCenter <= 180) {
-        return config.boarLevelMin + Math.floor(Math.random() * (config.lowLevelMax - config.boarLevelMin + 1));
-      }
-      return config.highLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.highLevelMin + 1));
-    }
-
-    function generateBoarData() {
-      data.boars.length = 0;
-      while (data.boars.length < BOAR_COUNT) {
-        const p = randomWorldPoint(20);
-        const d = Math.hypot(p.x, p.z);
-        if (d < 22) continue;
-        const level = getBoarLevelForDistance(d);
-        const stats = getBaseStatsByLevel(level);
-        data.boars.push({
-          id: makeId(),
-          x: p.x,
-          z: p.z,
-          rotY: Math.random() * Math.PI * 2,
-          scale: 0.85 + Math.random() * 0.45,
-          level,
-          hpMax: stats.hpMax,
-          hp: stats.hpMax,
-          atkDps: stats.atkDps,
-          attackRange: config.boarAttackRange + (level - 1) * 0.08,
-          aggroRange: config.boarAggroRange + (level - 1) * 0.8,
-          moveSpeed: config.boarMoveSpeed * (1 + (level - 1) * 0.08),
-          collisionRadius: 0.7,
-          uiOffset: 2.0,
-          state: "move",
-          stateTime: 0,
-          wanderYaw: Math.random() * Math.PI * 2,
-          wanderTimer: rand(0.8, 2.6),
-          hostileUntil: 0,
-          dead: false,
-          respawnToken: 0,
-          activeObject: null,
-          spawnState: "idle",
-          spawnLockUntil: 0
-        });
-      }
-    }
-
-    function generateHerbData() {
-      data.herbs.length = 0;
-      while (data.herbs.length < HERB_COUNT) {
-        const p = randomWorldPoint(16);
-        if (Math.hypot(p.x, p.z) < 18) continue;
-        data.herbs.push({
-          id: makeId(),
-          x: p.x,
-          z: p.z,
-          rotY: Math.random() * Math.PI * 2,
-          scale: 0.85 + Math.random() * 0.45,
-          activeObject: null,
-          removed: false,
-          animT: Math.random() * 10,
-          baseY: 0,
-          spawnState: "idle",
-          spawnLockUntil: 0
-        });
-      }
-    }
-
-    function generateStoneData() {
-      data.stones.length = 0;
-      while (data.stones.length < STONE_COUNT) {
-        const p = randomWorldPoint(16);
-        if (Math.hypot(p.x, p.z) < 20) continue;
-        data.stones.push({
-          id: makeId(),
-          x: p.x,
-          z: p.z,
-          rotY: Math.random() * Math.PI * 2,
-          scale: 0.8 + Math.random() * 1.0,
-          activeObject: null,
-          spawnState: "idle",
-          spawnLockUntil: 0,
-          collisionRadius: 0.95
-        });
-      }
-    }
-
-    function loadPlayerRig() {
-      return new Promise(async (resolve) => {
-        const res = await loadFBX(PLAYER_FBX_URL);
-        if (res.ok && res.fbx) {
-          const model = res.fbx;
-          fitAndGround(model, config.modelHeight, 0.03);
-          model.rotation.y = Math.PI;
-          model.userData.ownsResources = false;
-          playerRoot.add(model);
-          visualRoot = model;
-          resolve(true);
-          return;
-        }
-        const fallback = createFallbackPlayerRig();
-        fitAndGround(fallback, config.modelHeight, 0.03);
-        fallback.rotation.y = Math.PI;
-        playerRoot.add(fallback);
-        visualRoot = fallback;
-        resolve(false);
-      });
-    }
-
-    function syncPlayerGround() {
-      const terrainY = getTerrainHeight(playerRoot.position.x, playerRoot.position.z);
-      playerRoot.position.y = terrainY + state.jumpY;
-    }
-
-    function setPlayerPosition(x, z) {
-      playerRoot.position.x = clamp(x, -WORLD_HALF + 2, WORLD_HALF - 2);
-      playerRoot.position.z = clamp(z, -WORLD_HALF + 2, WORLD_HALF - 2);
-      syncPlayerGround();
-    }
-
-    function getCameraBasis() {
-      const forward = new THREE.Vector3(
-        -Math.sin(state.cameraYaw),
-        0,
-        -Math.cos(state.cameraYaw)
-      ).normalize();
-      const right = new THREE.Vector3(
-        Math.cos(state.cameraYaw),
-        0,
-        -Math.sin(state.cameraYaw)
-      ).normalize();
-      return { forward, right };
-    }
-
-    function getCameraRelativeMoveDirection(inputX, inputZ) {
-      const { forward, right } = getCameraBasis();
-      tmp.v1.copy(right).multiplyScalar(inputX);
-      tmp.v2.copy(forward).multiplyScalar(inputZ);
-      tmp.v3.copy(tmp.v1).add(tmp.v2);
-      if (tmp.v3.lengthSq() < 1e-8) return tmp.v3.set(0, 0, 0);
-      return tmp.v3.normalize();
-    }
-
-    function getKeyboardMoveVector() {
-      const x =
-        (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) +
-        (keys.has("KeyA") || keys.has("ArrowLeft") ? -1 : 0);
-      const z =
-        (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) +
-        (keys.has("KeyS") || keys.has("ArrowDown") ? -1 : 0);
-      return { x, z };
-    }
-
-    function getMoveInput() {
-      const k = getKeyboardMoveVector();
-
-      let x = clamp(k.x + stick.x, -1, 1);
-      let z = clamp(k.z + (-stick.y), -1, 1);
-
-      const len = Math.hypot(x, z);
-      if (len > 1) {
-        x /= len;
-        z /= len;
-      }
-
-      return {
-        x,
-        z,
-        magnitude: Math.hypot(x, z),
-        jump: keys.has("Space"),
-        attack: keys.has("KeyJ") || keys.has("KeyK")
-      };
-    }
-
-    function currentSpeed() {
-      return state.dashMode || state.dashHeld ? config.dashSpeed : config.walkSpeed;
-    }
-
-    function requestJump() {
-      if (state.gameOver) return;
-      if (!state.onGround) return;
-      state.jumpV = config.jumpVelocity;
-      state.onGround = false;
-    }
-
-    function updateJump(delta) {
-      if (state.onGround) return;
-      state.jumpV += config.gravity * delta;
-      state.jumpY += state.jumpV * delta;
-      if (state.jumpY <= 0) {
-        state.jumpY = 0;
-        state.jumpV = 0;
-        state.onGround = true;
-      }
-    }
-
-    function startAttack() {
-      if (state.gameOver || state.attackPlaying) return;
-      state.attackPlaying = true;
-      state.attackTimer = config.playerAttackDuration;
-      attackBtn.classList.add("active");
-    }
-
-    function finishAttack() {
-      state.attackPlaying = false;
-      state.attackTimer = 0;
-      attackBtn.classList.remove("active");
-    }
-
-    function takePlayerDamage(amount) {
-      if (state.gameOver) return;
-      state.hp = Math.max(0, state.hp - amount);
-      updatePlayerHud();
-      if (state.hp <= 0) {
-        state.hp = 0;
-        state.gameOver = true;
-        finishAttack();
-        setStatus("ゲームオーバー");
-      }
-    }
-
-    function healPlayer(amount) {
-      if (state.gameOver) return 0;
-      const before = state.hp;
-      state.hp = Math.min(state.hpMax, state.hp + amount);
-      updatePlayerHud();
-      return state.hp - before;
-    }
-
-    function segmentPointDistanceSq(ax, az, bx, bz, cx, cz) {
-      const abx = bx - ax;
-      const abz = bz - az;
-      const acx = cx - ax;
-      const acz = cz - az;
-      const abLenSq = abx * abx + abz * abz;
-      if (abLenSq < 1e-8) {
-        return acx * acx + acz * acz;
-      }
-      const t = clamp((acx * abx + acz * abz) / abLenSq, 0, 1);
-      const px = ax + abx * t;
-      const pz = az + abz * t;
-      const dx = cx - px;
-      const dz = cz - pz;
-      return dx * dx + dz * dz;
-    }
-
-    function getActiveObstacleList() {
-      const list = [];
-      for (const t of active.trees.values()) list.push({ x: t.activeObject.root.position.x, z: t.activeObject.root.position.z, r: t.collisionRadius || 2.2 });
-      for (const s of active.stones.values()) list.push({ x: s.activeObject.root.position.x, z: s.activeObject.root.position.z, r: s.collisionRadius || 0.95 });
-      return list;
-    }
-
-    function pathBlocked(ax, az, bx, bz, radius) {
-      const obstacles = getActiveObstacleList();
-      for (const o of obstacles) {
-        const sumR = radius + o.r;
-        const d2 = segmentPointDistanceSq(ax, az, bx, bz, o.x, o.z);
-        if (d2 <= sumR * sumR) return true;
-      }
-      return false;
-    }
-
-    function moveWithCollision(dx, dz) {
-      if (Math.abs(dx) < 1e-8 && Math.abs(dz) < 1e-8) return;
-      const startX = playerRoot.position.x;
-      const startZ = playerRoot.position.z;
-      const endX = clamp(startX + dx, -WORLD_HALF + 2, WORLD_HALF - 2);
-      const endZ = clamp(startZ + dz, -WORLD_HALF + 2, WORLD_HALF - 2);
-
-      if (!pathBlocked(startX, startZ, endX, endZ, config.playerCollisionRadius)) {
-        playerRoot.position.x = endX;
-        playerRoot.position.z = endZ;
-        syncPlayerGround();
-        return;
-      }
-
-      let lo = 0;
-      let hi = 1;
-      for (let i = 0; i < 10; i++) {
-        const mid = (lo + hi) * 0.5;
-        const mx = startX + (endX - startX) * mid;
-        const mz = startZ + (endZ - startZ) * mid;
-        if (pathBlocked(startX, startZ, mx, mz, config.playerCollisionRadius)) hi = mid;
-        else lo = mid;
-      }
-
-      const safeT = lo;
-      playerRoot.position.x = startX + (endX - startX) * safeT;
-      playerRoot.position.z = startZ + (endZ - startZ) * safeT;
-      syncPlayerGround();
-    }
-
-    function moveBoarWithCollision(rootObj, dx, dz, radius = 0.7) {
-      const startX = rootObj.position.x;
-      const startZ = rootObj.position.z;
-      const endX = clamp(startX + dx, -WORLD_HALF + 2, WORLD_HALF - 2);
-      const endZ = clamp(startZ + dz, -WORLD_HALF + 2, WORLD_HALF - 2);
-
-      if (!pathBlocked(startX, startZ, endX, endZ, radius)) {
-        rootObj.position.x = endX;
-        rootObj.position.z = endZ;
-        rootObj.position.y = getTerrainHeight(endX, endZ);
-        return;
-      }
-
-      let lo = 0;
-      let hi = 1;
-      for (let i = 0; i < 10; i++) {
-        const mid = (lo + hi) * 0.5;
-        const mx = startX + (endX - startX) * mid;
-        const mz = startZ + (endZ - startZ) * mid;
-        if (pathBlocked(startX, startZ, mx, mz, radius)) hi = mid;
-        else lo = mid;
-      }
-
-      const safeT = lo;
-      rootObj.position.x = startX + (endX - startX) * safeT;
-      rootObj.position.z = startZ + (endZ - startZ) * safeT;
-      rootObj.position.y = getTerrainHeight(rootObj.position.x, rootObj.position.z);
-    }
-
-    function disposeSpawned(root) {
-      if (!root) return;
-      disposeObject3D(root);
-      if (root.parent) root.parent.remove(root);
-    }
-
-    function spawnTree(item) {
-      if (item.activeObject || item.spawnState !== "idle" || performance.now() < item.spawnLockUntil) return;
-      item.spawnState = "spawning";
-      const root = cloneOrCreate(assets.tree);
-      fitAndGround(root, 9.5 * item.scale, 0.03);
-      root.position.set(item.x, getTerrainHeight(item.x, item.z), item.z);
-      root.position.y = getTerrainHeight(item.x, item.z) + root.position.y;
-      root.rotation.y = item.rotY;
-      root.userData.collisionRadius = item.collisionRadius;
-      scene.add(root);
-      item.activeObject = { root };
-      item.spawnState = "active";
-      active.trees.set(item.id, item);
-    }
-
-    function despawnTree(item, now = performance.now()) {
-      if (!item.activeObject || item.spawnState === "despawning") return;
-      item.spawnState = "despawning";
-      disposeSpawned(item.activeObject.root);
-      item.activeObject = null;
-      item.spawnState = "idle";
-      item.spawnLockUntil = now + 120;
-      active.trees.delete(item.id);
-    }
-
-    function spawnHerb(item) {
-      if (item.activeObject || item.spawnState !== "idle" || performance.now() < item.spawnLockUntil) return;
-      item.spawnState = "spawning";
-      const root = cloneOrCreate(assets.herb);
-      fitAndGround(root, 1.35 * item.scale, 0.03);
-      const gy = getTerrainHeight(item.x, item.z);
-      root.position.set(item.x, gy + root.position.y, item.z);
-      root.rotation.y = item.rotY;
-      const herbId = item.id;
-      root.userData.herbId = herbId;
-      root.traverse((child) => {
-        child.userData.herbId = herbId;
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      scene.add(root);
-      item.activeObject = { root };
-      item.baseY = root.position.y;
-      item.spawnState = "active";
-      active.herbs.set(item.id, item);
-    }
-
-    function despawnHerb(item, now = performance.now()) {
-      if (!item.activeObject || item.spawnState === "despawning") return;
-      item.spawnState = "despawning";
-      disposeSpawned(item.activeObject.root);
-      item.activeObject = null;
-      item.spawnState = "idle";
-      item.spawnLockUntil = now + 120;
-      active.herbs.delete(item.id);
-    }
-
-    function spawnStone(item) {
-      if (item.activeObject || item.spawnState !== "idle" || performance.now() < item.spawnLockUntil) return;
-      item.spawnState = "spawning";
-      const root = cloneOrCreate(assets.stone);
-      fitAndGround(root, 1.2 * item.scale, 0.03);
-      const gy = getTerrainHeight(item.x, item.z);
-      root.position.set(item.x, gy + root.position.y, item.z);
-      root.rotation.y = item.rotY;
-      root.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      const box = new THREE.Box3().setFromObject(root);
-      const size = box.getSize(new THREE.Vector3());
-      item.collisionRadius = Math.max(size.x, size.z) * 0.28 + 0.45;
-
-      scene.add(root);
-      item.activeObject = { root };
-      item.spawnState = "active";
-      active.stones.set(item.id, item);
-    }
-
-    function despawnStone(item, now = performance.now()) {
-      if (!item.activeObject || item.spawnState === "despawning") return;
-      item.spawnState = "despawning";
-      disposeSpawned(item.activeObject.root);
-      item.activeObject = null;
-      item.spawnState = "idle";
-      item.spawnLockUntil = now + 180;
-      active.stones.delete(item.id);
-    }
-
-    function spawnBoar(item) {
-      if (item.activeObject || item.spawnState !== "idle" || performance.now() < item.spawnLockUntil) return;
-      item.spawnState = "spawning";
-      const root = cloneOrCreate(assets.boar);
-      const scale = 0.95 + (item.level - 1) * 0.11;
-      fitAndGround(root, 2.0 * item.scale * scale, 0.05);
-      const gy = getTerrainHeight(item.x, item.z);
-      root.position.set(item.x, gy + root.position.y, item.z);
-      root.rotation.y = item.rotY;
-      const box = new THREE.Box3().setFromObject(root);
-      const size = box.getSize(new THREE.Vector3());
-      item.collisionRadius = Math.max(size.x, size.z) * 0.22 + 0.35;
-      item.uiOffset = Math.max(1.6, size.y * 1.15);
-      item.activeObject = { root };
-      item.spawnState = "active";
-      scene.add(root);
-      active.boars.set(item.id, item);
-      createBoarTag(item);
-    }
-
-    function despawnBoar(item, now = performance.now()) {
-      if (!item.activeObject || item.spawnState === "despawning") return;
-      item.spawnState = "despawning";
-      removeBoarTag(item);
-      disposeSpawned(item.activeObject.root);
-      item.activeObject = null;
-      item.spawnState = "idle";
-      item.spawnLockUntil = now + 180;
-      active.boars.delete(item.id);
-    }
-
-    function createBoarTag(item) {
-      if (item.tag) return;
+    function createBoarTag(level, hp, hpMax) {
       const el = document.createElement("div");
       el.className = "boarTag";
       el.innerHTML = `
-        <div class="boarLevel">Lv.${item.level}</div>
+        <div class="boarLevel">Lv.${level}</div>
         <div class="boarBarWrap"><div class="boarBarFill"></div></div>
-        <div class="boarHpText">${Math.ceil(item.hp)} / ${Math.ceil(item.hpMax)}</div>
+        <div class="boarHpText">${Math.ceil(hp)} / ${Math.ceil(hpMax)}</div>
       `;
       worldUI.appendChild(el);
-      item.tag = {
+      return {
         el,
         fill: el.querySelector(".boarBarFill"),
         text: el.querySelector(".boarHpText")
       };
     }
 
-    function removeBoarTag(item) {
-      if (item.tag && item.tag.el && item.tag.el.parentNode) {
-        item.tag.el.parentNode.removeChild(item.tag.el);
+    function updateBoarTag(data) {
+      const o = data.activeObject;
+      if (!o || data.dead || !o.root?.visible) {
+        if (o?.tag?.el) o.tag.el.style.opacity = "0";
+        return;
       }
-      item.tag = null;
-    }
 
-    function updateBoarTag(item) {
-      if (!item.tag || !item.activeObject) return;
-      const root = item.activeObject.root;
-      const pos = tmp.v1.set(root.position.x, root.position.y + item.uiOffset, root.position.z).project(camera);
+      const pos = tmp.v1.set(
+        o.root.position.x,
+        o.root.position.y + (data.uiOffset || 2.0),
+        o.root.position.z
+      ).project(camera);
+
       const inFront = pos.z > -1 && pos.z < 1;
       const onScreen = pos.x >= -1.2 && pos.x <= 1.2 && pos.y >= -1.2 && pos.y <= 1.2;
+
       if (!inFront || !onScreen) {
-        item.tag.el.style.opacity = "0";
+        o.tag.el.style.opacity = "0";
         return;
       }
+
       const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
-      item.tag.el.style.opacity = "1";
-      item.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
-      item.tag.fill.style.width = `${clamp((item.hp / item.hpMax) * 100, 0, 100)}%`;
-      item.tag.text.textContent = `HP ${Math.ceil(item.hp)} / ${Math.ceil(item.hpMax)}`;
+
+      o.tag.el.style.opacity = "1";
+      o.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+      o.tag.fill.style.width = `${clamp((data.hp / data.hpMax) * 100, 0, 100)}%`;
+      o.tag.text.textContent = `HP ${Math.ceil(data.hp)} / ${Math.ceil(data.hpMax)}`;
     }
 
-    function syncStream(array, spawnFn, despawnFn, activeMap) {
-      const px = playerRoot.position.x;
-      const pz = playerRoot.position.z;
-      for (const item of array) {
-        if (item.removed || item.dead) {
-          if (item.activeObject) despawnFn(item);
-          continue;
-        }
-        const dx = item.x - px;
-        const dz = item.z - pz;
-        const within = dx * dx + dz * dz <= ACTIVE_RADIUS_SQ;
-        if (within) {
-          if (!item.activeObject) spawnFn(item);
-          else activeMap.set(item.id, item);
-        } else {
-          if (item.activeObject) despawnFn(item);
-        }
-      }
+    function updateBoarTags() {
+      for (const data of activeBoars.values()) updateBoarTag(data);
     }
 
-    function updateWorldStreaming() {
-      syncStream(data.trees, spawnTree, despawnTree, active.trees);
-      syncStream(data.herbs, spawnHerb, despawnHerb, active.herbs);
-      syncStream(data.boars, spawnBoar, despawnBoar, active.boars);
-      syncStream(data.stones, spawnStone, despawnStone, active.stones);
+    function randomWorldPosition(minR = 18, maxR = 95) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = rand(minR, maxR);
+      return { x: Math.cos(angle) * dist, z: Math.sin(angle) * dist };
     }
 
-    function forceGroundAllActiveEntities() {
-      for (const item of active.trees.values()) {
-        if (!item.activeObject) continue;
-        const root = item.activeObject.root;
-        root.position.y = getTerrainHeight(root.position.x, root.position.z) + (root.position.y - Math.floor(root.position.y));
+    function placeOnTerrain(root, x, z, terrainLift = 0) {
+      root.position.set(x, getTerrainHeight(x, z) + terrainLift, z);
+    }
+
+    function refreshCollisionCircles() {
+      collisionCircles.length = 0;
+      for (const data of activeTrees.values()) {
+        if (!data.activeObject?.root) continue;
+        const p = data.activeObject.root.position;
+        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || 1.5 });
       }
-      for (const item of active.herbs.values()) {
-        if (!item.activeObject) continue;
-        const root = item.activeObject.root;
-        root.position.y = getTerrainHeight(root.position.x, root.position.z) + (root.position.y - Math.floor(root.position.y));
-        item.baseY = root.position.y;
-      }
-      for (const item of active.boars.values()) {
-        if (!item.activeObject) continue;
-        const root = item.activeObject.root;
-        root.position.y = getTerrainHeight(root.position.x, root.position.z);
-      }
-      for (const item of active.stones.values()) {
-        if (!item.activeObject) continue;
-        const root = item.activeObject.root;
-        root.position.y = getTerrainHeight(root.position.x, root.position.z) + (root.position.y - Math.floor(root.position.y));
+      for (const data of activeRocks.values()) {
+        if (!data.activeObject?.root) continue;
+        const p = data.activeObject.root.position;
+        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || 1.0 });
       }
     }
 
-    function updateHerbs(delta) {
-      for (const item of active.herbs.values()) {
-        if (!item.activeObject) continue;
-        const root = item.activeObject.root;
-        item.animT += delta;
-        root.position.y = item.baseY + Math.sin(item.animT * 3.8) * 0.03;
-        root.rotation.y += delta * 0.2;
+    function segmentCircleHitT(startX, startZ, endX, endZ, cx, cz, radius) {
+      const dx = endX - startX;
+      const dz = endZ - startZ;
+      const fx = startX - cx;
+      const fz = startZ - cz;
+      const a = dx * dx + dz * dz;
+      if (a < 1e-10) {
+        const inside = (fx * fx + fz * fz) <= radius * radius;
+        return inside ? 0 : null;
       }
+      const b = 2 * (fx * dx + fz * dz);
+      const c = fx * fx + fz * fz - radius * radius;
+      if (c <= 0) return 0;
+      const disc = b * b - 4 * a * c;
+      if (disc < 0) return null;
+      const s = Math.sqrt(disc);
+      const t1 = (-b - s) / (2 * a);
+      const t2 = (-b + s) / (2 * a);
+      if (t1 >= 0 && t1 <= 1) return t1;
+      if (t2 >= 0 && t2 <= 1) return t2;
+      return null;
     }
 
-    function updateTrees(delta) {
-      for (const item of active.trees.values()) {
-        if (!item.activeObject) continue;
-        const root = item.activeObject.root;
-        root.rotation.y += Math.sin(performance.now() * 0.0002) * 0.00001;
-        root.position.y = getTerrainHeight(root.position.x, root.position.z) + (root.position.y - Math.floor(root.position.y));
-      }
-    }
+    function moveWithStrictCollision(obj3D, dx, dz, radius) {
+      const sx = obj3D.x;
+      const sz = obj3D.z;
+      const ex = sx + dx;
+      const ez = sz + dz;
 
-    function updateBoars(delta, now) {
-      const playerPos = playerRoot.position;
-      for (const item of active.boars.values()) {
-        if (!item.activeObject) continue;
-        const root = item.activeObject.root;
-        const pos = root.position;
-        const dist = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
+      let bestT = 1;
+      let hit = false;
 
-        if (dist <= item.aggroRange) {
-          item.state = "chase";
-          item.hostileUntil = now + 4500;
-        } else {
-          item.state = "move";
-        }
-
-        if (item.state === "chase") {
-          const dir = tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
-          if (dir.lengthSq() > 1e-8) dir.normalize();
-
-          if (dist > item.attackRange * 0.95) {
-            moveBoarWithCollision(root, dir.x * item.moveSpeed * 1.4 * delta, dir.z * item.moveSpeed * 1.4 * delta, item.collisionRadius || 0.7);
-          }
-
-          const targetYaw = Math.atan2(dir.x, dir.z);
-          root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
-
-          if (dist <= item.attackRange) {
-            takePlayerDamage(item.atkDps * delta);
-          }
-        } else {
-          item.wanderTimer -= delta;
-          if (item.wanderTimer <= 0) {
-            item.wanderYaw += rand(-1.0, 1.0);
-            item.wanderTimer = rand(1.2, 3.2);
-          }
-
-          const dir = new THREE.Vector3(Math.cos(item.wanderYaw), 0, Math.sin(item.wanderYaw));
-          moveBoarWithCollision(root, dir.x * item.moveSpeed * 0.35 * delta, dir.z * item.moveSpeed * 0.35 * delta, item.collisionRadius || 0.7);
-          const targetYaw = Math.atan2(dir.x, dir.z);
-          root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
-        }
-
-        root.position.y = getTerrainHeight(root.position.x, root.position.z);
-        updateBoarTag(item);
-      }
-    }
-
-    function collectHerb(item) {
-      if (state.gameOver || !item || item.removed || !item.activeObject) return;
-      if (state.hp >= state.hpMax) {
-        showToast("体力は満タン！");
-        setStatus("体力は満タン");
-        return;
-      }
-      const healed = healPlayer(config.herbHealAmount);
-      if (healed <= 0) {
-        showToast("体力は満タン！");
-        setStatus("体力は満タン");
-        return;
-      }
-      showToast(`薬草を回収！ 体力 +${healed}`);
-      setStatus(`薬草を回収 / 体力 +${healed}`);
-      item.removed = true;
-      despawnHerb(item);
-      const idx = data.herbs.findIndex((h) => h.id === item.id);
-      if (idx >= 0) data.herbs.splice(idx, 1);
-    }
-
-    function findNearestHerb(maxDist = config.herbCollectRange) {
-      let best = null;
-      let bestDist = Infinity;
-      for (const item of active.herbs.values()) {
-        if (!item.activeObject || item.removed) continue;
-        const root = item.activeObject.root;
-        const d = Math.hypot(root.position.x - playerRoot.position.x, root.position.z - playerRoot.position.z);
-        if (d < maxDist && d < bestDist) {
-          best = item;
-          bestDist = d;
+      for (const circle of collisionCircles) {
+        const t = segmentCircleHitT(sx, sz, ex, ez, circle.x, circle.z, radius + circle.r);
+        if (t !== null && t < bestT) {
+          bestT = t;
+          hit = true;
         }
       }
-      return best;
-    }
 
-    function updateHerbCollectButton() {
-      const herb = findNearestHerb(1.0);
-      herbCollectBtn.style.display = herb ? "block" : "none";
-    }
-
-    function collectNearestHerb() {
-      const herb = findNearestHerb(1.0);
-      if (!herb) {
-        showToast("近くに薬草がない！");
-        setStatus("近くに薬草がない");
-        return;
+      if (hit) {
+        const safeT = Math.max(0, bestT - 0.02);
+        obj3D.x = sx + dx * safeT;
+        obj3D.z = sz + dz * safeT;
+        return false;
       }
-      collectHerb(herb);
-    }
 
-    function findNearestBoar(maxDist = 4.5) {
-      let best = null;
-      let bestDist = Infinity;
-      for (const item of active.boars.values()) {
-        if (!item.activeObject || item.dead) continue;
-        const root = item.activeObject.root;
-        const d = Math.hypot(root.position.x - playerRoot.position.x, root.position.z - playerRoot.position.z);
-        if (d < maxDist && d < bestDist) {
-          best = item;
-          bestDist = d;
-        }
-      }
-      return best;
-    }
-
-    function addInventoryCreature(species, level) {
-      if (data.inventory.length >= INVENTORY_LIMIT) return false;
-      data.inventory.push({
-        id: makeId(),
-        species,
-        level: Math.max(1, Math.floor(level)),
-        capturedAt: Date.now()
-      });
-      saveInventory();
-      renderInventory();
+      obj3D.x = ex;
+      obj3D.z = ez;
       return true;
     }
 
-    function scheduleBoarRespawn(item) {
-      const token = (item.respawnToken || 0) + 1;
-      item.respawnToken = token;
-      const delay = rand(2200, 4200);
-      setTimeout(() => {
-        if (state.gameOver) return;
-        if (item.respawnToken !== token) return;
-        item.dead = false;
-        const p = randomWorldPoint(20);
-        const d = Math.hypot(p.x, p.z);
-        const level = getBoarLevelForDistance(d);
-        const stats = getBaseStatsByLevel(level);
-        item.x = p.x;
-        item.z = p.z;
-        item.rotY = Math.random() * Math.PI * 2;
-        item.scale = 0.85 + Math.random() * 0.45;
-        item.level = level;
-        item.hpMax = stats.hpMax;
-        item.hp = stats.hpMax;
-        item.atkDps = stats.atkDps;
-        item.attackRange = config.boarAttackRange + (level - 1) * 0.08;
-        item.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
-        item.moveSpeed = config.boarMoveSpeed * (1 + (level - 1) * 0.08);
-        item.activeObject = null;
-        item.spawnState = "idle";
-        item.spawnLockUntil = 0;
-      }, delay);
-    }
+    function updatePlayerTerrainAndJump(delta) {
+      const groundY = getTerrainHeight(playerRoot.position.x, playerRoot.position.z);
 
-    function collectNearestBoar() {
-      if (state.gameOver) return;
-      if (data.inventory.length >= INVENTORY_LIMIT) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      const boar = findNearestBoar(4.5);
-      if (!boar) {
-        showToast("近くにイノシシがいない！");
-        setStatus("近くにイノシシがいない");
-        return;
-      }
-
-      if (boar.hp > boar.hpMax * 0.1) {
-        showToast("体力が多すぎて捕まえられない！");
-        setStatus("体力が多すぎて捕まえられない");
-        return;
-      }
-
-      if (!addInventoryCreature("イノシシ", boar.level)) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
-      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
-      boar.dead = true;
-      despawnBoar(boar);
-      scheduleBoarRespawn(boar);
-    }
-
-    function applyPlayerAttackDamage(delta) {
-      const damage = config.playerAttackDps * delta;
-      for (const item of active.boars.values()) {
-        if (!item.activeObject || item.dead) continue;
-        const root = item.activeObject.root;
-        const dx = root.position.x - playerRoot.position.x;
-        const dz = root.position.z - playerRoot.position.z;
-        const d = Math.hypot(dx, dz);
-        if (d <= config.attackRange) {
-          item.hp -= damage;
-          item.hostileUntil = performance.now() + 4500;
-          if (item.hp <= 0) {
-            item.hp = 0;
-            item.dead = true;
-            despawnBoar(item);
-            scheduleBoarRespawn(item);
-          }
+      if (physics.onGround) {
+        physics.jumpOffset = 0;
+        physics.vy = 0;
+        playerRoot.position.y = groundY;
+      } else {
+        physics.vy += config.gravity * delta;
+        physics.jumpOffset += physics.vy * delta;
+        if (physics.jumpOffset <= 0) {
+          physics.jumpOffset = 0;
+          physics.vy = 0;
+          physics.onGround = true;
         }
+        playerRoot.position.y = groundY + physics.jumpOffset;
       }
     }
 
     function updateMovement(delta) {
-      if (state.gameOver) {
+      if (gameOver) {
         setStatus("ゲームオーバー");
         return;
       }
@@ -1930,44 +1596,969 @@
       if (moving) {
         const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
         if (moveDir.lengthSq() > 1e-8) {
-          tmp.m.lookAt(new THREE.Vector3(0, 0, 0), moveDir, upAxis);
+          tmp.m.lookAt(new THREE.Vector3(0,0,0), moveDir, upAxis);
           tmp.q.setFromRotationMatrix(tmp.m);
           playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
 
-          const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
+          const currentForward = new THREE.Vector3(0,0,-1).applyQuaternion(playerRoot.quaternion).normalize();
           const align = clamp(currentForward.dot(moveDir), 0, 1);
           const moveScale = align * align;
           const speed = currentSpeed() * input.magnitude * moveScale;
           const dx = currentForward.x * speed * delta;
           const dz = currentForward.z * speed * delta;
-          moveWithCollision(dx, dz);
+
+          moveWithStrictCollision(playerRoot.position, dx, dz, config.playerCollisionRadius);
+          playerRoot.position.x = clamp(playerRoot.position.x, -WORLD_HALF + 2, WORLD_HALF - 2);
+          playerRoot.position.z = clamp(playerRoot.position.z, -WORLD_HALF + 2, WORLD_HALF - 2);
+
+          if (!attackPlaying) syncLocomotion(false);
         }
+      } else if (!attackPlaying && currentActionName !== "idle") {
+        hardStopAction("walk");
+        hardStopAction("run");
+        currentActionName = "idle";
       }
 
-      updateJump(delta);
-      syncPlayerGround();
+      updatePlayerTerrainAndJump(delta);
 
       setStatus(
-        state.attackPlaying
+        attackPlaying
           ? "攻撃中"
-          : state.onGround
-            ? (moving ? (state.dashMode || state.dashHeld ? "ダッシュ中" : "移動中") : "待機中")
+          : physics.onGround
+            ? (moving ? (dashMode || dashHeld ? "ダッシュ中" : "移動中") : "待機中")
             : (moving ? "移動中 / ジャンプ中" : "ジャンプ中")
       );
     }
 
+    function syncPlayerVisualToTerrain() {
+      if (!visualRoot) return;
+      const offset = getTerrainHeight(playerRoot.position.x, playerRoot.position.z) + physics.jumpOffset;
+      playerRoot.position.y = offset;
+    }
+
+    function updatePlayerVisualTerrainOnly() {
+      syncPlayerVisualToTerrain();
+    }
+
+    function syncDataObjectToTerrain(data) {
+      if (!data?.activeObject?.root) return;
+      const root = data.activeObject.root;
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
+    }
+
+    function resyncActiveHeights() {
+      updatePlayerVisualTerrainOnly();
+
+      for (const data of activeTrees.values()) syncDataObjectToTerrain(data);
+      for (const data of activeHerbs.values()) syncDataObjectToTerrain(data);
+      for (const data of activeRocks.values()) syncDataObjectToTerrain(data);
+      for (const data of activeBoars.values()) syncDataObjectToTerrain(data);
+
+      for (const c of companions) {
+        if (!c?.root) continue;
+        c.baseTerrain = getTerrainHeight(c.root.position.x, c.root.position.z);
+      }
+    }
+
+    function updateHerbActionUI() {
+      const found = findNearestHerb(1.0);
+      herbCollectBtn.style.display = found ? "block" : "none";
+    }
+
+    function applyEntityGrounding(data) {
+      if (!data?.activeObject?.root) return;
+      const root = data.activeObject.root;
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
+    }
+
+    function spawnTree(data) {
+      if (data.activeObject || data.isSpawning || data.removed) return;
+      data.isSpawning = true;
+      try {
+        const root = deepCloneUnique(treeTemplate);
+        fitAndGround(root, TREE_TARGET_HEIGHT * data.scale, TREE_GROUND_LIFT);
+        data.terrainLift = root.position.y;
+        placeOnTerrain(root, data.x, data.z, data.terrainLift);
+        root.rotation.y = data.rotY;
+        root.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        const box = new THREE.Box3().setFromObject(root);
+        const size = box.getSize(new THREE.Vector3());
+        data.collisionRadius = Math.max(size.x, size.z) * 0.42 + 0.7;
+        data.activeObject = { root };
+        scene.add(root);
+        activeTrees.set(data.id, data);
+      } finally {
+        data.isSpawning = false;
+      }
+    }
+
+    function despawnTree(data, now = performance.now()) {
+      if (!data?.activeObject || data.isDespawning) return;
+      data.isDespawning = true;
+      try {
+        const root = data.activeObject.root;
+        if (root?.parent) root.parent.remove(root);
+        disposeObject3D(root);
+        data.activeObject = null;
+        activeTrees.delete(data.id);
+        data.spawnCooldownUntil = now + 300;
+      } finally {
+        data.isDespawning = false;
+      }
+    }
+
+    function spawnHerb(data) {
+      if (data.activeObject || data.isSpawning || data.removed) return;
+      data.isSpawning = true;
+      try {
+        const root = deepCloneUnique(herbTemplate);
+        fitAndGround(root, HERB_TARGET_HEIGHT * data.scale, HERB_GROUND_LIFT);
+        data.terrainLift = root.position.y;
+        placeOnTerrain(root, data.x, data.z, data.terrainLift);
+        root.rotation.y = data.rotY;
+        root.userData.herbId = data.id;
+        root.traverse((child) => {
+          child.userData.herbId = data.id;
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        data.baseY = root.position.y;
+        data.activeObject = { root };
+        scene.add(root);
+        activeHerbs.set(data.id, data);
+      } finally {
+        data.isSpawning = false;
+      }
+    }
+
+    function despawnHerb(data, now = performance.now()) {
+      if (!data?.activeObject || data.isDespawning) return;
+      data.isDespawning = true;
+      try {
+        const root = data.activeObject.root;
+        if (root?.parent) root.parent.remove(root);
+        disposeObject3D(root);
+        data.activeObject = null;
+        activeHerbs.delete(data.id);
+        data.spawnCooldownUntil = now + 300;
+      } finally {
+        data.isDespawning = false;
+      }
+    }
+
+    function spawnRock(data) {
+      if (data.activeObject || data.isSpawning || data.removed) return;
+      data.isSpawning = true;
+      try {
+        const root = deepCloneUnique(rockTemplate);
+        fitAndGround(root, ROCK_TARGET_HEIGHT * data.scale, ROCK_GROUND_LIFT);
+        data.terrainLift = root.position.y;
+        placeOnTerrain(root, data.x, data.z, data.terrainLift);
+        root.rotation.y = data.rotY;
+        root.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        const box = new THREE.Box3().setFromObject(root);
+        const size = box.getSize(new THREE.Vector3());
+        data.collisionRadius = Math.max(size.x, size.z) * 0.45 + 0.35;
+        data.activeObject = { root };
+        scene.add(root);
+        activeRocks.set(data.id, data);
+      } finally {
+        data.isSpawning = false;
+      }
+    }
+
+    function despawnRock(data, now = performance.now()) {
+      if (!data?.activeObject || data.isDespawning) return;
+      data.isDespawning = true;
+      try {
+        const root = data.activeObject.root;
+        if (root?.parent) root.parent.remove(root);
+        disposeObject3D(root);
+        data.activeObject = null;
+        activeRocks.delete(data.id);
+        data.spawnCooldownUntil = now + 300;
+      } finally {
+        data.isDespawning = false;
+      }
+    }
+
+    function spawnBoar(data) {
+      if (data.activeObject || data.isSpawning || data.dead) return;
+      data.isSpawning = true;
+      try {
+        const levelVisualScale = 0.95 + (data.level - 1) * 0.11;
+        const root = deepCloneUnique(boarTemplate);
+        fitAndGround(root, BOAR_TARGET_HEIGHT * data.scale * levelVisualScale, BOAR_GROUND_LIFT);
+        data.terrainLift = root.position.y;
+        placeOnTerrain(root, data.x, data.z, data.terrainLift);
+        root.rotation.y = data.rotY;
+        const parts = root.userData.parts || null;
+        root.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        const tag = createBoarTag(data.level, data.hpMax, data.hpMax);
+        const box = new THREE.Box3().setFromObject(root);
+        const size = box.getSize(new THREE.Vector3());
+        data.uiOffset = Math.max(1.6, size.y * 1.15);
+        data.collisionRadius = Math.max(size.x, size.z) * 0.22 + 0.35;
+        data.activeObject = { root, tag, parts };
+        scene.add(root);
+        activeBoars.set(data.id, data);
+      } finally {
+        data.isSpawning = false;
+      }
+    }
+
+    function despawnBoarForStream(data, now = performance.now()) {
+      if (!data?.activeObject || data.isDespawning) return;
+      data.isDespawning = true;
+      try {
+        const o = data.activeObject;
+        if (o?.tag?.el?.parentNode) o.tag.el.parentNode.removeChild(o.tag.el);
+        if (o?.root?.parent) o.root.parent.remove(o.root);
+        disposeObject3D(o.root);
+        data.activeObject = null;
+        activeBoars.delete(data.id);
+        data.spawnCooldownUntil = now + 300;
+      } finally {
+        data.isDespawning = false;
+      }
+    }
+
+    function removeBoarAfterDeath(data, shouldRespawn = true) {
+      if (!data || data.dead) return;
+      if (data.activeObject) despawnBoarForStream(data);
+      data.dead = true;
+      if (shouldRespawn) scheduleBoarRespawn(data);
+    }
+
+    function scheduleBoarRespawn(data) {
+      const token = (data.respawnToken || 0) + 1;
+      data.respawnToken = token;
+      const delay = rand(2200, 4200);
+      setTimeout(() => {
+        if (gameOver) return;
+        if (data.respawnToken !== token) return;
+        respawnBoar(data);
+      }, delay);
+    }
+
+    function respawnBoar(data) {
+      if (!data) return;
+      const p = randomWorldPosition(20);
+      const d = Math.hypot(p.x, p.z);
+      const level = getBoarLevelForDistance(d);
+      const stats = getStatsByLevel(level);
+      data.dead = false;
+      data.x = p.x;
+      data.z = p.z;
+      data.rotY = Math.random() * Math.PI * 2;
+      data.scale = 0.85 + Math.random() * 0.45;
+      data.level = level;
+      data.hpMax = stats.hpMax;
+      data.hp = stats.hpMax;
+      data.atkDps = stats.atkDps;
+      data.attackRange = config.boarAttackRange + (level - 1) * 0.08;
+      data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
+      data.moveSpeed = config.boarMoveSpeed * (1 + (level - 1) * 0.08);
+      data.state = "move";
+      data.stateTime = 0;
+      data.wanderYaw = Math.random() * Math.PI * 2;
+      data.wanderTimer = rand(0.8, 2.6);
+      data.hostileUntil = 0;
+      data.activeObject = null;
+      data.spawnCooldownUntil = 0;
+    }
+
+    function spawnCompanionFromInventoryItem(item) {
+      const stats = getStatsByLevel(item.level);
+      const scaleBoost = 0.95 + (item.level - 1) * 0.11;
+      let root;
+      let parts = null;
+
+      if (!boarUsesFallback && boarTemplate) {
+        root = deepCloneUnique(boarTemplate);
+        fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
+        parts = root.userData.parts || null;
+      } else {
+        root = createFallbackBoarTemplate();
+        fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
+        parts = root.userData.parts || null;
+      }
+
+      const facing = getCharacterForwardVector();
+      const right = new THREE.Vector3(facing.z, 0, -facing.x).normalize();
+      const offset = facing.clone().multiplyScalar(-2.2).add(right.multiplyScalar(rand(-1.4, 1.4)));
+
+      root.position.set(
+        playerRoot.position.x + offset.x,
+        getTerrainHeight(playerRoot.position.x + offset.x, playerRoot.position.z + offset.z) + root.position.y,
+        playerRoot.position.z + offset.z
+      );
+      root.rotation.y = Math.atan2(facing.x, facing.z);
+
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      companions.push({
+        id: makeId(),
+        root,
+        parts,
+        species: item.species,
+        level: item.level,
+        hpMax: stats.hpMax,
+        hp: stats.hpMax,
+        atkDps: stats.atkDps * 1.15,
+        followSpeed: config.boarMoveSpeed * (1.35 + (item.level - 1) * 0.08),
+        attackRange: 2.2 + (item.level - 1) * 0.05,
+        attackCooldown: 0,
+        attackDuration: 0.62,
+        attackTimer: 0,
+        attackHitDone: false,
+        attackHitTime: 0.24,
+        attackLunge: 1.15,
+        state: "follow",
+        stateTime: 0,
+        animT: Math.random() * 10,
+        terrainLift: root.position.y - getTerrainHeight(root.position.x, root.position.z),
+        attackStartPos: new THREE.Vector3(),
+        attackDir: new THREE.Vector3(),
+        attackTargetId: null,
+        dead: false
+      });
+
+      scene.add(root);
+    }
+
+    function addInventoryCreature(species, level) {
+      if (inventory.length >= INVENTORY_LIMIT) return false;
+      inventory.push({
+        id: makeId(),
+        species,
+        level: Math.max(1, Math.floor(level)),
+        capturedAt: Date.now()
+      });
+      saveInventory();
+      renderInventoryModal();
+      return true;
+    }
+
+    function findNearestBoar(maxDist = 4.5) {
+      const playerPos = playerRoot.position;
+      let best = null;
+      let bestDist = Infinity;
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
+        if (d < maxDist && d < bestDist) {
+          best = data;
+          bestDist = d;
+        }
+      }
+
+      return best ? { boar: best, dist: bestDist } : null;
+    }
+
+    function collectNearestBoar() {
+      if (gameOver) return;
+
+      if (inventory.length >= INVENTORY_LIMIT) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      const found = findNearestBoar(4.5);
+      if (!found) {
+        showToast("近くにイノシシがいない！");
+        setStatus("近くにイノシシがいない");
+        return;
+      }
+
+      const boar = found.boar;
+      if (boar.hp > boar.hpMax * 0.1) {
+        showToast("体力が多すぎて捕まえられない！");
+        setStatus("体力が多すぎて捕まえられない");
+        return;
+      }
+
+      const ok = addInventoryCreature("イノシシ", boar.level);
+      if (!ok) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
+      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
+      removeBoarAfterDeath(boar, true);
+    }
+
+    function findNearestHerb(maxDist = config.herbCollectRange) {
+      const playerPos = playerRoot.position;
+      let best = null;
+      let bestDist = Infinity;
+
+      for (const data of activeHerbs.values()) {
+        if (data.removed || !data.activeObject) continue;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
+        if (d < maxDist && d < bestDist) {
+          best = data;
+          bestDist = d;
+        }
+      }
+
+      return best ? { herb: best, dist: bestDist } : null;
+    }
+
+    function collectHerb(data) {
+      if (gameOver || !data || data.removed) return;
+
+      if (playerHp >= config.playerHpMax) {
+        showToast("体力は満タン！");
+        setStatus("体力は満タン");
+        return;
+      }
+
+      const healed = healPlayer(config.herbHealAmount);
+      if (healed <= 0) {
+        showToast("体力は満タン！");
+        setStatus("体力は満タン");
+        return;
+      }
+
+      showToast(`薬草を回収！ 体力 +${healed}`);
+      setStatus(`薬草を回収 / 体力 +${healed}`);
+
+      const index = herbData.findIndex((h) => h.id === data.id);
+      if (index >= 0) herbData.splice(index, 1);
+      if (data.activeObject?.root?.parent) data.activeObject.root.parent.remove(data.activeObject.root);
+      if (data.activeObject?.root) disposeObject3D(data.activeObject.root);
+      data.activeObject = null;
+      data.removed = true;
+      activeHerbs.delete(data.id);
+    }
+
+    function collectNearestHerb() {
+      if (gameOver) return;
+      const found = findNearestHerb(1.0);
+      if (!found) {
+        showToast("近くに薬草がない！");
+        setStatus("近くに薬草がない");
+        return;
+      }
+      collectHerb(found.herb);
+    }
+
+    function tryInteractHerbAtScreen(clientX, clientY) {
+      if (gameOver) return false;
+
+      herbPointer.x = (clientX / window.innerWidth) * 2 - 1;
+      herbPointer.y = -(clientY / window.innerHeight) * 2 + 1;
+      herbRaycaster.setFromCamera(herbPointer, camera);
+
+      const targets = [];
+      for (const data of activeHerbs.values()) {
+        if (!data.activeObject || data.removed) continue;
+        targets.push(data.activeObject.root);
+      }
+
+      const hits = herbRaycaster.intersectObjects(targets, true);
+      if (hits.length) {
+        const herbId = hits[0].object.userData.herbId;
+        const data = activeHerbs.get(herbId);
+        if (!data) return false;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerRoot.position.x, pos.z - playerRoot.position.z);
+        if (d <= config.herbCollectRange) {
+          collectHerb(data);
+          return true;
+        }
+        showToast("薬草に近づいてから回収！");
+        setStatus("薬草が遠い");
+        return true;
+      }
+
+      const near = findNearestHerb(1.0);
+      if (near) {
+        collectHerb(near.herb);
+        return true;
+      }
+
+      return false;
+    }
+
+    function updateWildBoarAnimation(data, delta) {
+      if (data.dead || !data.activeObject) return;
+
+      const o = data.activeObject;
+      data.stateTime += delta;
+      const t = data.stateTime;
+      const isCombat = data.state === "chase";
+
+      const baseY = getTerrainHeight(o.root.position.x, o.root.position.z) + (data.terrainLift || 0);
+      const bobAmp = isCombat ? 0.08 : 0.04;
+      const bobFreq = isCombat ? 12.0 : 7.0;
+      o.root.position.y = baseY + Math.sin(t * bobFreq) * bobAmp;
+
+      if (o.parts) {
+        const sway = Math.sin(t * (isCombat ? 18 : 10)) * (isCombat ? 0.05 : 0.025);
+        o.parts.body.rotation.z = sway;
+        o.parts.head.rotation.x = isCombat ? 0.22 : 0.05;
+        o.parts.head.rotation.z = -sway * 0.7;
+        o.parts.snout.rotation.z = -sway * 0.55;
+        o.parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.4;
+        o.parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.4;
+
+        const legSwing = Math.sin(t * (isCombat ? 16 : 8)) * (isCombat ? 0.75 : 0.55);
+        o.parts.legs[0].rotation.x = legSwing;
+        o.parts.legs[3].rotation.x = legSwing;
+        o.parts.legs[1].rotation.x = -legSwing;
+        o.parts.legs[2].rotation.x = -legSwing;
+      } else {
+        o.root.rotation.z = Math.sin(t * (isCombat ? 14 : 8)) * (isCombat ? 0.06 : 0.03);
+      }
+    }
+
+    function findHostileBoarTarget(now) {
+      const playerPos = playerRoot.position;
+      let best = null;
+      let bestDist = Infinity;
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+        if ((data.hostileUntil || 0) <= now) continue;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
+        if (d < bestDist) {
+          bestDist = d;
+          best = data;
+        }
+      }
+      return best;
+    }
+
+    function findBoarById(id) {
+      return activeBoars.get(id) || null;
+    }
+
+    function updateCompanionAnimation(companion, delta) {
+      const t = companion.animT;
+
+      if (companion.state === "attack") {
+        const progress = 1 - (companion.attackTimer / companion.attackDuration);
+        const kick = Math.sin(progress * Math.PI);
+        companion.root.rotation.z = Math.sin(progress * Math.PI) * 0.08;
+
+        if (companion.parts) {
+          companion.parts.body.rotation.z = 0.14 * kick;
+          companion.parts.head.rotation.x = 0.42 + 0.14 * kick;
+          companion.parts.head.rotation.z = -0.08 * kick;
+          companion.parts.snout.rotation.z = -0.2 * kick;
+          companion.parts.ears[0].rotation.z = Math.PI / 2 + 0.45 * kick;
+          companion.parts.ears[1].rotation.z = Math.PI / 2 - 0.45 * kick;
+
+          const legSwing = Math.sin(progress * Math.PI * 2) * 0.95;
+          companion.parts.legs[0].rotation.x = legSwing;
+          companion.parts.legs[3].rotation.x = legSwing;
+          companion.parts.legs[1].rotation.x = -legSwing;
+          companion.parts.legs[2].rotation.x = -legSwing;
+        }
+      } else {
+        companion.root.rotation.z = Math.sin(t * 10.0) * 0.02;
+        if (companion.parts) {
+          const sway = Math.sin(t * 10.0) * 0.02;
+          companion.parts.body.rotation.z = sway;
+          companion.parts.head.rotation.x = 0.04;
+          companion.parts.head.rotation.z = -sway * 0.7;
+          companion.parts.snout.rotation.z = -sway * 0.4;
+          companion.parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.35;
+          companion.parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.35;
+          const legSwing = Math.sin(t * 8.0) * 0.5;
+          companion.parts.legs[0].rotation.x = legSwing;
+          companion.parts.legs[3].rotation.x = legSwing;
+          companion.parts.legs[1].rotation.x = -legSwing;
+          companion.parts.legs[2].rotation.x = -legSwing;
+        }
+      }
+    }
+
+    function startCompanionAttack(companion, target, now) {
+      companion.state = "attack";
+      companion.attackTimer = companion.attackDuration;
+      companion.attackHitDone = false;
+      companion.attackTargetId = target.id;
+      companion.attackStartPos.copy(companion.root.position);
+
+      const targetPos = target.activeObject.root.position;
+      const dir = new THREE.Vector3(targetPos.x - companion.root.position.x, 0, targetPos.z - companion.root.position.z);
+      if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
+      else dir.normalize();
+
+      companion.attackDir.copy(dir);
+      companion.root.rotation.y = Math.atan2(dir.x, dir.z);
+      companion.attackCooldown = 0.9;
+      companion.animT = now * 0.001;
+    }
+
+    function applyCompanionHit(companion, target) {
+      if (!target || target.dead) return;
+      target.hostileUntil = performance.now() + 4500;
+      target.hp -= companion.atkDps * 1.8;
+      if (target.hp <= 0) {
+        target.hp = 0;
+        removeBoarAfterDeath(target, true);
+      }
+    }
+
+    function updateCompanions(delta, now) {
+      if (!companions.length) return;
+
+      const playerPos = playerRoot.position;
+      const forward = getCharacterForwardVector();
+      const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
+      const hostile = findHostileBoarTarget(now);
+
+      for (let i = companions.length - 1; i >= 0; i--) {
+        const c = companions[i];
+        if (c.dead) continue;
+
+        c.stateTime += delta;
+        c.animT += delta;
+        c.attackCooldown = Math.max(0, c.attackCooldown - delta);
+
+        if (c.state === "attack") {
+          c.attackTimer -= delta;
+          const progress = 1 - (c.attackTimer / c.attackDuration);
+          const lunge = Math.sin(progress * Math.PI);
+
+          const target = findBoarById(c.attackTargetId);
+          let dir = c.attackDir.clone();
+
+          if (target && !target.dead) {
+            const targetPos = target.activeObject.root.position;
+            const nowDir = new THREE.Vector3(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z);
+            if (nowDir.lengthSq() > 1e-8) {
+              nowDir.normalize();
+              dir = nowDir;
+            }
+          }
+
+          c.root.position.copy(c.attackStartPos).add(dir.clone().multiplyScalar(lunge * c.attackLunge));
+          c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift + Math.sin(progress * Math.PI) * 0.15;
+          c.root.rotation.y = Math.atan2(dir.x, dir.z);
+
+          if (!c.attackHitDone && progress >= c.attackHitTime) {
+            c.attackHitDone = true;
+            applyCompanionHit(c, target);
+          }
+
+          if (c.attackTimer <= 0) {
+            c.state = "follow";
+            c.attackTargetId = null;
+            c.attackHitDone = false;
+          }
+
+          updateCompanionAnimation(c, delta);
+          continue;
+        }
+
+        let target = hostile || null;
+        if (target && (target.dead || !target.activeObject)) target = null;
+
+        if (target) {
+          const targetPos = target.activeObject.root.position;
+          const toTarget = targetPos.clone().sub(c.root.position);
+          toTarget.y = 0;
+          const dist = toTarget.length();
+
+          if (dist > 0.001) {
+            const dir = toTarget.clone().normalize();
+            const yaw = Math.atan2(dir.x, dir.z);
+            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.5 * delta));
+
+            if (dist <= c.attackRange && c.attackCooldown <= 0) {
+              startCompanionAttack(c, target, now);
+            } else {
+              moveWithStrictCollision(c.root.position, dir.x * c.followSpeed * 1.65 * delta, dir.z * c.followSpeed * 1.65 * delta, 0.62);
+              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+            }
+          }
+        } else {
+          const slotIndex = i;
+          const lane = Math.floor(slotIndex / 2);
+          const side = slotIndex % 2 === 0 ? -1 : 1;
+
+          const desired = playerPos.clone()
+            .add(forward.clone().multiplyScalar(-(2.5 + lane * 0.45)))
+            .add(right.clone().multiplyScalar(side * (1.25 + lane * 0.72)));
+
+          const toSlot = desired.sub(c.root.position);
+          toSlot.y = 0;
+          const dist = toSlot.length();
+
+          if (dist > 0.12) {
+            const dir = toSlot.clone().normalize();
+            const yaw = Math.atan2(dir.x, dir.z);
+            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.0 * delta));
+
+            const speed = c.followSpeed * clamp(dist / 2.0, 0.4, 1.8);
+            moveWithStrictCollision(c.root.position, dir.x * speed * delta, dir.z * speed * delta, 0.62);
+          }
+
+          c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+        }
+
+        updateCompanionAnimation(c, delta);
+      }
+    }
+
+    function updateWildBoars(delta, now) {
+      const playerPos = playerRoot.position;
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+
+        const o = data.activeObject;
+        const pos = o.root.position;
+        const dist = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
+
+        if (dist <= data.aggroRange) {
+          data.state = "chase";
+          data.hostileUntil = now + 4500;
+        } else {
+          data.state = "move";
+        }
+
+        if (data.state === "chase") {
+          const dir = tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
+          if (dir.lengthSq() > 1e-8) dir.normalize();
+
+          if (dist > data.attackRange * 0.95) {
+            const speed = data.moveSpeed * 1.4;
+            moveWithStrictCollision(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
+          }
+
+          const targetYaw = Math.atan2(dir.x, dir.z);
+          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
+
+          if (dist <= data.attackRange) {
+            data.hostileUntil = now + 5000;
+            takePlayerDamage(data.atkDps * delta);
+          }
+        } else {
+          data.wanderTimer -= delta;
+          if (data.wanderTimer <= 0) {
+            data.wanderYaw += rand(-1.0, 1.0);
+            data.wanderTimer = rand(1.2, 3.2);
+          }
+
+          const dir = new THREE.Vector3(Math.cos(data.wanderYaw), 0, Math.sin(data.wanderYaw));
+          moveWithStrictCollision(o.root, dir.x * data.moveSpeed * 0.35 * delta, dir.z * data.moveSpeed * 0.35 * delta, data.collisionRadius || 0.7);
+
+          const targetYaw = Math.atan2(dir.x, dir.z);
+          o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
+        }
+
+        updateWildBoarAnimation(data, delta);
+        data.x = o.root.position.x;
+        data.z = o.root.position.z;
+        data.rotY = o.root.rotation.y;
+      }
+    }
+
+    function applyPlayerAttackDamage(delta) {
+      if (!activeBoars.size) return;
+
+      const playerPos = playerRoot.position;
+      const forward = getCharacterForwardVector();
+      const damage = config.playerAttackDps * delta;
+      const now = performance.now();
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+        const pos = data.activeObject.root.position;
+        tmp.v2.set(pos.x, pos.y, pos.z);
+        tmp.v3.copy(tmp.v2).sub(playerPos);
+        tmp.v3.y = 0;
+
+        const dist = tmp.v3.length();
+        if (dist > config.attackRange) continue;
+
+        const dir = tmp.v3.clone().normalize();
+        if (forward.dot(dir) < config.attackConeDot) continue;
+
+        data.hp -= damage;
+        data.hostileUntil = now + 4500;
+        if (data.hp <= 0) {
+          data.hp = 0;
+          removeBoarAfterDeath(data, true);
+        }
+      }
+    }
+
+    function applyBoarDamageToPlayer(delta, now) {
+      if (gameOver || playerHp <= 0) return;
+      const playerPos = playerRoot.position;
+
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
+        if (d > data.attackRange) continue;
+        data.hostileUntil = now + 5000;
+        takePlayerDamage(data.atkDps * delta);
+        if (gameOver) return;
+      }
+    }
+
+    function startAttack() {
+      if (gameOver || attackPlaying) return;
+      attackPlaying = true;
+      attackTimer = config.playerAttackDuration;
+      attackBtn.classList.add("active");
+      stopAllActions(0.05);
+
+      const a = actions.attack;
+      if (a) {
+        a.reset();
+        a.enabled = true;
+        a.paused = false;
+        a.clampWhenFinished = true;
+        a.setLoop(THREE.LoopOnce, 1);
+        const clipDuration = a.getClip()?.duration || 1.0;
+        a.timeScale = clipDuration / config.playerAttackDuration;
+        a.play();
+      }
+
+      currentActionName = "attack";
+    }
+
+    function finishAttack() {
+      attackPlaying = false;
+      attackTimer = 0;
+      attackBtn.classList.remove("active");
+      if (actions.attack) hardStopAction("attack");
+      if (!gameOver) syncLocomotion(true);
+    }
+
+    function setDashMode(on) {
+      if (gameOver) return;
+      dashMode = on;
+      dashBtn.classList.toggle("active", dashMode);
+      if (!attackPlaying) syncLocomotion(true);
+    }
+
+    function stopAllActions(fade = 0.12) {
+      for (const key of ["walk", "run", "attack"]) {
+        const a = actions[key];
+        if (!a) continue;
+        a.fadeOut(fade);
+      }
+    }
+
+    function hardStopAction(name) {
+      const a = actions[name];
+      if (!a) return;
+      a.stop();
+      a.reset();
+      a.paused = false;
+    }
+
+    function playAction(name, fade = 0.14) {
+      const next = actions[name];
+      if (!next) return;
+      for (const key of ["walk", "run"]) {
+        if (key !== name) hardStopAction(key);
+      }
+      next.reset();
+      next.enabled = true;
+      next.paused = false;
+      next.setEffectiveWeight(1);
+      next.fadeIn(fade).play();
+      currentActionName = name;
+    }
+
+    function syncLocomotion(force = false) {
+      if (gameOver) return;
+      if (attackPlaying && !force) return;
+
+      const input = getMoveInput();
+      const moving = input.magnitude > 0.001;
+
+      if (!moving) {
+        if (currentActionName !== "idle") {
+          hardStopAction("walk");
+          hardStopAction("run");
+          currentActionName = "idle";
+        }
+        return;
+      }
+
+      const desired = (dashMode || dashHeld) ? "run" : "walk";
+      if (force || currentActionName !== desired) {
+        stopAllActions(0.08);
+        playAction(desired, 0.08);
+      } else {
+        const a = actions[desired];
+        if (a && !a.isRunning()) a.play();
+        if (a) a.paused = false;
+      }
+    }
+
+    function updateJoystickVisual() {
+      const px = stick.x * stick.radius;
+      const py = stick.y * stick.radius;
+      joyKnob.style.transform = `translate(${px}px, ${py}px)`;
+    }
+
+    function resetJoystick() {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+      updateJoystickVisual();
+    }
+
     function updateCamera(delta) {
-      const cosPitch = Math.cos(state.cameraPitch);
-      const sinPitch = Math.sin(state.cameraPitch);
+      const cosPitch = Math.cos(cameraPitch);
+      const sinPitch = Math.sin(cameraPitch);
 
       const offset = new THREE.Vector3(
-        Math.sin(state.cameraYaw) * cosPitch,
+        Math.sin(cameraYaw) * cosPitch,
         sinPitch,
-        Math.cos(state.cameraYaw) * cosPitch
+        Math.cos(cameraYaw) * cosPitch
       ).multiplyScalar(config.cameraDistance);
 
-      const targetY = getTerrainHeight(playerRoot.position.x, playerRoot.position.z) + state.jumpY + config.targetHeight;
-      const target = new THREE.Vector3(playerRoot.position.x, targetY, playerRoot.position.z);
+      const target = new THREE.Vector3(
+        playerRoot.position.x,
+        playerRoot.position.y + config.targetHeight,
+        playerRoot.position.z
+      );
 
       const desiredCameraPos = new THREE.Vector3().copy(target).add(offset);
       const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
@@ -1975,73 +2566,346 @@
       camera.lookAt(target);
     }
 
-    function updateButtons() {
-      dashBtn.classList.toggle("active", state.dashMode);
-      attackBtn.classList.toggle("active", state.attackPlaying);
+    function updateMiniMap() {
+      drawWorldMap(miniMapCanvas, "mini");
     }
 
-    function updateHerbButtonAndCollection() {
-      updateHerbCollectButton();
+    function updateFullMap() {
+      drawWorldMap(fullMapCanvas, "full");
+    }
+
+    function drawWorldMap(canvas, mode) {
+      const ctx = canvas.getContext("2d");
+      const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      const cssW = canvas.clientWidth || 1;
+      const cssH = canvas.clientHeight || 1;
+      const width = Math.floor(cssW * dpr);
+      const height = Math.floor(cssH * dpr);
+
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const W = cssW;
+      const H = cssH;
+
+      if (mode === "mini") {
+        const cx = W / 2;
+        const cy = H / 2;
+        const radius = Math.min(W, H) / 2;
+
+        ctx.fillStyle = "rgba(12,18,24,0.86)";
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 2, 0, Math.PI * 2);
+        ctx.clip();
+
+        ctx.fillStyle = "#18301f";
+        ctx.fillRect(0, 0, W, H);
+
+        const range = 180;
+        const scale = (radius * 0.84) / range;
+        const player = { x: playerRoot.position.x, z: playerRoot.position.z };
+
+        ctx.strokeStyle = "rgba(255,255,255,0.10)";
+        ctx.lineWidth = 1;
+        for (let d = -range; d <= range; d += 20) {
+          const x = cx + d * scale;
+          ctx.beginPath();
+          ctx.moveTo(x, cy - range * scale);
+          ctx.lineTo(x, cy + range * scale);
+          ctx.stroke();
+
+          const y = cy + d * scale;
+          ctx.beginPath();
+          ctx.moveTo(cx - range * scale, y);
+          ctx.lineTo(cx + range * scale, y);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, range * scale, 0, Math.PI * 2);
+        ctx.stroke();
+
+        for (const data of boarData) {
+          if (data.dead) continue;
+          const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+          const dx = pos.x - player.x;
+          const dz = pos.z - player.z;
+          if (dx * dx + dz * dz > range * range) continue;
+
+          const x = cx + dx * scale;
+          const y = cy + dz * scale;
+          ctx.fillStyle = "#ff5b5b";
+          ctx.beginPath();
+          ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#fff";
+          ctx.font = "10px system-ui, sans-serif";
+          ctx.fillText("M", x - 3, y - 7);
+        }
+
+        const forward = getCharacterForwardVector();
+        const yaw = Math.atan2(forward.x, forward.z);
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(yaw);
+        ctx.fillStyle = "#4cff7e";
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(7, 8);
+        ctx.lineTo(0, 4);
+        ctx.lineTo(-7, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        return;
+      }
+
+      const margin = 18;
+      const innerW = W - margin * 2;
+      const innerH = H - margin * 2;
+      const scaleX = innerW / WORLD_SIZE;
+      const scaleY = innerH / WORLD_SIZE;
+
+      ctx.fillStyle = "#0f1720";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#17331f";
+      ctx.fillRect(margin, margin, innerW, innerH);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 1;
+      for (let x = -WORLD_HALF; x <= WORLD_HALF; x += 100) {
+        const px = margin + (x + WORLD_HALF) * scaleX;
+        ctx.beginPath();
+        ctx.moveTo(px, margin);
+        ctx.lineTo(px, margin + innerH);
+        ctx.stroke();
+      }
+      for (let z = -WORLD_HALF; z <= WORLD_HALF; z += 100) {
+        const py = margin + (z + WORLD_HALF) * scaleY;
+        ctx.beginPath();
+        ctx.moveTo(margin, py);
+        ctx.lineTo(margin + innerW, py);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "rgba(255,255,255,0.22)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(margin, margin, innerW, innerH);
+
+      for (const data of boarData) {
+        if (data.dead) continue;
+        const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+        const x = margin + (pos.x + WORLD_HALF) * scaleX;
+        const y = margin + (pos.z + WORLD_HALF) * scaleY;
+        ctx.fillStyle = "#ff5b5b";
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = "10px system-ui, sans-serif";
+        ctx.fillText("M", x - 3, y - 6);
+      }
+
+      const player = playerRoot.position;
+      const px = margin + (player.x + WORLD_HALF) * scaleX;
+      const py = margin + (player.z + WORLD_HALF) * scaleY;
+      const forward = getCharacterForwardVector();
+      const yaw = Math.atan2(forward.x, forward.z);
+
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(yaw);
+      ctx.fillStyle = "#4cff7e";
+      ctx.beginPath();
+      ctx.moveTo(0, -12);
+      ctx.lineTo(8, 9);
+      ctx.lineTo(0, 5);
+      ctx.lineTo(-8, 9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    function spawnFromTemplateIfNeeded(data, templateType, now) {
+      // placeholder for future expansion
+    }
+
+    function syncStream(masterArray, spawnFn, despawnFn, now) {
+      const px = playerRoot.position.x;
+      const pz = playerRoot.position.z;
+      const r2 = ACTIVE_RADIUS_SQ;
+
+      for (const data of masterArray) {
+        if (data.removed || data.dead) {
+          if (data.activeObject) despawnFn(data, now);
+          continue;
+        }
+
+        const dx = data.x - px;
+        const dz = data.z - pz;
+        const within = (dx * dx) + (dz * dz) <= r2;
+
+        if (within) {
+          if (!data.activeObject && !data.isSpawning && now >= (data.spawnCooldownUntil || 0)) {
+            spawnFn(data, now);
+          }
+        } else {
+          if (data.activeObject && !data.isDespawning) {
+            despawnFn(data, now);
+          }
+        }
+      }
+    }
+
+    function syncWorldEntities(now) {
+      syncStream(treeData, spawnTree, despawnTree, now);
+      syncStream(herbData, spawnHerb, despawnHerb, now);
+      syncStream(rockData, spawnRock, despawnRock, now);
+      syncStream(boarData, spawnBoar, despawnBoarForStream, now);
+    }
+
+    function updateHerbs(delta) {
+      for (const data of activeHerbs.values()) {
+        if (!data.activeObject) continue;
+        data.animT += delta;
+        const root = data.activeObject.root;
+        root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0) + Math.sin(data.animT * 3.8) * 0.03;
+        root.rotation.y += delta * 0.2;
+      }
+    }
+
+    function updateRocks(delta) {
+      for (const data of activeRocks.values()) {
+        if (!data.activeObject) continue;
+        const root = data.activeObject.root;
+        root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
+      }
     }
 
     function updateCombat(delta, now) {
-      if (!state.gameOver) {
-        if (state.attackPlaying) {
-          state.attackTimer -= delta;
+      if (!gameOver) {
+        if (attackPlaying) {
+          attackTimer -= delta;
           applyPlayerAttackDamage(delta);
-          if (state.attackTimer <= 0) finishAttack();
+          if (attackTimer <= 0) finishAttack();
         }
+        applyBoarDamageToPlayer(delta, now);
       }
+
       updatePlayerHud();
-      updateBoars(delta, now);
+      updateWildBoars(delta, now);
+      updateCompanions(delta, now);
       updateHerbs(delta);
-      updateTrees(delta);
-      updateHerbButtonAndCollection();
+      updateRocks(delta);
+      updateHerbActionUI();
     }
 
-    function updatePlayerRootGround() {
-      syncPlayerGround();
+    function updateWorldStreamingAndCollision(now) {
+      syncWorldEntities(now);
+      refreshCollisionCircles();
     }
 
-    function renderBoarTags() {
-      for (const item of active.boars.values()) updateBoarTag(item);
-    }
+    function updateJoystickBindings() {
+      const joystickEl = document.getElementById("joystick");
+      const joyKnob = document.getElementById("joyKnob");
+      const jumpBtn = document.getElementById("jumpBtn");
 
-    function updateHudStatus() {
-      if (state.gameOver) setStatus("ゲームオーバー");
-    }
+      joystickEl.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        stick.active = true;
+        stick.pointerId = e.pointerId;
+        joystickEl.setPointerCapture(e.pointerId);
 
-    function getInteractHerbAtScreen(clientX, clientY) {
-      herbPointer.x = (clientX / window.innerWidth) * 2 - 1;
-      herbPointer.y = -(clientY / window.innerHeight) * 2 + 1;
-      herbRaycaster.setFromCamera(herbPointer, camera);
+        const rect = joystickEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        const len = Math.hypot(dx, dy);
+        const maxLen = stick.radius;
 
-      const targets = [];
-      for (const item of active.herbs.values()) {
-        if (!item.activeObject || item.removed) continue;
-        targets.push(item.activeObject.root);
+        let nx = dx / maxLen;
+        let ny = dy / maxLen;
+        if (len > maxLen) {
+          nx = dx / len;
+          ny = dy / len;
+        }
+
+        stick.x = clamp(nx, -1, 1);
+        stick.y = clamp(ny, -1, 1);
+        joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`;
+      });
+
+      joystickEl.addEventListener("pointermove", (e) => {
+        if (!stick.active || e.pointerId !== stick.pointerId) return;
+        e.preventDefault();
+
+        const rect = joystickEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx;
+        const dy = e.clientY - cy;
+        const len = Math.hypot(dx, dy);
+        const maxLen = stick.radius;
+
+        let nx = dx / maxLen;
+        let ny = dy / maxLen;
+        if (len > maxLen) {
+          nx = dx / len;
+          ny = dy / len;
+        }
+
+        stick.x = clamp(nx, -1, 1);
+        stick.y = clamp(ny, -1, 1);
+        joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`;
+      });
+
+      function endJoystick(e) {
+        if (e.pointerId !== stick.pointerId) return;
+        stick.active = false;
+        stick.pointerId = null;
+        stick.x = 0;
+        stick.y = 0;
+        joyKnob.style.transform = "translate(0,0)";
       }
 
-      const hits = herbRaycaster.intersectObjects(targets, true);
-      if (!hits.length) return null;
-      const herbId = hits[0].object.userData.herbId;
-      return active.herbs.get(herbId) || null;
-    }
+      joystickEl.addEventListener("pointerup", endJoystick);
+      joystickEl.addEventListener("pointercancel", endJoystick);
+      joystickEl.addEventListener("lostpointercapture", () => {
+        stick.active = false;
+        stick.pointerId = null;
+        stick.x = 0;
+        stick.y = 0;
+        joyKnob.style.transform = "translate(0,0)";
+      });
 
-    function tryInteractHerbAtScreen(clientX, clientY) {
-      if (state.gameOver) return false;
-      const herb = getInteractHerbAtScreen(clientX, clientY);
-      if (!herb) return false;
-
-      const root = herb.activeObject.root;
-      const d = Math.hypot(root.position.x - playerRoot.position.x, root.position.z - playerRoot.position.z);
-      if (d > config.herbCollectRange) {
-        showToast("薬草に近づいてから回収！");
-        setStatus("薬草が遠い");
-        return true;
-      }
-      collectHerb(herb);
-      return true;
+      jumpBtn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        requestJump();
+      });
     }
 
     const cameraDrag = {
@@ -2053,174 +2917,315 @@
 
     function shouldIgnoreCameraDragTarget(target) {
       if (!(target instanceof Element)) return false;
-      return !!target.closest("#ui, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
+      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
     }
 
-    function startCameraDrag(e) {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      if (shouldIgnoreCameraDragTarget(e.target)) return;
-      if (e.target !== renderer.domElement) return;
-      cameraDrag.active = true;
-      cameraDrag.pointerId = e.pointerId;
-      cameraDrag.lastX = e.clientX;
-      cameraDrag.lastY = e.clientY;
-      renderer.domElement.setPointerCapture(e.pointerId);
-    }
+    function bindCameraControls() {
+      renderer.domElement.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        if (shouldIgnoreCameraDragTarget(e.target)) return;
+        if (e.target !== renderer.domElement) return;
+        cameraDrag.active = true;
+        cameraDrag.pointerId = e.pointerId;
+        cameraDrag.lastX = e.clientX;
+        cameraDrag.lastY = e.clientY;
+        renderer.domElement.setPointerCapture(e.pointerId);
+      });
 
-    function moveCameraDrag(e) {
-      if (!cameraDrag.active || e.pointerId !== cameraDrag.pointerId) return;
-      const dx = e.clientX - cameraDrag.lastX;
-      const dy = e.clientY - cameraDrag.lastY;
-      state.cameraYaw -= dx * config.cameraYawSensitivity;
-      state.cameraPitch = clamp(
-        state.cameraPitch - dy * config.cameraPitchSensitivity,
-        config.cameraPitchMin,
-        config.cameraPitchMax
-      );
-      cameraDrag.lastX = e.clientX;
-      cameraDrag.lastY = e.clientY;
-    }
+      renderer.domElement.addEventListener("pointermove", (e) => {
+        if (!cameraDrag.active || e.pointerId !== cameraDrag.pointerId) return;
+        const dx = e.clientX - cameraDrag.lastX;
+        const dy = e.clientY - cameraDrag.lastY;
+        cameraYaw -= dx * config.cameraYawSensitivity;
+        cameraPitch = clamp(cameraPitch - dy * config.cameraPitchSensitivity, config.cameraPitchMin, config.cameraPitchMax);
+        cameraDrag.lastX = e.clientX;
+        cameraDrag.lastY = e.clientY;
+      });
 
-    function endCameraDrag(e) {
-      if (e.pointerId !== cameraDrag.pointerId) return;
-      cameraDrag.active = false;
-      cameraDrag.pointerId = null;
-    }
-
-    function updateJoystickVisual() {
-      joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`;
-    }
-
-    function resetJoystick() {
-      stick.active = false;
-      stick.pointerId = null;
-      stick.x = 0;
-      stick.y = 0;
-      updateJoystickVisual();
-    }
-
-    joystickEl.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      stick.active = true;
-      stick.pointerId = e.pointerId;
-      joystickEl.setPointerCapture(e.pointerId);
-
-      const rect = joystickEl.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const len = Math.hypot(dx, dy);
-      const maxLen = stick.radius;
-
-      let nx = dx / maxLen;
-      let ny = dy / maxLen;
-
-      if (len > maxLen) {
-        nx = dx / len;
-        ny = dy / len;
+      function endDrag(e) {
+        if (e.pointerId !== cameraDrag.pointerId) return;
+        cameraDrag.active = false;
+        cameraDrag.pointerId = null;
       }
 
-      stick.x = clamp(nx, -1, 1);
-      stick.y = clamp(ny, -1, 1);
-      updateJoystickVisual();
-    });
+      renderer.domElement.addEventListener("pointerup", endDrag);
+      renderer.domElement.addEventListener("pointercancel", endDrag);
+      renderer.domElement.addEventListener("lostpointercapture", () => {
+        cameraDrag.active = false;
+        cameraDrag.pointerId = null;
+      });
 
-    joystickEl.addEventListener("pointermove", (e) => {
-      if (!stick.active || e.pointerId !== stick.pointerId) return;
-      e.preventDefault();
-
-      const rect = joystickEl.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const len = Math.hypot(dx, dy);
-      const maxLen = stick.radius;
-
-      let nx = dx / maxLen;
-      let ny = dy / maxLen;
-
-      if (len > maxLen) {
-        nx = dx / len;
-        ny = dy / len;
-      }
-
-      stick.x = clamp(nx, -1, 1);
-      stick.y = clamp(ny, -1, 1);
-      updateJoystickVisual();
-    });
-
-    function endJoystick(e) {
-      if (e.pointerId !== stick.pointerId) return;
-      resetJoystick();
+      renderer.domElement.addEventListener("click", (e) => {
+        if (shouldIgnoreCameraDragTarget(e.target)) return;
+        tryInteractHerbAtScreen(e.clientX, e.clientY);
+      });
     }
 
-    joystickEl.addEventListener("pointerup", endJoystick);
-    joystickEl.addEventListener("pointercancel", endJoystick);
-    joystickEl.addEventListener("lostpointercapture", () => resetJoystick());
+    function bindKeyboardControls() {
+      window.addEventListener("keydown", (e) => {
+        if (["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyJ","KeyK"].includes(e.code)) {
+          e.preventDefault();
+        }
+        keys.add(e.code);
+        if (e.code === "Space") requestJump();
+        if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = true;
+        if (e.code === "KeyJ" || e.code === "KeyK") startAttack();
+      }, { passive: false });
 
-    jumpBtn.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      requestJump();
-    });
+      window.addEventListener("keyup", (e) => {
+        keys.delete(e.code);
+        if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = false;
+      });
+    }
 
-    dashBtn.addEventListener("click", () => {
-      state.dashMode = !state.dashMode;
-      updateButtons();
-    });
+    function bindUI() {
+      dashBtn.addEventListener("click", () => setDashMode(!dashMode));
+      attackBtn.addEventListener("click", () => startAttack());
+      captureBtn.addEventListener("click", collectNearestBoar);
+      herbCollectBtn.addEventListener("click", collectNearestHerb);
 
-    attackBtn.addEventListener("click", () => {
-      startAttack();
-      updateButtons();
-    });
+      inventoryBtn.addEventListener("click", openInventoryModal);
+      closeInventoryBtn.addEventListener("click", closeInventoryModal);
+      inventoryModal.addEventListener("click", (e) => {
+        if (e.target === inventoryModal) closeInventoryModal();
+      });
+      inventoryList.addEventListener("click", (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
+        const id = target.dataset.deployId;
+        if (!id) return;
+        const index = inventory.findIndex((item) => item.id === id);
+        if (index < 0) return;
+        const item = inventory[index];
+        inventory.splice(index, 1);
+        saveInventory();
+        renderInventoryModal();
+        spawnCompanionFromInventoryItem(item);
+        showToast(`${item.species} Lv.${item.level} が出撃！`);
+      });
 
-    herbCollectBtn.addEventListener("click", collectNearestHerb);
-    captureBtn.addEventListener("click", collectNearestBoar);
-    inventoryBtn.addEventListener("click", openInventory);
-    closeInventoryBtn.addEventListener("click", closeInventory);
-    inventoryModal.addEventListener("click", (e) => {
-      if (e.target === inventoryModal) closeInventory();
-    });
-
-    window.addEventListener("keydown", (e) => {
-      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", "KeyJ", "KeyK"].includes(e.code)) {
+      miniMapWrap.addEventListener("pointerdown", (e) => {
         e.preventDefault();
+        fullMapModal.classList.add("open");
+        fullMapModal.setAttribute("aria-hidden", "false");
+        updateFullMap();
+      });
+
+      fullMapClose.addEventListener("click", () => {
+        fullMapModal.classList.remove("open");
+        fullMapModal.setAttribute("aria-hidden", "true");
+      });
+
+      fullMapModal.addEventListener("click", (e) => {
+        if (e.target === fullMapModal) {
+          fullMapModal.classList.remove("open");
+          fullMapModal.setAttribute("aria-hidden", "true");
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        updateMiniMap();
+        if (fullMapModal.classList.contains("open")) updateFullMap();
+      });
+    }
+
+    function addEntityRespawnLock(data) {
+      data.spawnCooldownUntil = performance.now() + 300;
+    }
+
+    function updateEntityGroundForTemplate(data, root) {
+      data.terrainLift = root.position.y;
+      placeOnTerrain(root, data.x, data.z, data.terrainLift);
+    }
+
+    function spawnStone(data, now = performance.now()) {
+      if (data.activeObject || data.isSpawning || data.removed) return;
+      data.isSpawning = true;
+      try {
+        const root = deepCloneUnique(rockTemplate);
+        fitAndGround(root, ROCK_TARGET_HEIGHT * data.scale, ROCK_GROUND_LIFT);
+        updateEntityGroundForTemplate(data, root);
+        root.rotation.y = data.rotY;
+        root.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        const box = new THREE.Box3().setFromObject(root);
+        const size = box.getSize(new THREE.Vector3());
+        data.collisionRadius = Math.max(size.x, size.z) * 0.45 + 0.35;
+        data.activeObject = { root };
+        scene.add(root);
+        activeRocks.set(data.id, data);
+      } finally {
+        data.isSpawning = false;
       }
-      keys.add(e.code);
-      if (e.code === "Space") requestJump();
-      if (e.code === "ShiftLeft" || e.code === "ShiftRight") state.dashHeld = true;
-      if (e.code === "KeyJ" || e.code === "KeyK") startAttack();
-      updateButtons();
-    }, { passive: false });
+    }
 
-    window.addEventListener("keyup", (e) => {
-      keys.delete(e.code);
-      if (e.code === "ShiftLeft" || e.code === "ShiftRight") state.dashHeld = false;
-      updateButtons();
-    });
+    function despawnStone(data, now = performance.now()) {
+      if (!data?.activeObject || data.isDespawning) return;
+      data.isDespawning = true;
+      try {
+        const root = data.activeObject.root;
+        if (root?.parent) root.parent.remove(root);
+        disposeObject3D(root);
+        data.activeObject = null;
+        activeRocks.delete(data.id);
+        addEntityRespawnLock(data);
+      } finally {
+        data.isDespawning = false;
+      }
+    }
 
-    renderer.domElement.addEventListener("pointerdown", startCameraDrag);
-    renderer.domElement.addEventListener("pointermove", moveCameraDrag);
-    renderer.domElement.addEventListener("pointerup", endCameraDrag);
-    renderer.domElement.addEventListener("pointercancel", endCameraDrag);
-    renderer.domElement.addEventListener("lostpointercapture", () => {
-      cameraDrag.active = false;
-      cameraDrag.pointerId = null;
-    });
+    function spawnBoarAtGenerated(data) {
+      spawnBoar(data);
+    }
 
-    renderer.domElement.addEventListener("click", (e) => {
-      if (shouldIgnoreCameraDragTarget(e.target)) return;
-      tryInteractHerbAtScreen(e.clientX, e.clientY);
-    });
+    function updateBoarStreamingPosition(data) {
+      if (!data?.activeObject?.root) return;
+      const root = data.activeObject.root;
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
+    }
 
-    function generateAllWorldData() {
-      generateTreeData();
-      generateHerbData();
-      generateBoarData();
-      generateStoneData();
+    function updateTreeStreamingPosition(data) {
+      if (!data?.activeObject?.root) return;
+      const root = data.activeObject.root;
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
+    }
+
+    function updateHerbStreamingPosition(data) {
+      if (!data?.activeObject?.root) return;
+      const root = data.activeObject.root;
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
+    }
+
+    function updateRockStreamingPosition(data) {
+      if (!data?.activeObject?.root) return;
+      const root = data.activeObject.root;
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
+    }
+
+    function updateAllActiveTerrainAlignment() {
+      updatePlayerVisualTerrainOnly();
+      for (const d of activeTrees.values()) updateTreeStreamingPosition(d);
+      for (const d of activeHerbs.values()) updateHerbStreamingPosition(d);
+      for (const d of activeRocks.values()) updateRockStreamingPosition(d);
+      for (const d of activeBoars.values()) updateBoarStreamingPosition(d);
+      for (const c of companions) {
+        if (!c?.root) continue;
+        c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+      }
+    }
+
+    function spawnTreeWrapper(data) { spawnTree(data); }
+    function despawnTreeWrapper(data, now) { despawnTree(data, now); }
+    function spawnHerbWrapper(data) { spawnHerb(data); }
+    function despawnHerbWrapper(data, now) { despawnHerb(data, now); }
+    function spawnRockWrapper(data) { spawnStone(data, now = performance.now()); }
+    function despawnRockWrapper(data, now) { despawnStone(data, now); }
+    function spawnBoarWrapper(data) { spawnBoarAtGenerated(data); }
+    function despawnBoarWrapper(data, now) { despawnBoarForStream(data, now); }
+
+    function updateMovementAndWorld(delta, now) {
+      updateMovement(delta);
+      syncWorldEntities(now);
+      refreshCollisionCircles();
+      updateAllActiveTerrainAlignment();
+      updateCombat(delta, now);
+      updateCamera(delta);
+      updateBoarTags();
+      updateMiniMap();
+      if (fullMapModal.classList.contains("open")) updateFullMap();
+      renderer.render(scene, camera);
+    }
+
+    function forceRegroundAllLoaded() {
+      updateAllActiveTerrainAlignment();
+      refreshCollisionCircles();
+    }
+
+    async function loadTemplates() {
+      const [treeGLTF, boarGLTF, herbGLTF, rockGLTF] = await Promise.all([
+        loadGLTFWithFallback(TREE_URLS, createFallbackTreeTemplate),
+        loadGLTFWithFallback(BOAR_URLS, createFallbackBoarTemplate),
+        loadGLTFWithFallback(HERB_URLS, createFallbackHerbTemplate),
+        loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate)
+      ]);
+
+      treeTemplate = treeGLTF.scene;
+      boarTemplate = boarGLTF.scene;
+      herbTemplate = herbGLTF.scene;
+      rockTemplate = rockGLTF.scene;
+
+      treeUsesFallback = treeGLTF.fallback;
+      boarUsesFallback = boarGLTF.fallback;
+      herbUsesFallback = herbGLTF.fallback;
+      rockUsesFallback = rockGLTF.fallback;
+
+      forceRegroundAllLoaded();
+    }
+
+    async function loadPlayerRig() {
+      const fbx = await loadFBXWithFallback([WALK_FBX_URL]);
+      if (fbx) {
+        visualRoot = fbx;
+        fitAndGround(visualRoot, config.modelHeight, 0.03);
+        visualRoot.rotation.y = Math.PI;
+        playerRoot.add(visualRoot);
+      } else {
+        visualRoot = createFallbackPlayerRig();
+        fitAndGround(visualRoot, config.modelHeight, 0.03);
+        visualRoot.rotation.y = Math.PI;
+        playerRoot.add(visualRoot);
+      }
+    }
+
+    async function loadAnimations() {
+      if (!visualRoot || visualRoot.userData.fallback) return;
+      try {
+        const [walkFBX, runFBX, attackFBX] = await Promise.all([
+          loadFBXWithFallback([WALK_FBX_URL]),
+          loadFBXWithFallback([RUN_FBX_URL]),
+          loadFBXWithFallback([ATTACK_FBX_URL])
+        ]);
+
+        if (!walkFBX || !runFBX || !attackFBX) return;
+
+        const rootNames = collectRootNames(visualRoot);
+        rootNames.push("Armature", "RootNode", "Scene");
+
+        const walkClip = stripRootMotionTracks(firstClip(walkFBX), rootNames);
+        const runClip = stripRootMotionTracks(firstClip(runFBX), rootNames);
+        const attackClip = stripRootMotionTracks(firstClip(attackFBX), rootNames);
+
+        mixer = new THREE.AnimationMixer(visualRoot);
+
+        if (walkClip) {
+          actions.walk = mixer.clipAction(walkClip);
+          actions.walk.setLoop(THREE.LoopRepeat, Infinity);
+          actions.walk.clampWhenFinished = false;
+          actions.walk.enabled = true;
+        }
+        if (runClip) {
+          actions.run = mixer.clipAction(runClip);
+          actions.run.setLoop(THREE.LoopRepeat, Infinity);
+          actions.run.clampWhenFinished = false;
+          actions.run.enabled = true;
+        }
+        if (attackClip) {
+          actions.attack = mixer.clipAction(attackClip);
+          actions.attack.setLoop(THREE.LoopOnce, 1);
+          actions.attack.clampWhenFinished = true;
+          actions.attack.enabled = true;
+        }
+      } catch (e) {
+        console.warn("animation load failed", e);
+      }
     }
 
     async function bootstrap() {
@@ -2229,19 +3234,21 @@
         updatePlayerHud();
         setStatus("モデルを読み込み中…");
 
-        assets.tree = await loadGLTFTemplate(TREE_URLS, createFallbackTree);
-        assets.boar = await loadGLTFTemplate(BOAR_URLS, createFallbackBoar);
-        assets.herb = await loadGLTFTemplate(HERB_URLS, createFallbackHerb);
-        assets.stone = await loadGLTFTemplate(STONE_URLS, createFallbackStone);
-        await loadPlayerRig();
+        generateTreeData();
+        generateHerbData();
+        generateRockData();
+        generateBoarData();
 
-        generateAllWorldData();
-        updateWorldStreaming();
-        forceGroundAllActiveEntities();
-        updatePlayerRootGround();
+        await loadPlayerRig();
+        await loadAnimations();
+        await loadTemplates();
 
         loading.classList.add("hidden");
         setStatus("待機中");
+
+        syncWorldEntities(performance.now());
+        refreshCollisionCircles();
+        forceRegroundAllLoaded();
       } catch (err) {
         console.error(err);
         loading.classList.add("hidden");
@@ -2249,33 +3256,26 @@
       }
     }
 
-    function updateFrame() {
+    function animate() {
+      requestAnimationFrame(animate);
       const delta = Math.min(clock.getDelta(), 0.033);
       const now = performance.now();
 
-      updateWorldStreaming();
-      updateMovement(delta);
-      updateCombat(delta, now);
-      updateWorldStreaming();
-      updateCamera(delta);
-      renderBoarTags();
-      updateButtons();
-      updateHudStatus();
-      renderer.render(scene, camera);
-      requestAnimationFrame(updateFrame);
+      if (mixer) mixer.update(delta);
+
+      updateMovementAndWorld(delta, now);
+
+      if (!gameOver) {
+        updateHerbActionUI();
+      }
     }
 
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    });
-
-    playerRoot.position.set(0, getTerrainHeight(0, 0), 0);
-    updateButtons();
+    bindUI();
+    bindKeyboardControls();
+    bindCameraControls();
+    updateJoystickBindings();
     bootstrap();
-    requestAnimationFrame(updateFrame);
+    animate();
   </script>
 </body>
 </html>
