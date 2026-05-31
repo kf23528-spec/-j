@@ -2378,7 +2378,58 @@
       }
     }
 
-    function findHostileBoarTarget(now) {
+    function setBoarHateTarget(data, type, id = null, now = performance.now()) {
+      if (!data || data.dead) return;
+      data.targetType = type;
+      data.targetId = id;
+      data.hostileUntil = now + 9000;
+      data.state = "chase";
+      if (!Number.isFinite(data.nextAttackAt)) data.nextAttackAt = 0;
+    }
+
+    function clearBoarHateTarget(data) {
+      if (!data) return;
+      data.targetType = null;
+      data.targetId = null;
+      data.state = "move";
+    }
+
+    function getBoarTarget(data) {
+      if (!data || !data.targetType) return null;
+      if (data.targetType === "player") {
+        if (gameOver || playerHp <= 0) return null;
+        return { type: "player", position: playerRoot.position, entity: null };
+      }
+      if (data.targetType === "companion") {
+        const c = companions.find((item) => item.id === data.targetId && !item.dead && item.root);
+        if (!c) return null;
+        return { type: "companion", position: c.root.position, entity: c };
+      }
+      return null;
+    }
+
+    function damageCompanion(companion, amount) {
+      if (!companion || companion.dead || !companion.root) return;
+      companion.hp = Math.max(0, companion.hp - amount);
+      if (companion.hp <= 0) {
+        killCompanion(companion);
+      }
+    }
+
+    function killCompanion(companion) {
+      if (!companion || companion.dead) return;
+      companion.dead = true;
+      const root = companion.root;
+      if (root?.parent) root.parent.remove(root);
+      disposeObject3D(root);
+      companion.root = null;
+      for (const data of activeBoars.values()) {
+        if (data.targetType === "companion" && data.targetId === companion.id) clearBoarHateTarget(data);
+      }
+      showToast(`${companion.species} Lv.${companion.level} は倒れました`);
+    }
+    
+function findHostileBoarTarget(now) {
       const playerPos = playerRoot.position;
       let best = null;
       let bestDist = Infinity;
@@ -2455,14 +2506,15 @@
 
       companion.attackDir.copy(dir);
       companion.root.rotation.y = Math.atan2(dir.x, dir.z);
-      companion.attackCooldown = 0.9;
+      companion.attackCooldown = config.combatInterval;
+      companion.nextAttackAt = now + config.combatInterval * 1000;
       companion.animT = now * 0.001;
     }
 
     function applyCompanionHit(companion, target) {
       if (!target || target.dead) return;
-      target.hostileUntil = performance.now() + 4500;
-      target.hp -= companion.atkDps * 1.8;
+      setBoarHateTarget(target, "companion", companion.id, performance.now());
+      target.hp -= companion.atkDps;
       if (target.hp <= 0) {
         target.hp = 0;
         removeBoarAfterDeath(target, true);
