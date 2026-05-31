@@ -2136,9 +2136,9 @@
         parts = root.userData.parts || null;
       }
 
-      const facing = getCharacterForwardVector();
-      const right = new THREE.Vector3(facing.z, 0, -facing.x).normalize();
-      const offset = facing.clone().multiplyScalar(-2.2).add(right.multiplyScalar(rand(-1.4, 1.4)));
+      const facing = companionSpawnTmp.facing.copy(getCharacterForwardVector());
+      const right = companionSpawnTmp.right.set(facing.z, 0, -facing.x).normalize();
+      const offset = companionSpawnTmp.offset.copy(facing).multiplyScalar(-2.2).add(right.multiplyScalar(rand(-1.4, 1.4)));
 
       root.position.set(
         playerRoot.position.x + offset.x,
@@ -2160,12 +2160,13 @@
         parts,
         species: item.species,
         level: item.level,
-        hpMax: stats.hpMax,
-        hp: stats.hpMax,
-        atkDps: stats.atkDps * 1.15,
+        hpMax: stats.hpMax * config.companionStatMultiplier,
+        hp: stats.hpMax * config.companionStatMultiplier,
+        atkDps: stats.atkDps * config.companionStatMultiplier,
         followSpeed: config.boarMoveSpeed * (1.35 + (item.level - 1) * 0.08),
         attackRange: 2.2 + (item.level - 1) * 0.05,
         attackCooldown: 0,
+        nextAttackAt: 0,
         attackDuration: 0.62,
         attackTimer: 0,
         attackHitDone: false,
