@@ -3,363 +3,124 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-  <title>Forest Mountain TPS</title>
+  <title>Forest Mountain TPS Open World</title>
   <style>
     html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #9fd3ff;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      touch-action: none;
+      width: 100%; height: 100%; margin: 0; overflow: hidden; background: #9fd3ff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; touch-action: none;
     }
     canvas { display: block; }
-
-    #loading { display: none; }
-
+    #loading {
+      position: fixed; inset: 0; z-index: 40; display:flex; align-items:center; justify-content:center;
+      background: rgba(238,242,247,0.78); backdrop-filter: blur(8px); color:#222; font-size:16px; font-weight:800; transition: opacity .25s ease;
+    }
+    #loading.hidden { opacity:0; pointer-events:none; }
     #toast {
-      position: fixed;
-      left: 50%;
-      top: 14px;
-      transform: translateX(-50%);
-      z-index: 80;
-      max-width: min(92vw, 540px);
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(18, 24, 34, 0.82);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.2);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.18s ease;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 80; max-width: min(92vw, 560px);
+      padding: 10px 14px; border-radius: 999px; background: rgba(18,24,34,0.84); color: #fff; font-size: 13px; font-weight: 800;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; text-align:center; white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
     }
     #toast.show { opacity: 1; }
-
     #ui {
-      position: fixed;
-      left: 12px;
-      top: 12px;
-      z-index: 30;
-      min-width: 280px;
-      max-width: min(92vw, 500px);
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.84);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-      color: #222;
-      line-height: 1.5;
-      font-size: 14px;
-      user-select: none;
+      position: fixed; left: 12px; top: 12px; z-index: 30; min-width: 280px; max-width: min(92vw, 500px); padding: 12px 14px;
+      border-radius: 16px; background: rgba(255,255,255,0.84); backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      color:#222; line-height:1.5; font-size:14px; user-select:none;
     }
-    #title { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+    #title { font-weight: 900; font-size: 15px; margin-bottom: 4px; }
     #status { margin-top: 8px; font-size: 13px; font-weight: 800; color: #1d3f7a; }
-    #buttons { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    #buttons { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
     .modeBtn {
-      border: 0;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 13px;
-      font-weight: 800;
-      color: #fff;
-      cursor: pointer;
-      background: #2f82ff;
+      border:0; border-radius:12px; padding:10px 12px; font-size:13px; font-weight:800; color:#fff; cursor:pointer; background:#2f82ff;
       box-shadow: 0 8px 18px rgba(47,130,255,0.22);
     }
-    .modeBtn.active { background: #1d5fc0; }
-    .modeBtn.attack {
-      background: #ff6a2c;
-      box-shadow: 0 8px 18px rgba(255,106,44,0.22);
-    }
-    .modeBtn.attack.active { background: #cc4e1d; }
-
-    #help {
-      margin-top: 8px;
-      font-size: 12px;
-      opacity: 0.82;
-      line-height: 1.5;
-    }
-
-    #playerHud {
-      margin-top: 10px;
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-      border: 0;
-      box-shadow: none;
-    }
-    .hudRow {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      color: #1c3359;
-    }
-    .barWrap {
-      width: 100%;
-      height: 12px;
-      border-radius: 999px;
-      overflow: hidden;
-      background: rgba(28,51,89,0.12);
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
-    }
-    .barFill {
-      width: 100%;
-      height: 100%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #4fd06f, #19a54f);
-      transition: width 0.08s linear;
-    }
-
-    #worldUI {
-      position: fixed;
-      inset: 0;
-      z-index: 25;
-      pointer-events: none;
-      overflow: hidden;
-    }
-
+    .modeBtn.active { background:#1d5fc0; }
+    .modeBtn.attack { background:#ff6a2c; box-shadow: 0 8px 18px rgba(255,106,44,0.22); }
+    .modeBtn.attack.active { background:#cc4e1d; }
+    #help { margin-top: 8px; font-size: 12px; opacity: .82; line-height: 1.5; }
+    #playerHud { margin-top: 10px; }
+    .hudRow { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; font-weight:800; margin-bottom:6px; color:#1c3359; }
+    .barWrap { width: 100%; height: 12px; border-radius: 999px; overflow: hidden; background: rgba(28,51,89,0.12); box-shadow: inset 0 1px 2px rgba(0,0,0,0.12); }
+    .barFill { width:100%; height:100%; border-radius:999px; background: linear-gradient(90deg, #4fd06f, #19a54f); transition: width 0.08s linear; }
+    #worldUI { position: fixed; inset: 0; z-index: 25; pointer-events:none; overflow:hidden; }
     .boarTag {
-      position: absolute;
-      min-width: 120px;
-      transform: translate(-50%, -100%);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 800;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.7);
-      opacity: 1;
-      transition: opacity 0.1s linear;
-      will-change: transform, opacity;
+      position: absolute; min-width: 120px; transform: translate(-50%, -100%); color:#fff; font-size:12px; font-weight:800; text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+      transition: opacity .1s linear; will-change: transform, opacity;
     }
-    .boarLevel {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.50);
-      margin-bottom: 5px;
+    .boarLevel { display:inline-block; padding:2px 6px; border-radius:999px; background: rgba(0,0,0,0.50); margin-bottom:5px; }
+    .boarHpText { margin-top:4px; font-size:11px; opacity:.95; }
+    .boarBarWrap { width:120px; height:10px; border-radius:999px; overflow:hidden; background: rgba(255,255,255,0.25); box-shadow: inset 0 1px 2px rgba(0,0,0,0.28); }
+    .boarBarFill { width:100%; height:100%; border-radius:999px; background: linear-gradient(90deg, #ff5b5b, #e61d1d); transition: width .08s linear; }
+    #miniMapWrap {
+      position: fixed; right: 14px; top: 14px; width: 160px; height: 160px; border-radius: 50%; overflow: hidden; background: rgba(15,24,32,0.72);
+      border: 1px solid rgba(255,255,255,0.22); box-shadow: 0 12px 28px rgba(0,0,0,0.22); z-index: 45; pointer-events:auto; touch-action:none; cursor:pointer;
+      user-select:none; -webkit-user-select:none;
     }
-    .boarHpText { margin-top: 4px; font-size: 11px; opacity: 0.95; }
-    .boarBarWrap {
-      width: 120px;
-      height: 10px;
-      border-radius: 999px;
-      overflow: hidden;
-      background: rgba(255,255,255,0.25);
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.28);
+    #miniMapCanvas { width:100%; height:100%; display:block; }
+    #fullMapModal {
+      position: fixed; inset: 0; z-index: 70; display:none; align-items:center; justify-content:center; background: rgba(10,18,30,0.60); backdrop-filter: blur(8px); pointer-events:auto;
     }
-    .boarBarFill {
-      width: 100%;
-      height: 100%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #ff5b5b, #e61d1d);
-      transition: width 0.08s linear;
+    #fullMapModal.open { display:flex; }
+    #fullMapPanel { position:relative; width:min(92vw,720px); max-height:min(92vh,760px); border-radius:22px; background: rgba(255,255,255,0.96); box-shadow: 0 24px 70px rgba(0,0,0,0.30); padding:16px; color:#1a2740; }
+    #fullMapTitle { font-size:18px; font-weight:900; margin-bottom:8px; }
+    #fullMapInfo { font-size:13px; font-weight:800; color:#4a5c80; margin-bottom:12px; }
+    #fullMapCanvas { width:min(88vw,660px); height:min(88vw,660px); max-width:660px; max-height:660px; display:block; margin:0 auto; border-radius:18px; background:#17212c; }
+    #fullMapClose {
+      position:absolute; top:10px; right:10px; width:46px; height:46px; border:0; border-radius:50%; background: linear-gradient(180deg,#ff6c6c,#d92c2c);
+      color:#fff; font-size:22px; font-weight:900; cursor:pointer; box-shadow: 0 10px 22px rgba(0,0,0,0.18);
     }
-
     #joystick {
-      position: fixed;
-      left: 18px;
-      bottom: 18px;
-      width: 132px;
-      height: 132px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.22);
-      border: 1px solid rgba(255,255,255,0.45);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.08);
-      backdrop-filter: blur(8px);
-      pointer-events: auto;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-      z-index: 35;
+      position: fixed; left: 18px; bottom: 18px; width: 132px; height: 132px; border-radius: 50%; background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.45); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.08); backdrop-filter: blur(8px);
+      pointer-events:auto; touch-action:none; user-select:none; -webkit-user-select:none; z-index:35;
     }
-    #joystick::before {
-      content: "";
-      position: absolute;
-      inset: 18px;
-      border-radius: 50%;
-      border: 1px dashed rgba(255,255,255,0.35);
-    }
+    #joystick::before { content:""; position:absolute; inset:18px; border-radius:50%; border:1px dashed rgba(255,255,255,0.35); }
     #joyKnob {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 54px;
-      height: 54px;
-      margin-left: -27px;
-      margin-top: -27px;
-      border-radius: 50%;
-      background: rgba(47,130,255,0.9);
-      box-shadow: 0 8px 18px rgba(47,130,255,0.25);
-      transform: translate(0,0);
+      position:absolute; left:50%; top:50%; width:54px; height:54px; margin-left:-27px; margin-top:-27px; border-radius:50%; background: rgba(47,130,255,0.9); box-shadow: 0 8px 18px rgba(47,130,255,0.25); transform: translate(0,0);
     }
-
     #jumpBtn {
-      position: fixed;
-      right: 18px;
-      bottom: 28px;
-      width: 108px;
-      height: 108px;
-      border-radius: 50%;
-      border: 0;
-      background: linear-gradient(180deg, #ff8f4d, #ff6a2c);
-      color: #fff;
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 0.03em;
-      box-shadow: 0 10px 24px rgba(255,106,44,0.28);
-      pointer-events: auto;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-      z-index: 35;
+      position: fixed; right: 18px; bottom: 28px; width: 108px; height: 108px; border-radius: 50%; border:0; background: linear-gradient(180deg,#ff8f4d,#ff6a2c);
+      color:#fff; font-size:18px; font-weight:900; box-shadow: 0 10px 24px rgba(255,106,44,0.28); pointer-events:auto; touch-action:none; user-select:none; -webkit-user-select:none; z-index:35;
     }
-    #jumpBtn:active { transform: scale(0.97); }
-
+    #jumpBtn:active { transform: scale(.97); }
     #sideButtons {
-      position: fixed;
-      right: 18px;
-      bottom: 150px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 35;
-      pointer-events: auto;
+      position: fixed; right: 18px; bottom: 150px; display:flex; flex-direction:column; gap:10px; z-index:35; pointer-events:auto;
     }
     .sideBtn {
-      width: 120px;
-      height: 60px;
-      border: 0;
-      border-radius: 18px;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 900;
-      box-shadow: 0 10px 22px rgba(0,0,0,0.16);
-      cursor: pointer;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
+      width:120px; height:60px; border:0; border-radius:18px; color:#fff; font-size:15px; font-weight:900; box-shadow: 0 10px 22px rgba(0,0,0,0.16); cursor:pointer;
+      user-select:none; -webkit-user-select:none; touch-action:none;
     }
-    #herbCollectBtn {
-      background: linear-gradient(180deg, #69d66f, #239b3a);
-      display: none;
-    }
-    #captureBtn { background: linear-gradient(180deg, #ffb14d, #ff7b1f); }
-    #inventoryBtn { background: linear-gradient(180deg, #4e92ff, #2f67d6); }
-    .sideBtn:active { transform: scale(0.97); }
-
+    #herbCollectBtn { background: linear-gradient(180deg,#69d66f,#239b3a); display:none; }
+    #captureBtn { background: linear-gradient(180deg,#ffb14d,#ff7b1f); }
+    #inventoryBtn { background: linear-gradient(180deg,#4e92ff,#2f67d6); }
+    .sideBtn:active { transform: scale(.97); }
     #inventoryModal {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(10,18,30,0.48);
-      backdrop-filter: blur(6px);
-      pointer-events: auto;
+      position: fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; background: rgba(10,18,30,0.48); backdrop-filter: blur(6px); pointer-events:auto;
     }
-    #inventoryModal.open { display: flex; }
-    #inventoryPanel {
-      width: min(92vw, 420px);
-      max-height: min(72vh, 560px);
-      overflow: auto;
-      border-radius: 22px;
-      background: rgba(255,255,255,0.96);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.28);
-      padding: 18px;
-      color: #1a2740;
-    }
-    #inventoryTitle { font-size: 18px; font-weight: 900; margin-bottom: 10px; }
-    #inventoryInfo { font-size: 13px; font-weight: 800; margin-bottom: 14px; color: #3a4c73; }
-    #inventoryList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-    .inventoryItem {
-      padding: 11px 12px;
-      border-radius: 14px;
-      background: #f3f7ff;
-      border: 1px solid rgba(47,103,214,0.12);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-weight: 800;
-      font-size: 14px;
-    }
-    .inventoryItemText { min-width: 0; word-break: break-word; }
-    .deployBtn {
-      border: 0;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #ff8f4d, #ff6a2c);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 900;
-      padding: 8px 10px;
-      cursor: pointer;
-      flex: 0 0 auto;
-    }
-    .inventoryEmpty {
-      padding: 14px;
-      border-radius: 14px;
-      background: #f3f7ff;
-      border: 1px dashed rgba(47,103,214,0.22);
-      font-weight: 800;
-      font-size: 14px;
-      color: #516383;
-    }
-    #closeInventoryBtn {
-      width: 100%;
-      height: 46px;
-      border: 0;
-      border-radius: 14px;
-      background: linear-gradient(180deg, #4e92ff, #2f67d6);
-      color: #fff;
-      font-size: 15px;
-      font-weight: 900;
-      cursor: pointer;
-    }
-
+    #inventoryModal.open { display:flex; }
+    #inventoryPanel { width:min(92vw,420px); max-height:min(72vh,560px); overflow:auto; border-radius:22px; background: rgba(255,255,255,0.96); box-shadow: 0 20px 60px rgba(0,0,0,0.28); padding:18px; color:#1a2740; }
+    #inventoryTitle { font-size:18px; font-weight:900; margin-bottom:10px; }
+    #inventoryInfo { font-size:13px; font-weight:800; margin-bottom:14px; color:#3a4c73; }
+    #inventoryList { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+    .inventoryItem { padding:11px 12px; border-radius:14px; background:#f3f7ff; border:1px solid rgba(47,103,214,0.12); display:flex; align-items:center; justify-content:space-between; gap:10px; font-weight:800; font-size:14px; }
+    .inventoryItemText { min-width:0; word-break:break-word; }
+    .deployBtn { border:0; border-radius:12px; background: linear-gradient(180deg,#ff8f4d,#ff6a2c); color:#fff; font-size:12px; font-weight:900; padding:8px 10px; cursor:pointer; flex:0 0 auto; }
+    .inventoryEmpty { padding:14px; border-radius:14px; background:#f3f7ff; border:1px dashed rgba(47,103,214,0.22); font-weight:800; font-size:14px; color:#516383; }
+    #closeInventoryBtn { width:100%; height:46px; border:0; border-radius:14px; background: linear-gradient(180deg,#4e92ff,#2f67d6); color:#fff; font-size:15px; font-weight:900; cursor:pointer; }
     @media (max-width: 700px) {
-      #ui {
-        min-width: 0;
-        max-width: calc(100vw - 24px);
-      }
-      #help { font-size: 11px; }
-      #jumpBtn {
-        width: 94px;
-        height: 94px;
-        font-size: 16px;
-      }
-      #joystick {
-        width: 118px;
-        height: 118px;
-      }
-      #joyKnob {
-        width: 48px;
-        height: 48px;
-        margin-left: -24px;
-        margin-top: -24px;
-      }
-      #sideButtons { bottom: 138px; }
-      .sideBtn {
-        width: 108px;
-        height: 52px;
-        font-size: 13px;
-      }
-      .boarTag { min-width: 100px; }
-      .boarBarWrap { width: 100px; }
-      .inventoryItem { font-size: 13px; }
+      #ui { min-width: 0; max-width: calc(100vw - 24px); }
+      #help { font-size:11px; }
+      #jumpBtn { width:94px; height:94px; font-size:16px; }
+      #joystick { width:118px; height:118px; }
+      #joyKnob { width:48px; height:48px; margin-left:-24px; margin-top:-24px; }
+      #sideButtons { bottom:138px; }
+      .sideBtn { width:108px; height:52px; font-size:13px; }
+      .boarTag { min-width:100px; }
+      .boarBarWrap { width:100px; }
+      .inventoryItem { font-size:13px; }
+      #miniMapWrap { width:132px; height:132px; }
+      #fullMapCanvas { width:min(84vw,560px); height:min(84vw,560px); }
     }
   </style>
-
   <script type="importmap">
     {
       "imports": {
@@ -370,41 +131,41 @@
   </script>
 </head>
 <body>
-  <div id="loading"></div>
+  <div id="loading">読み込み中…</div>
   <div id="toast"></div>
 
   <div id="ui">
-    <div id="title">Forest Mountain TPS</div>
-
+    <div id="title">Forest Mountain TPS Open World</div>
     <div id="playerHud">
-      <div class="hudRow">
-        <span>プレイヤーHP</span>
-        <span id="playerHpText">200 / 200</span>
-      </div>
-      <div class="barWrap">
-        <div id="playerHpFill" class="barFill"></div>
-      </div>
+      <div class="hudRow"><span>プレイヤーHP</span><span id="playerHpText">200 / 200</span></div>
+      <div class="barWrap"><div id="playerHpFill" class="barFill"></div></div>
     </div>
-
-    <div id="status">準備中</div>
+    <div id="status">待機中</div>
     <div id="buttons">
       <button id="dashBtn" class="modeBtn">ダッシュ</button>
       <button id="attackBtn" class="modeBtn attack">攻撃</button>
     </div>
     <div id="help">
       WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
-      薬草は1m以内で回収ボタンが出ます。画面をスライドすると視点回転。
+      薬草は1m以内で「薬草回収」が表示。ミニマップをタップすると全体マップを開けます。
     </div>
   </div>
 
   <div id="worldUI"></div>
-
+  <div id="miniMapWrap" title="タップで全体マップ"><canvas id="miniMapCanvas"></canvas></div>
+  <div id="fullMapModal" aria-hidden="true">
+    <div id="fullMapPanel">
+      <button id="fullMapClose">×</button>
+      <div id="fullMapTitle">全体マップ</div>
+      <div id="fullMapInfo">緑＝プレイヤー / 赤＝モンスター / 青＝川</div>
+      <canvas id="fullMapCanvas"></canvas>
+    </div>
+  </div>
   <div id="sideButtons">
     <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
     <button id="captureBtn" class="sideBtn">捕獲（ゲット）</button>
     <button id="inventoryBtn" class="sideBtn">インベントリ</button>
   </div>
-
   <div id="inventoryModal" aria-hidden="true">
     <div id="inventoryPanel">
       <div id="inventoryTitle">インベントリ</div>
@@ -413,147 +174,225 @@
       <button id="closeInventoryBtn">閉じる</button>
     </div>
   </div>
-
-  <div id="joystick" aria-label="joystick">
-    <div id="joyKnob"></div>
-  </div>
+  <div id="joystick" aria-label="joystick"><div id="joyKnob"></div></div>
   <button id="jumpBtn">JUMP</button>
 
   <script type="module">
     import * as THREE from "three";
+    import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-    const TREE_URLS  = ["./tree.glb"];
-    const HERB_URLS  = ["./herb.glb", "./yakusou.glb"];
-    const BOAR_URLS  = ["./boar.glb"];
-    const ROCK_URLS  = ["./isi.glb", "./iwa.glb"];
-    const RIVER_URLS = ["./river.glb"];
-
-    const STORAGE_KEY = "forest_tps_inventory_v4";
-    const INVENTORY_LIMIT = 10;
-
+    // -------------------- 基本設定 --------------------
     const WORLD_SIZE = 1200;
     const WORLD_HALF = WORLD_SIZE / 2;
     const ACTIVE_RADIUS = 100;
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
-
     const TREE_COUNT = 1000;
     const HERB_COUNT = 1500;
     const ROCK_COUNT = 500;
-    const RIVER_COUNT = 10;
     const BOAR_COUNT = 10;
-
+    const RIVER_COUNT = 10;
+    const STORAGE_KEY = "forest_mountain_tps_inventory_v4";
+    const INVENTORY_LIMIT = 10;
     const PLAYER_SAFE_RADIUS = 18;
+
+    const config = {
+      walkSpeed: 2.5,
+      dashMultiplier: 2.3,
+      gravity: -22.0,
+      jumpVelocity: 8.8,
+      cameraHeight: 2.55,
+      cameraDistance: 6.9,
+      cameraSmooth: 8.5,
+      targetHeight: 1.5,
+      modelHeight: 2.45,
+      turnSpeed: 9.0,
+      playerHpMax: 200,
+      playerAttackDps: 5,
+      playerAttackDuration: 5.0,
+      attackRange: 5.6,
+      attackConeDot: -0.15,
+      boarBaseHp: 100,
+      boarBaseAttack: 3,
+      boarLevelMin: 1,
+      boarLevelMax: 20,
+      lowLevelMax: 10,
+      highLevelMin: 11,
+      boarMoveSpeed: 1.2,
+      boarAggroRange: 18.0,
+      boarAttackRange: 2.1,
+      herbHealAmount: 30,
+      herbCollectRange: 1.0,
+      playerCollisionRadius: 0.72,
+      cameraYawSensitivity: 0.005,
+      cameraPitchSensitivity: 0.004,
+      cameraPitchMin: 0.08,
+      cameraPitchMax: 0.78
+    };
+
+    const TREE_TARGET_HEIGHT = 9.5;
+    const TREE_GROUND_LIFT = 0.18;
+    const BOAR_TARGET_HEIGHT = 2.0;
+    const BOAR_GROUND_LIFT = 0.05;
+    const HERB_TARGET_HEIGHT = 1.35;
+    const HERB_GROUND_LIFT = 0.03;
+    const ROCK_TARGET_HEIGHT = 1.45;
+    const ROCK_GROUND_LIFT = 0.02;
+    const RIVER_TARGET_HEIGHT = 1.0;
+    const RIVER_GROUND_LIFT = 0.01;
+
+    const WALK_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
+    const ATTACK_FBX_URL = "./Meshy_AI_biped_Animation_Attack_withSkin.fbx";
+    const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
+    const TREE_URLS = ["./tree.glb"];
+    const BOAR_URLS = ["./boar.glb"];
+    const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
+    const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
+    const RIVER_URLS = ["./river.glb"];
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9fd3ff);
-    scene.fog = new THREE.Fog(0x9fd3ff, 72, 360);
+    scene.fog = new THREE.Fog(0x9fd3ff, 70, 320);
 
-    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 800);
-    camera.position.set(0, 2.6, 7.2);
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 700);
+    camera.position.set(0, 2.5, 6.8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.23;
+    renderer.toneMappingExposure = 1.25;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.style.touchAction = "none";
     document.body.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xbbe6ff, 0x4d7a3b, 1.9));
-
+    scene.add(new THREE.HemisphereLight(0xbbe6ff, 0x4d7a3b, 2.0));
     const sun = new THREE.DirectionalLight(0xffffff, 3.2);
-    sun.position.set(28, 40, 20);
+    sun.position.set(25, 35, 18);
     sun.castShadow = true;
     sun.shadow.mapSize.set(4096, 4096);
     sun.shadow.camera.near = 1;
-    sun.shadow.camera.far = 220;
-    sun.shadow.camera.left = -110;
-    sun.shadow.camera.right = 110;
-    sun.shadow.camera.top = 110;
-    sun.shadow.camera.bottom = -110;
+    sun.shadow.camera.far = 180;
+    sun.shadow.camera.left = -90;
+    sun.shadow.camera.right = 90;
+    sun.shadow.camera.top = 90;
+    sun.shadow.camera.bottom = -90;
     sun.shadow.bias = -0.00015;
     scene.add(sun);
+    scene.add(new THREE.PointLight(0xffffff, 0.7, 160).position.set(-20, 18, -12));
 
-    const fill = new THREE.PointLight(0xffffff, 0.75, 200);
-    fill.position.set(-20, 18, -12);
-    scene.add(fill);
+    const uiStatus = document.getElementById("status");
+    const loading = document.getElementById("loading");
+    const dashBtn = document.getElementById("dashBtn");
+    const attackBtn = document.getElementById("attackBtn");
+    const playerHpText = document.getElementById("playerHpText");
+    const playerHpFill = document.getElementById("playerHpFill");
+    const worldUI = document.getElementById("worldUI");
+    const toastEl = document.getElementById("toast");
+    const inventoryModal = document.getElementById("inventoryModal");
+    const inventoryList = document.getElementById("inventoryList");
+    const inventoryInfo = document.getElementById("inventoryInfo");
+    const closeInventoryBtn = document.getElementById("closeInventoryBtn");
+    const inventoryBtn = document.getElementById("inventoryBtn");
+    const captureBtn = document.getElementById("captureBtn");
+    const herbCollectBtn = document.getElementById("herbCollectBtn");
+    const miniMapWrap = document.getElementById("miniMapWrap");
+    const miniMapCanvas = document.getElementById("miniMapCanvas");
+    const fullMapModal = document.getElementById("fullMapModal");
+    const fullMapCanvas = document.getElementById("fullMapCanvas");
+    const fullMapClose = document.getElementById("fullMapClose");
 
-    const fbxlessInfo = document.getElementById("loading");
-    fbxlessInfo.style.display = "none";
+    const fbxLoader = new FBXLoader();
+    const gltfLoader = new GLTFLoader();
+    const clock = new THREE.Clock();
+    const upAxis = new THREE.Vector3(0, 1, 0);
+    const tmp = { v1: new THREE.Vector3(), v2: new THREE.Vector3(), v3: new THREE.Vector3(), q: new THREE.Quaternion(), m: new THREE.Matrix4() };
+    const herbRaycaster = new THREE.Raycaster();
+    const herbPointer = new THREE.Vector2();
 
-    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-    function rand(min, max) { return min + RNG() * (max - min); }
-    function safeNum(v, fallback = 0) { return Number.isFinite(v) ? v : fallback; }
-    function makeId() { return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`; }
+    const playerRoot = new THREE.Group();
+    scene.add(playerRoot);
 
-    function mulberry32(seed) {
-      let a = seed >>> 0;
-      return function () {
-        a |= 0;
-        a = a + 0x6D2B79F5 | 0;
-        let t = Math.imul(a ^ a >>> 15, 1 | a);
-        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-      };
-    }
-    const RNG = mulberry32(0x5F3759DF);
+    let visualRoot = null;
+    let mixer = null;
+    let treeTemplate = null, boarTemplate = null, herbTemplate = null, rockTemplate = null, riverTemplate = null;
+    let treeUsesFallback = true, boarUsesFallback = true, herbUsesFallback = true, rockUsesFallback = true, riverUsesFallback = true;
+    const actions = { walk: null, run: null, attack: null };
+    let currentActionName = "idle";
+    let attackPlaying = false;
+    let attackTimer = 0;
+    let dashMode = false;
+    let dashHeld = false;
+    let gameOver = false;
+    let nextEntityId = 1;
+    let cameraYaw = Math.PI;
+    let cameraPitch = 0.22;
+    let playerHp = config.playerHpMax;
 
-    function choice(arr) { return arr[Math.floor(RNG() * arr.length)]; }
+    const keys = new Set();
+    const stick = { active:false, pointerId:null, x:0, y:0, radius:40 };
+    const physics = { vy:0, onGround:true, jumpOffset:0 };
+    const inventory = [];
+    const companions = [];
+    let collisionCircles = [];
+
+    const treeData = [], herbData = [], rockData = [], boarData = [], riverData = [];
+    const activeTrees = new Map(), activeHerbs = new Map(), activeRocks = new Map(), activeBoars = new Map(), activeRivers = new Map();
 
     const mountainPeaks = [];
     for (let i = 0; i < 5; i++) {
       mountainPeaks.push({
-        x: rand(-WORLD_HALF + 120, WORLD_HALF - 120),
-        z: rand(-WORLD_HALF + 120, WORLD_HALF - 120),
-        amp: rand(20, 30),
-        sigma: rand(16, 24),
-        ridge: rand(7, 14)
+        x: (Math.random() * 2 - 1) * 420,
+        z: (Math.random() * 2 - 1) * 420,
+        h: 20 + Math.random() * 10,
+        r: 38 + Math.random() * 14
       });
     }
 
-    function getTerrainHeight(x, z) {
-      x = safeNum(x, 0);
-      z = safeNum(z, 0);
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    function rand(min, max) { return min + Math.random() * (max - min); }
+    function makeId() { return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
+    function setStatus(text) { uiStatus.textContent = text; }
+    function showToast(text, duration = 1800) {
+      toastEl.textContent = text; toastEl.classList.add("show"); clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toastEl.classList.remove("show"), duration);
+    }
+    function safeNum(v, fallback = 0) { return Number.isFinite(v) ? v : fallback; }
 
+    function getTerrainHeight(x, z) {
+      x = safeNum(x); z = safeNum(z);
       const r = Math.hypot(x, z);
       let h =
-        Math.sin(x * 0.015) * 8.5 +
-        Math.cos(z * 0.017) * 7.8 +
-        Math.sin((x + z) * 0.010) * 4.7 +
-        Math.cos((x - z) * 0.009) * 4.1 +
-        Math.sin(x * 0.03) * Math.cos(z * 0.024) * 2.0 +
-        Math.cos(r * 0.018) * 2.2;
-
+        Math.sin(x * 0.015) * 6.8 +
+        Math.cos(z * 0.017) * 6.5 +
+        Math.sin((x + z) * 0.008) * 4.8 +
+        Math.cos(r * 0.014) * 3.8 +
+        Math.sin(x * 0.029) * Math.cos(z * 0.024) * 2.4;
       for (const p of mountainPeaks) {
-        const dx = x - p.x;
-        const dz = z - p.z;
+        const dx = x - p.x, dz = z - p.z;
         const d2 = dx * dx + dz * dz;
-        const g = Math.exp(-d2 / (2 * p.sigma * p.sigma));
-        const cone = Math.max(0, 1 - Math.sqrt(d2) / (p.sigma * 2.2));
-        h += p.amp * g + p.ridge * cone;
+        h += p.h * Math.exp(-d2 / (2 * p.r * p.r));
+        const cone = Math.max(0, 1 - Math.sqrt(d2) / (p.r * 1.35));
+        h += cone * cone * 2.8;
       }
-
-      if (!Number.isFinite(h)) h = 0;
-      return h;
+      h += Math.sin((x * 0.04) + (z * 0.035)) * 1.1;
+      return Number.isFinite(h) ? h : 0;
     }
 
-    const terrainGeometry = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 260, 260);
+    // -------------------- 地形 --------------------
+    const terrainGeometry = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 300, 300);
     terrainGeometry.rotateX(-Math.PI / 2);
     {
       const pos = terrainGeometry.attributes.position;
       for (let i = 0; i < pos.count; i++) {
-        const x = pos.getX(i);
-        const z = pos.getZ(i);
+        const x = pos.getX(i), z = pos.getZ(i);
         pos.setY(i, getTerrainHeight(x, z));
       }
       pos.needsUpdate = true;
       terrainGeometry.computeVertexNormals();
     }
-
     const ground = new THREE.Mesh(
       terrainGeometry,
       new THREE.MeshStandardMaterial({ color: 0x4fa84f, roughness: 1.0, metalness: 0.0 })
@@ -566,238 +405,33 @@
     grassGrid.material.opacity = 0.16;
     scene.add(grassGrid);
 
-    const gltfLoader = new GLTFLoader();
-
-    const uiStatus = document.getElementById("status");
-    const toastEl = document.getElementById("toast");
-    const playerHpText = document.getElementById("playerHpText");
-    const playerHpFill = document.getElementById("playerHpFill");
-    const dashBtn = document.getElementById("dashBtn");
-    const attackBtn = document.getElementById("attackBtn");
-    const herbCollectBtn = document.getElementById("herbCollectBtn");
-    const captureBtn = document.getElementById("captureBtn");
-    const inventoryBtn = document.getElementById("inventoryBtn");
-    const inventoryModal = document.getElementById("inventoryModal");
-    const inventoryList = document.getElementById("inventoryList");
-    const inventoryInfo = document.getElementById("inventoryInfo");
-    const closeInventoryBtn = document.getElementById("closeInventoryBtn");
-
-    const worldUI = document.getElementById("worldUI");
-
-    const playerRoot = new THREE.Group();
-    scene.add(playerRoot);
-
-    let visualRoot = null;
-    let playerParts = null;
-
-    const stick = { active: false, pointerId: null, x: 0, y: 0, radius: 40 };
-    const physics = { vy: 0, onGround: true, jumpOffset: 0 };
-    const keys = new Set();
-    const cameraDrag = { active: false, pointerId: null, lastX: 0, lastY: 0 };
-
-    let dashMode = false;
-    let dashHeld = false;
-    let attackPlaying = false;
-    let attackTimer = 0;
-    let currentActionName = "idle";
-    let playerAttackProgress = 0;
-    let gameOver = false;
-    let playerHp = 200;
-    let cameraYaw = Math.PI;
-    let cameraPitch = 0.22;
-
-    const config = {
-      walkSpeed: 2.5,
-      dashMultiplier: 2.4, // 6 m/s
-      gravity: -22.0,
-      jumpVelocity: 8.8,
-      cameraSmooth: 8.5,
-      targetHeight: 1.5,
-      turnSpeed: 9.0,
-
-      playerHpMax: 200,
-      playerAttackDps: 5,
-      playerAttackDuration: 5.0,
-      attackRange: 5.6,
-      attackConeDot: -0.15,
-
-      boarBaseHp: 100,
-      boarBaseAttack: 3,
-      boarMoveSpeed: 1.2,
-      boarAggroRange: 18.0,
-      boarAttackRange: 2.1,
-
-      herbHealAmount: 30,
-      herbCollectRange: 1.0,
-      playerCollisionRadius: 0.72
-    };
-
-    const TREE_TARGET_HEIGHT = 9.5;
-    const TREE_GROUND_LIFT = 0.18;
-    const HERB_TARGET_HEIGHT = 1.35;
-    const HERB_GROUND_LIFT = 0.03;
-    const BOAR_TARGET_HEIGHT = 2.0;
-    const BOAR_GROUND_LIFT = 0.05;
-    const ROCK_TARGET_HEIGHT = 2.4;
-    const ROCK_GROUND_LIFT = 0.02;
-    const RIVER_TARGET_LENGTH = 50;
-    const RIVER_TARGET_WIDTH = 10;
-    const RIVER_TARGET_THICKNESS = 1;
-
-    const clock = new THREE.Clock();
-    let nextEntityId = 1;
-
-    const tmp = {
-      v1: new THREE.Vector3(),
-      v2: new THREE.Vector3(),
-      v3: new THREE.Vector3(),
-      v4: new THREE.Vector3(),
-      v5: new THREE.Vector3(),
-      q: new THREE.Quaternion(),
-      m: new THREE.Matrix4()
-    };
-    const upAxis = new THREE.Vector3(0, 1, 0);
-    const herbRaycaster = new THREE.Raycaster();
-    const herbPointer = new THREE.Vector2();
-
-    const treeData = [];
-    const herbData = [];
-    const rockData = [];
-    const riverData = [];
-    const boarData = [];
-    const activeTrees = new Map();
-    const activeHerbs = new Map();
-    const activeRocks = new Map();
-    const activeRivers = new Map();
-    const activeBoars = new Map();
-    const inventory = [];
-    const companions = [];
-
-    const fallbackTemplates = {
-      tree: createFallbackTreeTemplate(),
-      herb: createFallbackHerbTemplate(),
-      boar: createFallbackBoarTemplate(),
-      rock: createFallbackRockTemplate(),
-      river: createFallbackRiverTemplate()
-    };
-
-    let treeTemplate = fallbackTemplates.tree;
-    let herbTemplate = fallbackTemplates.herb;
-    let boarTemplate = fallbackTemplates.boar;
-    let rockTemplate = fallbackTemplates.rock;
-    let riverTemplate = fallbackTemplates.river;
-
-    function setStatus(text) {
-      uiStatus.textContent = text;
-    }
-
-    function showToast(text, duration = 1800) {
-      toastEl.textContent = text;
-      toastEl.classList.add("show");
-      clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => toastEl.classList.remove("show"), duration);
-    }
-
-    function updatePlayerHud() {
-      const pct = (playerHp / config.playerHpMax) * 100;
-      playerHpText.textContent = `${Math.max(0, Math.ceil(playerHp))} / ${config.playerHpMax}`;
-      playerHpFill.style.width = `${clamp(pct, 0, 100)}%`;
-      if (pct > 60) {
-        playerHpFill.style.background = "linear-gradient(90deg, #4fd06f, #19a54f)";
-      } else if (pct > 25) {
-        playerHpFill.style.background = "linear-gradient(90deg, #ffd24d, #ff9f1a)";
-      } else {
-        playerHpFill.style.background = "linear-gradient(90deg, #ff6b6b, #d91f1f)";
-      }
-    }
-
-    function safeLoadInventory() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return;
-        inventory.splice(0, inventory.length);
-        for (const item of parsed) {
-          if (!item || typeof item !== "object") continue;
-          if (typeof item.species !== "string") continue;
-          const level = Number(item.level);
-          if (!Number.isFinite(level)) continue;
-          inventory.push({
-            id: typeof item.id === "string" ? item.id : makeId(),
-            species: item.species,
-            level: Math.max(1, Math.floor(level)),
-            capturedAt: typeof item.capturedAt === "number" ? item.capturedAt : Date.now()
-          });
-        }
-      } catch (e) {
-        console.warn("inventory load failed", e);
-      }
-    }
-
-    function saveInventory() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
-      } catch (e) {
-        console.warn("inventory save failed", e);
-      }
-    }
-
-    function renderInventoryModal() {
-      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体`;
-      inventoryList.innerHTML = "";
-      if (!inventory.length) {
-        const empty = document.createElement("div");
-        empty.className = "inventoryEmpty";
-        empty.textContent = "まだ捕まえたキャラクターはいません。";
-        inventoryList.appendChild(empty);
-        return;
-      }
-
-      inventory.forEach((item) => {
-        const row = document.createElement("div");
-        row.className = "inventoryItem";
-        const label = document.createElement("div");
-        label.className = "inventoryItemText";
-        label.textContent = `${item.species} Lv.${item.level}`;
-
-        const btn = document.createElement("button");
-        btn.className = "deployBtn";
-        btn.textContent = "出撃";
-        btn.dataset.deployId = item.id;
-
-        row.appendChild(label);
-        row.appendChild(btn);
-        inventoryList.appendChild(row);
-      });
-    }
-
-    function openInventoryModal() {
-      renderInventoryModal();
-      inventoryModal.classList.add("open");
-      inventoryModal.setAttribute("aria-hidden", "false");
-    }
-
-    function closeInventoryModal() {
-      inventoryModal.classList.remove("open");
-      inventoryModal.setAttribute("aria-hidden", "true");
-    }
-
+    // -------------------- ユーティリティ --------------------
     function applyShadowsAndFixMaterials(object3D) {
       object3D.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
           const mats = Array.isArray(child.material) ? child.material : [child.material];
-          for (const mat of mats) {
-            if (!mat) continue;
-            mat.side = THREE.DoubleSide;
-            mat.needsUpdate = true;
-          }
+          for (const mat of mats) if (mat) { mat.side = THREE.DoubleSide; mat.needsUpdate = true; }
         }
       });
     }
-
+    function fitAndGround(model, targetHeight = config.modelHeight, groundLift = 0.0) {
+      applyShadowsAndFixMaterials(model);
+      model.updateWorldMatrix(true, true);
+      const box1 = new THREE.Box3().setFromObject(model);
+      const size1 = box1.getSize(new THREE.Vector3());
+      const scale = targetHeight / Math.max(size1.y, 0.0001);
+      model.scale.setScalar(scale);
+      model.updateWorldMatrix(true, true);
+      const box2 = new THREE.Box3().setFromObject(model);
+      const center2 = box2.getCenter(new THREE.Vector3());
+      model.position.x -= center2.x;
+      model.position.z -= center2.z;
+      model.position.y += (-box2.min.y) + groundLift;
+      model.updateWorldMatrix(true, true);
+      return model;
+    }
     function cloneMaterialDeep(material) {
       if (!material) return material;
       if (Array.isArray(material)) return material.map(cloneMaterialDeep);
@@ -808,7 +442,6 @@
       }
       return cloned;
     }
-
     function deepCloneUnique(root) {
       const clone = root.clone(true);
       clone.traverse((obj) => {
@@ -819,7 +452,6 @@
       });
       return clone;
     }
-
     function disposeMaterial(material) {
       if (!material) return;
       const materials = Array.isArray(material) ? material : [material];
@@ -828,408 +460,15 @@
         const seen = new Set();
         for (const key of Object.keys(mat)) {
           const value = mat[key];
-          if (value && value.isTexture && !seen.has(value)) {
-            seen.add(value);
-            value.dispose();
-          }
+          if (value && value.isTexture && !seen.has(value)) { seen.add(value); value.dispose(); }
         }
         mat.dispose?.();
       }
     }
-
     function disposeObject3D(root) {
       if (!root) return;
-      root.traverse((obj) => {
-        if (obj.isMesh) {
-          obj.geometry?.dispose?.();
-          disposeMaterial(obj.material);
-        }
-      });
+      root.traverse((obj) => { if (obj.isMesh) { obj.geometry?.dispose?.(); disposeMaterial(obj.material); } });
     }
-
-    function fitAndGroundUniform(model, targetHeight, groundLift = 0) {
-      applyShadowsAndFixMaterials(model);
-      model.updateWorldMatrix(true, true);
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const scale = targetHeight / Math.max(size.y, 0.0001);
-      model.scale.setScalar(scale);
-      model.updateWorldMatrix(true, true);
-      const box2 = new THREE.Box3().setFromObject(model);
-      const center = box2.getCenter(new THREE.Vector3());
-      model.position.x -= center.x;
-      model.position.z -= center.z;
-      model.position.y += (-box2.min.y) + groundLift;
-      model.updateWorldMatrix(true, true);
-      return model;
-    }
-
-    function fitAndGroundToDimensions(model, targetX, targetY, targetZ, groundLift = 0) {
-      applyShadowsAndFixMaterials(model);
-      model.updateWorldMatrix(true, true);
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const sx = targetX / Math.max(size.x, 0.0001);
-      const sy = targetY / Math.max(size.y, 0.0001);
-      const sz = targetZ / Math.max(size.z, 0.0001);
-      model.scale.set(sx, sy, sz);
-      model.updateWorldMatrix(true, true);
-      const box2 = new THREE.Box3().setFromObject(model);
-      const center = box2.getCenter(new THREE.Vector3());
-      model.position.x -= center.x;
-      model.position.z -= center.z;
-      model.position.y += (-box2.min.y) + groundLift;
-      model.updateWorldMatrix(true, true);
-      return model;
-    }
-
-    function getCameraBasis() {
-      const forward = new THREE.Vector3(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw)).normalize();
-      const right = new THREE.Vector3(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw)).normalize();
-      return { forward, right };
-    }
-
-    function getCameraRelativeMoveDirection(inputX, inputZ) {
-      const { forward, right } = getCameraBasis();
-      tmp.v1.copy(right).multiplyScalar(inputX);
-      tmp.v2.copy(forward).multiplyScalar(inputZ);
-      tmp.v3.copy(tmp.v1).add(tmp.v2);
-      if (tmp.v3.lengthSq() < 1e-8) return tmp.v3.set(0, 0, 0);
-      return tmp.v3.normalize();
-    }
-
-    function currentSpeed() {
-      return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
-    }
-
-    function getKeyboardMoveVector() {
-      const x =
-        (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) +
-        (keys.has("KeyA") || keys.has("ArrowLeft") ? -1 : 0);
-
-      const z =
-        (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) +
-        (keys.has("KeyS") || keys.has("ArrowDown") ? -1 : 0);
-
-      return { x, z };
-    }
-
-    function getMoveInput() {
-      const k = getKeyboardMoveVector();
-      let x = clamp(k.x + stick.x, -1, 1);
-      let z = clamp(k.z + (-stick.y), -1, 1);
-      const len = Math.hypot(x, z);
-      if (len > 1) {
-        x /= len;
-        z /= len;
-      }
-      return {
-        x,
-        z,
-        magnitude: Math.hypot(x, z),
-        jump: keys.has("Space"),
-        attack: keys.has("KeyJ") || keys.has("KeyK")
-      };
-    }
-
-    function requestJump() {
-      if (gameOver) return;
-      if (!physics.onGround) return;
-      physics.vy = config.jumpVelocity;
-      physics.onGround = false;
-      physics.jumpOffset = 0.02;
-    }
-
-    function getCharacterForwardVector() {
-      return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
-    }
-
-    function takePlayerDamage(amount) {
-      if (gameOver) return;
-      playerHp = Math.max(0, playerHp - amount);
-      updatePlayerHud();
-      if (playerHp <= 0) {
-        playerHp = 0;
-        gameOver = true;
-        attackPlaying = false;
-        attackTimer = 0;
-        hardStopAction("walk");
-        hardStopAction("run");
-        hardStopAction("attack");
-        currentActionName = "idle";
-        setStatus("ゲームオーバー");
-      }
-    }
-
-    function healPlayer(amount) {
-      if (gameOver) return 0;
-      const before = playerHp;
-      playerHp = Math.min(config.playerHpMax, playerHp + amount);
-      updatePlayerHud();
-      return playerHp - before;
-    }
-
-    function getStatsByLevel(level) {
-      const mult = Math.pow(1.5, level - 1);
-      return {
-        level,
-        hpMax: config.boarBaseHp * mult,
-        atkDps: config.boarBaseAttack * mult
-      };
-    }
-
-    function randomWorldPoint(margin = 18) {
-      return {
-        x: rand(-WORLD_HALF + margin, WORLD_HALF - margin),
-        z: rand(-WORLD_HALF + margin, WORLD_HALF - margin)
-      };
-    }
-
-    function createFallbackPlayerRig() {
-      const root = new THREE.Group();
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x78a9ff, roughness: 0.85 });
-      const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd5b8, roughness: 0.95 });
-      const darkMat = new THREE.MeshStandardMaterial({ color: 0x38506e, roughness: 0.9 });
-
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.15, 4, 8), bodyMat);
-      body.position.y = 1.2;
-      body.castShadow = true;
-      body.receiveShadow = true;
-
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), skinMat);
-      head.position.set(0, 2.15, 0.05);
-      head.castShadow = true;
-      head.receiveShadow = true;
-
-      const legGeo = new THREE.CylinderGeometry(0.09, 0.11, 0.72, 6);
-      const legPos = [[-0.18,0.4,0.11],[0.18,0.4,0.11],[-0.18,0.4,-0.11],[0.18,0.4,-0.11]];
-      for (const [x, y, z] of legPos) {
-        const leg = new THREE.Mesh(legGeo, darkMat);
-        leg.position.set(x, y, z);
-        leg.castShadow = true;
-        leg.receiveShadow = true;
-        root.add(leg);
-      }
-
-      const armGeo = new THREE.CylinderGeometry(0.07, 0.09, 0.52, 6);
-      const arm1 = new THREE.Mesh(armGeo, darkMat);
-      arm1.position.set(-0.48, 1.48, 0);
-      arm1.rotation.z = 0.14;
-      arm1.castShadow = true;
-      arm1.receiveShadow = true;
-
-      const arm2 = arm1.clone();
-      arm2.position.x = 0.48;
-      arm2.rotation.z = -0.14;
-      arm2.castShadow = true;
-      arm2.receiveShadow = true;
-
-      root.add(body, head, arm1, arm2);
-
-      root.userData.parts = { body, head, arms: [arm1, arm2], legs: root.children.slice(0, 4) };
-      return root;
-    }
-
-    function createFallbackTreeTemplate() {
-      const tree = new THREE.Group();
-      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7b4f2a, roughness: 1.0 });
-      const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1.0 });
-
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.38, 3.0, 8), trunkMat);
-      trunk.position.y = 1.5;
-      trunk.castShadow = true;
-      trunk.receiveShadow = true;
-
-      const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.8, 8), leafMat);
-      crown1.position.y = 4.1;
-      crown1.castShadow = true;
-      crown1.receiveShadow = true;
-
-      const crown2 = new THREE.Mesh(new THREE.ConeGeometry(1.25, 3.0, 8), leafMat);
-      crown2.position.y = 5.0;
-      crown2.castShadow = true;
-      crown2.receiveShadow = true;
-
-      tree.add(trunk, crown1, crown2);
-      return tree;
-    }
-
-    function createFallbackHerbTemplate() {
-      const herb = new THREE.Group();
-      const stemMat = new THREE.MeshStandardMaterial({ color: 0x2f8f3e, roughness: 1.0 });
-      const leafMat = new THREE.MeshStandardMaterial({ color: 0x5ecb60, roughness: 1.0 });
-
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 6), stemMat);
-      stem.position.y = 0.45;
-      stem.castShadow = true;
-      stem.receiveShadow = true;
-
-      const leaf1 = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.55, 5), leafMat);
-      leaf1.position.set(0.1, 0.75, 0.0);
-      leaf1.rotation.z = 0.7;
-      leaf1.castShadow = true;
-      leaf1.receiveShadow = true;
-
-      const leaf2 = leaf1.clone();
-      leaf2.position.set(-0.1, 0.62, 0.1);
-      leaf2.rotation.z = -0.7;
-      leaf2.castShadow = true;
-      leaf2.receiveShadow = true;
-
-      const leaf3 = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 5), stemMat);
-      leaf3.position.set(0.0, 0.95, 0.0);
-      leaf3.rotation.x = -0.25;
-      leaf3.castShadow = true;
-      leaf3.receiveShadow = true;
-
-      herb.add(stem, leaf1, leaf2, leaf3);
-      return herb;
-    }
-
-    function createFallbackBoarTemplate() {
-      const boar = new THREE.Group();
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b4b2b, roughness: 1.0 });
-      const snoutMat = new THREE.MeshStandardMaterial({ color: 0x7f6044, roughness: 1.0 });
-      const earMat = new THREE.MeshStandardMaterial({ color: 0x5c3f23, roughness: 1.0 });
-
-      const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 0.9), bodyMat);
-      body.position.y = 0.8;
-      body.castShadow = true;
-      body.receiveShadow = true;
-
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.65), snoutMat);
-      head.position.set(1.15, 0.85, 0);
-      head.castShadow = true;
-      head.receiveShadow = true;
-
-      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.24), snoutMat);
-      snout.position.set(1.52, 0.78, 0);
-      snout.castShadow = true;
-      snout.receiveShadow = true;
-
-      const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), earMat);
-      ear1.position.set(0.95, 1.18, 0.22);
-      ear1.rotation.z = Math.PI / 2;
-      ear1.rotation.x = -0.3;
-      ear1.castShadow = true;
-      ear1.receiveShadow = true;
-
-      const ear2 = ear1.clone();
-      ear2.position.z = -0.22;
-
-      const legGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6);
-      const legs = [];
-      const legOffsets = [[-0.6,0.25,0.3],[-0.6,0.25,-0.3],[0.5,0.25,0.3],[0.5,0.25,-0.3]];
-      for (const [x, y, z] of legOffsets) {
-        const leg = new THREE.Mesh(legGeo, bodyMat);
-        leg.position.set(x, y, z);
-        leg.castShadow = true;
-        leg.receiveShadow = true;
-        boar.add(leg);
-        legs.push(leg);
-      }
-
-      boar.add(body, head, snout, ear1, ear2);
-      boar.userData.parts = { body, head, snout, ears: [ear1, ear2], legs };
-      return boar;
-    }
-
-    function createFallbackRockTemplate() {
-      const rock = new THREE.Group();
-      const mat1 = new THREE.MeshStandardMaterial({ color: 0x8d8d8d, roughness: 1.0 });
-      const mat2 = new THREE.MeshStandardMaterial({ color: 0x6f6f6f, roughness: 1.0 });
-      const base = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0, 0), mat1);
-      base.castShadow = true;
-      base.receiveShadow = true;
-      const bump1 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.74, 0), mat2);
-      bump1.position.set(0.2, 0.25, -0.1);
-      bump1.rotation.set(0.3, 0.4, 0.1);
-      bump1.castShadow = true;
-      bump1.receiveShadow = true;
-      const bump2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.48, 0), mat1);
-      bump2.position.set(-0.32, 0.18, 0.2);
-      bump2.rotation.set(0.6, 0.2, 0.1);
-      bump2.castShadow = true;
-      bump2.receiveShadow = true;
-      rock.add(base, bump1, bump2);
-      return rock;
-    }
-
-    function createFallbackRiverTemplate() {
-      const river = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0x4aa8ff,
-        roughness: 0.18,
-        metalness: 0.0,
-        transparent: true,
-        opacity: 0.88
-      });
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(50, 1, 10), mat);
-      mesh.castShadow = false;
-      mesh.receiveShadow = false;
-      river.add(mesh);
-      return river;
-    }
-
-    function createRiverTagInfo(root) {
-      root.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = false;
-          child.receiveShadow = false;
-        }
-      });
-    }
-
-    function createBoarTag(level, hp, hpMax) {
-      const el = document.createElement("div");
-      el.className = "boarTag";
-      el.innerHTML = `
-        <div class="boarLevel">Lv.${level}</div>
-        <div class="boarBarWrap"><div class="boarBarFill"></div></div>
-        <div class="boarHpText">${Math.ceil(hp)} / ${Math.ceil(hpMax)}</div>
-      `;
-      worldUI.appendChild(el);
-      return {
-        el,
-        fill: el.querySelector(".boarBarFill"),
-        text: el.querySelector(".boarHpText")
-      };
-    }
-
-    function updateBoarTag(data) {
-      const o = data.activeObject;
-      if (!o || data.dead || !o.root?.visible) {
-        if (o?.tag?.el) o.tag.el.style.opacity = "0";
-        return;
-      }
-
-      const pos = tmp.v1.set(
-        o.root.position.x,
-        o.root.position.y + (data.uiOffset || 2.0),
-        o.root.position.z
-      ).project(camera);
-
-      const inFront = pos.z > -1 && pos.z < 1;
-      const onScreen = pos.x >= -1.2 && pos.x <= 1.2 && pos.y >= -1.2 && pos.y <= 1.2;
-
-      if (!inFront || !onScreen) {
-        o.tag.el.style.opacity = "0";
-        return;
-      }
-
-      const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
-      const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
-
-      o.tag.el.style.opacity = "1";
-      o.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
-      o.tag.fill.style.width = `${clamp((data.hp / data.hpMax) * 100, 0, 100)}%`;
-      o.tag.text.textContent = `HP ${Math.ceil(data.hp)} / ${Math.ceil(data.hpMax)}`;
-    }
-
-    function updateBoarTags() {
-      for (const data of activeBoars.values()) updateBoarTag(data);
-    }
-
     function collectRootNames(root) {
       const names = new Set();
       root.traverse((obj) => {
@@ -1239,7 +478,6 @@
       });
       return [...names];
     }
-
     function stripRootMotionTracks(clip, rootNames) {
       if (!clip) return null;
       const c = clip.clone();
@@ -1257,1759 +495,886 @@
       });
       return c;
     }
-
-    function firstClip(gltf) {
-      if (!gltf?.animations?.length) return null;
-      return gltf.animations[0];
-    }
-
+    function firstClip(fbx) { return fbx?.animations?.length ? fbx.animations[0] : null; }
     function loadGLTFWithFallback(urls, fallbackFactory) {
       return new Promise((resolve) => {
         const tryAt = (index) => {
-          if (index >= urls.length) {
-            resolve({ scene: fallbackFactory(), fallback: true, url: null });
-            return;
-          }
-          gltfLoader.load(
-            urls[index],
-            (gltf) => resolve({ scene: gltf.scene, fallback: false, url: urls[index] }),
-            undefined,
-            () => tryAt(index + 1)
-          );
+          if (index >= urls.length) { resolve({ scene: fallbackFactory(), fallback: true, url: null }); return; }
+          gltfLoader.load(urls[index], (gltf) => resolve({ scene: gltf.scene, fallback: false, url: urls[index] }), undefined, () => tryAt(index + 1));
         };
         tryAt(0);
       });
     }
-
-    function loadGLTFWithPossibleFailure(urls, fallbackFactory) {
+    function loadFBXWithFallback(urls) {
       return new Promise((resolve) => {
-        const next = (idx) => {
-          if (idx >= urls.length) return resolve({ scene: fallbackFactory(), fallback: true, url: null });
-          gltfLoader.load(
-            urls[idx],
-            (gltf) => resolve({ scene: gltf.scene, fallback: false, url: urls[idx] }),
-            undefined,
-            () => next(idx + 1)
-          );
+        const tryAt = (index) => {
+          if (index >= urls.length) { resolve(null); return; }
+          fbxLoader.load(urls[index], (fbx) => resolve(fbx), undefined, () => tryAt(index + 1));
         };
-        next(0);
+        tryAt(0);
       });
     }
-
-    function getTerrainGroundY(x, z) {
-      return getTerrainHeight(x, z);
+    function getCameraBasis() {
+      const forward = new THREE.Vector3(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw)).normalize();
+      const right = new THREE.Vector3(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw)).normalize();
+      return { forward, right };
     }
-
-    function placeOnTerrain(root, x, z, terrainLift = 0) {
-      root.position.set(x, getTerrainGroundY(x, z) + terrainLift, z);
+    function getCameraRelativeMoveDirection(inputX, inputZ) {
+      const { forward, right } = getCameraBasis();
+      tmp.v1.copy(right).multiplyScalar(inputX);
+      tmp.v2.copy(forward).multiplyScalar(inputZ);
+      tmp.v3.copy(tmp.v1).add(tmp.v2);
+      if (tmp.v3.lengthSq() < 1e-8) return tmp.v3.set(0, 0, 0);
+      return tmp.v3.normalize();
     }
-
-    function makeCircleObstacleList() {
-      const arr = [];
-      for (const d of activeTrees.values()) {
-        if (!d.activeObject?.root) continue;
-        const p = d.activeObject.root.position;
-        arr.push({ x: p.x, z: p.z, r: d.collisionRadius || 1.5 });
+    function currentSpeed() { return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0); }
+    function getKeyboardMoveVector() {
+      const x = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) + (keys.has("KeyA") || keys.has("ArrowLeft") ? -1 : 0);
+      const z = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) + (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+      return { x, z };
+    }
+    function getMoveInput() {
+      const k = getKeyboardMoveVector();
+      let x = clamp(k.x + stick.x, -1, 1);
+      let z = clamp(k.z + (-stick.y), -1, 1);
+      const len = Math.hypot(x, z);
+      if (len > 1) { x /= len; z /= len; }
+      return { x, z, magnitude: Math.hypot(x, z), jump: keys.has("Space"), attack: keys.has("KeyJ") || keys.has("KeyK") };
+    }
+    function requestJump() {
+      if (gameOver || !physics.onGround) return;
+      physics.vy = config.jumpVelocity;
+      physics.jumpOffset = 0.02;
+      physics.onGround = false;
+    }
+    function getCharacterForwardVector() { return new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize(); }
+    function takePlayerDamage(amount) {
+      if (gameOver) return;
+      playerHp = Math.max(0, playerHp - amount);
+      updatePlayerHud();
+      if (playerHp <= 0) {
+        playerHp = 0; gameOver = true; attackPlaying = false; attackTimer = 0; hardStopAction("walk"); hardStopAction("run"); hardStopAction("attack"); currentActionName = "idle"; setStatus("ゲームオーバー");
       }
-      for (const d of activeRocks.values()) {
-        if (!d.activeObject?.root) continue;
-        const p = d.activeObject.root.position;
-        arr.push({ x: p.x, z: p.z, r: d.collisionRadius || 1.5 });
-      }
-      return arr;
     }
-
-    function toLocalPoint(px, pz, cx, cz, rotY) {
-      const dx = px - cx;
-      const dz = pz - cz;
-      const c = Math.cos(-rotY);
-      const s = Math.sin(-rotY);
-      return {
-        x: dx * c - dz * s,
-        z: dx * s + dz * c
-      };
+    function healPlayer(amount) {
+      if (gameOver) return 0;
+      const before = playerHp;
+      playerHp = Math.min(config.playerHpMax, playerHp + amount);
+      updatePlayerHud();
+      return playerHp - before;
     }
+    function getStatsByLevel(level) { const mult = Math.pow(1.5, level - 1); return { level, hpMax: config.boarBaseHp * mult, atkDps: config.boarBaseAttack * mult }; }
+    function randomWorldPoint(margin = 18) { return { x: rand(-WORLD_HALF + margin, WORLD_HALF - margin), z: rand(-WORLD_HALF + margin, WORLD_HALF - margin) }; }
+    function randomWorldPosition(minR = 18, maxR = 95) { const angle = Math.random() * Math.PI * 2; const dist = rand(minR, maxR); return { x: Math.cos(angle) * dist, z: Math.sin(angle) * dist }; }
+    function placeOnTerrain(root, x, z, terrainLift = 0) { root.position.set(x, getTerrainHeight(x, z) + terrainLift, z); }
 
-    function pointInAABB(x, z, hx, hz) {
-      return Math.abs(x) <= hx && Math.abs(z) <= hz;
+    // -------------------- UI --------------------
+    function updatePlayerHud() {
+      const pct = (playerHp / config.playerHpMax) * 100;
+      playerHpText.textContent = `${Math.max(0, Math.ceil(playerHp))} / ${config.playerHpMax}`;
+      playerHpFill.style.width = `${clamp(pct, 0, 100)}%`;
+      if (pct > 60) playerHpFill.style.background = "linear-gradient(90deg, #4fd06f, #19a54f)";
+      else if (pct > 25) playerHpFill.style.background = "linear-gradient(90deg, #ffd24d, #ff9f1a)";
+      else playerHpFill.style.background = "linear-gradient(90deg, #ff6b6b, #d91f1f)";
     }
-
-    function segmentIntersectsAABB(x1, z1, x2, z2, hx, hz) {
-      let t0 = 0;
-      let t1 = 1;
-      const dx = x2 - x1;
-      const dz = z2 - z1;
-
-      const clip = (p, q) => {
-        if (Math.abs(p) < 1e-10) return q < 0;
-        const r = q / p;
-        if (p < 0) {
-          if (r > t1) return true;
-          if (r > t0) t0 = r;
-        } else {
-          if (r < t0) return true;
-          if (r < t1) t1 = r;
+    function safeLoadInventory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+        const parsed = JSON.parse(raw); if (!Array.isArray(parsed)) return;
+        inventory.splice(0, inventory.length);
+        for (const item of parsed) {
+          if (!item || typeof item !== "object") continue;
+          if (typeof item.species !== "string") continue;
+          const level = Number(item.level); if (!Number.isFinite(level)) continue;
+          inventory.push({ id: typeof item.id === "string" ? item.id : makeId(), species: item.species, level: Math.max(1, Math.floor(level)), capturedAt: typeof item.capturedAt === "number" ? item.capturedAt : Date.now() });
         }
-        return false;
-      };
-
-      if (
-        clip(-dx, x1 + hx) ||
-        clip(dx, hx - x1) ||
-        clip(-dz, z1 + hz) ||
-        clip(dz, hz - z1)
-      ) return false;
-
-      return t0 <= t1 && t1 >= 0 && t0 <= 1;
+      } catch (e) { console.warn("inventory load failed", e); }
     }
-
-    function segmentCircleHitT(x1, z1, x2, z2, cx, cz, r) {
-      const dx = x2 - x1;
-      const dz = z2 - z1;
-      const fx = x1 - cx;
-      const fz = z1 - cz;
-      const a = dx * dx + dz * dz;
-      if (a < 1e-10) return (fx * fx + fz * fz) <= r * r ? 0 : null;
-      const b = 2 * (fx * dx + fz * dz);
-      const c = fx * fx + fz * fz - r * r;
-      if (c <= 0) return 0;
-      const disc = b * b - 4 * a * c;
-      if (disc < 0) return null;
-      const s = Math.sqrt(disc);
-      const t1 = (-b - s) / (2 * a);
-      const t2 = (-b + s) / (2 * a);
-      if (t1 >= 0 && t1 <= 1) return t1;
-      if (t2 >= 0 && t2 <= 1) return t2;
-      return null;
-    }
-
-    function segmentIntersectsRiver(x1, z1, x2, z2, river, inflate = 0) {
-      const p1 = toLocalPoint(x1, z1, river.x, river.z, river.rotY);
-      const p2 = toLocalPoint(x2, z2, river.x, river.z, river.rotY);
-      const hx = river.halfLength + inflate;
-      const hz = river.halfWidth + inflate;
-      return segmentIntersectsAABB(p1.x, p1.z, p2.x, p2.z, hx, hz) ||
-             pointInAABB(p2.x, p2.z, hx, hz);
-    }
-
-    function wouldCollideAtPoint(x, z, radius = config.playerCollisionRadius) {
-      for (const c of makeCircleObstacleList()) {
-        const dx = x - c.x;
-        const dz = z - c.z;
-        if (dx * dx + dz * dz < (radius + c.r) * (radius + c.r)) return true;
+    function saveInventory() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); } catch (e) { console.warn("inventory save failed", e); } }
+    function renderInventoryModal() {
+      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体`;
+      inventoryList.innerHTML = "";
+      if (!inventory.length) {
+        const empty = document.createElement("div"); empty.className = "inventoryEmpty"; empty.textContent = "まだ捕まえたキャラクターはいません。"; inventoryList.appendChild(empty); return;
       }
-      for (const river of activeRivers.values()) {
-        const local = toLocalPoint(x, z, river.x, river.z, river.rotY);
-        if (pointInAABB(local.x, local.z, river.halfLength + radius, river.halfWidth + radius)) return true;
-      }
-      return false;
-    }
-
-    function wouldCollideOnMove(sx, sz, ex, ez, radius = config.playerCollisionRadius) {
-      for (const c of makeCircleObstacleList()) {
-        const t = segmentCircleHitT(sx, sz, ex, ez, c.x, c.z, radius + c.r);
-        if (t !== null) return true;
-      }
-      for (const river of activeRivers.values()) {
-        if (segmentIntersectsRiver(sx, sz, ex, ez, river, radius)) return true;
-      }
-      return false;
-    }
-
-    function moveWithStrictCollision(vec3, dx, dz, radius = config.playerCollisionRadius) {
-      const sx = vec3.x;
-      const sz = vec3.z;
-      const ex = sx + dx;
-      const ez = sz + dz;
-
-      if (!wouldCollideOnMove(sx, sz, ex, ez, radius) && Math.abs(ex) <= WORLD_HALF - 2 && Math.abs(ez) <= WORLD_HALF - 2) {
-        vec3.x = ex;
-        vec3.z = ez;
-        return true;
-      }
-
-      return false;
-    }
-
-    function riverPushOut(x, z, radius) {
-      let best = null;
-      let bestScore = Infinity;
-
-      for (const river of activeRivers.values()) {
-        const local = toLocalPoint(x, z, river.x, river.z, river.rotY);
-        const hx = river.halfLength + radius;
-        const hz = river.halfWidth + radius;
-        const ax = Math.abs(local.x);
-        const az = Math.abs(local.z);
-
-        if (ax <= hx && az <= hz) {
-          const pushX = hx - ax;
-          const pushZ = hz - az;
-          const score = Math.min(pushX, pushZ);
-
-          if (score < bestScore) {
-            bestScore = score;
-            const signX = local.x >= 0 ? 1 : -1;
-            const signZ = local.z >= 0 ? 1 : -1;
-            let localOutX = local.x;
-            let localOutZ = local.z;
-
-            if (pushX < pushZ) localOutX = signX * (hx + 0.01);
-            else localOutZ = signZ * (hz + 0.01);
-
-            const c = Math.cos(river.rotY);
-            const s = Math.sin(river.rotY);
-            const worldX = river.x + localOutX * c - localOutZ * s;
-            const worldZ = river.z + localOutX * s + localOutZ * c;
-            best = { x: worldX, z: worldZ };
-          }
-        }
-      }
-
-      return best;
-    }
-
-    function updatePlayerTerrainAndJump(delta) {
-      const groundY = getTerrainGroundY(playerRoot.position.x, playerRoot.position.z);
-
-      if (physics.onGround) {
-        physics.jumpOffset = 0;
-        physics.vy = 0;
-        playerRoot.position.y = groundY;
-      } else {
-        physics.vy += config.gravity * delta;
-        physics.jumpOffset += physics.vy * delta;
-        if (physics.jumpOffset <= 0) {
-          physics.jumpOffset = 0;
-          physics.vy = 0;
-          physics.onGround = true;
-        }
-        playerRoot.position.y = groundY + physics.jumpOffset;
+      for (const item of inventory) {
+        const row = document.createElement("div"); row.className = "inventoryItem";
+        const label = document.createElement("div"); label.className = "inventoryItemText"; label.textContent = `${item.species} Lv.${item.level}`;
+        const btn = document.createElement("button"); btn.className = "deployBtn"; btn.textContent = "出撃"; btn.dataset.deployId = item.id;
+        row.appendChild(label); row.appendChild(btn); inventoryList.appendChild(row);
       }
     }
+    function openInventoryModal() { renderInventoryModal(); inventoryModal.classList.add("open"); inventoryModal.setAttribute("aria-hidden", "false"); }
+    function closeInventoryModal() { inventoryModal.classList.remove("open"); inventoryModal.setAttribute("aria-hidden", "true"); }
 
-    function applyPlayerPose(delta, moving, speedMode) {
-      if (!playerParts) return;
-
-      const t = performance.now() * 0.001;
-
-      if (attackPlaying) {
-        const p = clamp(1 - (attackTimer / config.playerAttackDuration), 0, 1);
-        const kick = Math.sin(Math.PI * p);
-
-        playerParts.body.rotation.z = 0.08 * kick;
-        playerParts.head.rotation.x = 0.12 + 0.10 * kick;
-        playerParts.arms[0].rotation.x = -0.3 - 1.0 * kick;
-        playerParts.arms[1].rotation.x = -0.2 + 0.15 * kick;
-        playerParts.legs[0].rotation.x = 0.35 * Math.sin(t * 5);
-        playerParts.legs[1].rotation.x = -0.35 * Math.sin(t * 5);
-        playerParts.legs[2].rotation.x = -0.35 * Math.sin(t * 5);
-        playerParts.legs[3].rotation.x = 0.35 * Math.sin(t * 5);
-      } else if (moving) {
-        const swing = Math.sin(t * (speedMode > 1 ? 13 : 8));
-        playerParts.body.rotation.z = 0.04 * swing;
-        playerParts.head.rotation.x = 0.04;
-        playerParts.arms[0].rotation.x = 0.55 * swing;
-        playerParts.arms[1].rotation.x = -0.55 * swing;
-        playerParts.legs[0].rotation.x = -0.9 * swing;
-        playerParts.legs[1].rotation.x = 0.9 * swing;
-        playerParts.legs[2].rotation.x = 0.9 * swing;
-        playerParts.legs[3].rotation.x = -0.9 * swing;
-      } else {
-        playerParts.body.rotation.z = 0;
-        playerParts.head.rotation.x = 0;
-        playerParts.arms[0].rotation.x = 0;
-        playerParts.arms[1].rotation.x = 0;
-        playerParts.legs[0].rotation.x = 0;
-        playerParts.legs[1].rotation.x = 0;
-        playerParts.legs[2].rotation.x = 0;
-        playerParts.legs[3].rotation.x = 0;
-      }
-    }
-
-    function createPlayerRig() {
+    // -------------------- バージョン安全な外部モデル --------------------
+    function createFallbackPlayerRig() {
       const root = new THREE.Group();
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x78a9ff, roughness: 0.85 });
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd5b8, roughness: 0.95 });
       const darkMat = new THREE.MeshStandardMaterial({ color: 0x38506e, roughness: 0.9 });
-
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.15, 4, 8), bodyMat);
-      body.position.y = 1.2;
-      body.castShadow = true;
-      body.receiveShadow = true;
-
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), skinMat);
-      head.position.set(0, 2.15, 0.05);
-      head.castShadow = true;
-      head.receiveShadow = true;
-
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.15, 4, 8), bodyMat); body.position.y = 1.2; body.castShadow = true; body.receiveShadow = true;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), skinMat); head.position.set(0, 2.15, 0.05); head.castShadow = true; head.receiveShadow = true;
       const legGeo = new THREE.CylinderGeometry(0.09, 0.11, 0.72, 6);
-      const legs = [];
       const legPos = [[-0.18,0.4,0.11],[0.18,0.4,0.11],[-0.18,0.4,-0.11],[0.18,0.4,-0.11]];
-      for (const [x, y, z] of legPos) {
-        const leg = new THREE.Mesh(legGeo, darkMat);
-        leg.position.set(x, y, z);
-        leg.castShadow = true;
-        leg.receiveShadow = true;
-        root.add(leg);
-        legs.push(leg);
-      }
-
+      for (const [x,y,z] of legPos) { const leg = new THREE.Mesh(legGeo, darkMat); leg.position.set(x,y,z); leg.castShadow = true; leg.receiveShadow = true; root.add(leg); }
       const armGeo = new THREE.CylinderGeometry(0.07, 0.09, 0.52, 6);
-      const arm1 = new THREE.Mesh(armGeo, darkMat);
-      arm1.position.set(-0.48, 1.48, 0);
-      arm1.rotation.z = 0.14;
-      arm1.castShadow = true;
-      arm1.receiveShadow = true;
-      const arm2 = arm1.clone();
-      arm2.position.x = 0.48;
-      arm2.rotation.z = -0.14;
-      arm2.castShadow = true;
-      arm2.receiveShadow = true;
-
-      root.add(body, head, arm1, arm2);
-      return {
-        root,
-        parts: { body, head, arms: [arm1, arm2], legs }
-      };
+      const arm1 = new THREE.Mesh(armGeo, darkMat); arm1.position.set(-0.48, 1.48, 0); arm1.rotation.z = 0.14; arm1.castShadow = true; arm1.receiveShadow = true;
+      const arm2 = arm1.clone(); arm2.position.x = 0.48; arm2.rotation.z = -0.14; arm2.castShadow = true; arm2.receiveShadow = true;
+      root.add(body, head, arm1, arm2); return root;
+    }
+    function createFallbackTreeTemplate() {
+      const tree = new THREE.Group(); const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7b4f2a, roughness: 1.0 }); const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1.0 });
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.38, 3.0, 8), trunkMat); trunk.position.y = 1.5; trunk.castShadow = true; trunk.receiveShadow = true;
+      const crown1 = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.8, 8), leafMat); crown1.position.y = 4.1; crown1.castShadow = true; crown1.receiveShadow = true;
+      const crown2 = new THREE.Mesh(new THREE.ConeGeometry(1.25, 3.0, 8), leafMat); crown2.position.y = 5.0; crown2.castShadow = true; crown2.receiveShadow = true;
+      tree.add(trunk, crown1, crown2); return tree;
+    }
+    function createFallbackBoarTemplate() {
+      const boar = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b4b2b, roughness: 1.0 });
+      const snoutMat = new THREE.MeshStandardMaterial({ color: 0x7f6044, roughness: 1.0 });
+      const earMat = new THREE.MeshStandardMaterial({ color: 0x5c3f23, roughness: 1.0 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 0.9), bodyMat); body.position.y = 0.8; body.castShadow = true; body.receiveShadow = true;
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.65), snoutMat); head.position.set(1.15, 0.85, 0); head.castShadow = true; head.receiveShadow = true;
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.24), snoutMat); snout.position.set(1.52, 0.78, 0); snout.castShadow = true; snout.receiveShadow = true;
+      const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), earMat); ear1.position.set(0.95, 1.18, 0.22); ear1.rotation.z = Math.PI / 2; ear1.rotation.x = -0.3; ear1.castShadow = true; ear1.receiveShadow = true;
+      const ear2 = ear1.clone(); ear2.position.z = -0.22;
+      const legGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.7, 6); const legs = []; const legOffsets = [[-0.6,0.25,0.3],[-0.6,0.25,-0.3],[0.5,0.25,0.3],[0.5,0.25,-0.3]];
+      for (const [x, y, z] of legOffsets) { const leg = new THREE.Mesh(legGeo, bodyMat); leg.position.set(x, y, z); leg.castShadow = true; leg.receiveShadow = true; boar.add(leg); legs.push(leg); }
+      boar.add(body, head, snout, ear1, ear2); boar.userData.parts = { body, head, snout, ears: [ear1, ear2], legs }; return boar;
+    }
+    function createFallbackHerbTemplate() {
+      const herb = new THREE.Group();
+      const stemMat = new THREE.MeshStandardMaterial({ color: 0x2f8f3e, roughness: 1.0 }); const leafMat = new THREE.MeshStandardMaterial({ color: 0x5ecb60, roughness: 1.0 });
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 6), stemMat); stem.position.y = 0.45; stem.castShadow = true; stem.receiveShadow = true;
+      const leaf1 = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.55, 5), leafMat); leaf1.position.set(0.1, 0.75, 0.0); leaf1.rotation.z = 0.7; leaf1.castShadow = true; leaf1.receiveShadow = true;
+      const leaf2 = leaf1.clone(); leaf2.position.set(-0.1, 0.62, 0.1); leaf2.rotation.z = -0.7; leaf2.castShadow = true; leaf2.receiveShadow = true;
+      const leaf3 = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 5), stemMat); leaf3.position.set(0.0, 0.95, 0.0); leaf3.rotation.x = -0.25; leaf3.castShadow = true; leaf3.receiveShadow = true;
+      herb.add(stem, leaf1, leaf2, leaf3); return herb;
+    }
+    function createFallbackRockTemplate() {
+      const rock = new THREE.Group();
+      const mat1 = new THREE.MeshStandardMaterial({ color: 0x8d8d8d, roughness: 1.0 });
+      const mat2 = new THREE.MeshStandardMaterial({ color: 0x6f6f6f, roughness: 1.0 });
+      const base = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0, 0), mat1); base.castShadow = true; base.receiveShadow = true;
+      const bump1 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.74, 0), mat2); bump1.position.set(0.2, 0.25, -0.1); bump1.rotation.set(0.3, 0.4, 0.1); bump1.castShadow = true; bump1.receiveShadow = true;
+      const bump2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.48, 0), mat1); bump2.position.set(-0.32, 0.18, 0.2); bump2.rotation.set(0.6, 0.2, 0.1); bump2.castShadow = true; bump2.receiveShadow = true;
+      rock.add(base, bump1, bump2); return rock;
+    }
+    function createFallbackRiverTemplate() {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0x2f86ff, roughness: 0.25, metalness: 0.0, transparent: true, opacity: 0.86 });
+      const base = new THREE.Mesh(new THREE.BoxGeometry(50, 1, 10), mat); base.castShadow = false; base.receiveShadow = true; g.add(base);
+      return g;
     }
 
-    function initPlayer() {
-      const p = createPlayerRig();
-      visualRoot = p.root;
-      playerParts = p.parts;
-      fitAndGroundUniform(visualRoot, 2.45, 0.03);
-      visualRoot.rotation.y = Math.PI;
-      playerRoot.add(visualRoot);
-      playerRoot.position.set(0, getTerrainGroundY(0, 0), 0);
-      playerHp = config.playerHpMax;
-      updatePlayerHud();
-    }
-
+    // -------------------- スポーン・管理 --------------------
     function generateTreeData() {
       treeData.length = 0;
       while (treeData.length < TREE_COUNT) {
-        const p = randomWorldPoint(20);
-        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
-        treeData.push({
-          id: nextEntityId++,
-          x: p.x, z: p.z,
-          rotY: RNG() * Math.PI * 2,
-          scale: 0.95 + RNG() * 1.1,
-          activeObject: null,
-          removed: false,
-          isSpawning: false,
-          isDespawning: false,
-          spawnCooldownUntil: 0,
-          terrainLift: 0,
-          collisionRadius: 2.2
-        });
+        const p = randomWorldPoint(20); if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        treeData.push({ id: nextEntityId++, x:p.x, z:p.z, rotY:Math.random()*Math.PI*2, scale:0.95 + Math.random()*1.1, activeObject:null, removed:false, isSpawning:false, isDespawning:false, spawnCooldownUntil:0, terrainLift:0, collisionRadius:2.2 });
       }
     }
-
     function generateHerbData() {
       herbData.length = 0;
       while (herbData.length < HERB_COUNT) {
-        const p = randomWorldPoint(16);
-        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
-        herbData.push({
-          id: nextEntityId++,
-          x: p.x, z: p.z,
-          rotY: RNG() * Math.PI * 2,
-          scale: 0.85 + RNG() * 0.45,
-          activeObject: null,
-          removed: false,
-          isSpawning: false,
-          isDespawning: false,
-          spawnCooldownUntil: 0,
-          terrainLift: 0,
-          animT: RNG() * 10,
-          baseY: 0
-        });
+        const p = randomWorldPoint(16); if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        herbData.push({ id: nextEntityId++, x:p.x, z:p.z, rotY:Math.random()*Math.PI*2, scale:0.85 + Math.random()*0.45, activeObject:null, removed:false, isSpawning:false, isDespawning:false, spawnCooldownUntil:0, animT:Math.random()*10, terrainLift:0, baseY:0 });
       }
     }
-
     function generateRockData() {
       rockData.length = 0;
       while (rockData.length < ROCK_COUNT) {
-        const p = randomWorldPoint(20);
-        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
-        rockData.push({
-          id: nextEntityId++,
-          x: p.x, z: p.z,
-          rotY: RNG() * Math.PI * 2,
-          scale: 1.5 + RNG() * 0.5,
-          activeObject: null,
-          removed: false,
-          isSpawning: false,
-          isDespawning: false,
-          spawnCooldownUntil: 0,
-          terrainLift: 0,
-          collisionRadius: 1.2 + RNG() * 0.8
-        });
+        const p = randomWorldPoint(20); if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        rockData.push({ id: nextEntityId++, x:p.x, z:p.z, rotY:Math.random()*Math.PI*2, scale:1.5 + Math.random()*0.5, activeObject:null, removed:false, isSpawning:false, isDespawning:false, spawnCooldownUntil:0, terrainLift:0, collisionRadius:1.2 + Math.random()*0.8 });
       }
     }
-
-    function generateRiverData() {
-      riverData.length = 0;
-      while (riverData.length < RIVER_COUNT) {
-        const p = randomWorldPoint(60);
-        if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
-        riverData.push({
-          id: nextEntityId++,
-          x: p.x, z: p.z,
-          rotY: RNG() * Math.PI * 2,
-          length: 50,
-          width: 10,
-          thickness: 1,
-          activeObject: null,
-          removed: false,
-          isSpawning: false,
-          isDespawning: false,
-          spawnCooldownUntil: 0,
-          terrainLift: 0,
-          halfLength: 25,
-          halfWidth: 5
-        });
-      }
-    }
-
-    function getBoarLevelForDistance(distanceFromCenter) {
-      if (distanceFromCenter <= 180) return 1 + Math.floor(RNG() * 10);
-      return 11 + Math.floor(RNG() * 10);
-    }
-
+    function getBoarLevelForDistance(distanceFromCenter) { return distanceFromCenter <= 180 ? config.boarLevelMin + Math.floor(Math.random() * (config.lowLevelMax - config.boarLevelMin + 1)) : config.highLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.highLevelMin + 1)); }
     function generateBoarData() {
       boarData.length = 0;
       while (boarData.length < BOAR_COUNT) {
-        const p = randomWorldPoint(20);
-        const d = Math.hypot(p.x, p.z);
-        if (d < 22) continue;
-        const level = getBoarLevelForDistance(d);
-        const stats = getStatsByLevel(level);
+        const p = randomWorldPoint(20); const d = Math.hypot(p.x, p.z); if (d < 22) continue;
+        const level = getBoarLevelForDistance(d); const stats = getStatsByLevel(level);
         boarData.push({
-          id: nextEntityId++,
-          x: p.x, z: p.z,
-          rotY: RNG() * Math.PI * 2,
-          scale: 0.85 + RNG() * 0.45,
-          level,
-          hpMax: stats.hpMax,
-          hp: stats.hpMax,
-          atkDps: stats.atkDps,
-          attackRange: config.boarAttackRange + (level - 1) * 0.08,
-          aggroRange: config.boarAggroRange + (level - 1) * 0.8,
-          moveSpeed: config.boarMoveSpeed,
-          collisionRadius: 0.75,
-          uiOffset: 2.0,
-          state: "wander",
-          stateTime: 0,
-          patrolYaw: RNG() * Math.PI * 2,
-          patrolChangeTimer: rand(1.5, 4.0),
-          hostileUntil: 0,
-          dead: false,
-          respawnToken: 0,
-          isSpawning: false,
-          isDespawning: false,
-          spawnCooldownUntil: 0,
-          terrainLift: 0,
-          activeObject: null
+          id: nextEntityId++, x:p.x, z:p.z, rotY:Math.random()*Math.PI*2, scale:0.95, level, hpMax:stats.hpMax, hp:stats.hpMax, atkDps:stats.atkDps,
+          attackRange: config.boarAttackRange + (level - 1) * 0.08, aggroRange: config.boarAggroRange + (level - 1) * 0.8,
+          moveSpeed: config.boarMoveSpeed, collisionRadius: 0.7, uiOffset: 2.0, state: "wander", stateTime: 0, wanderYaw: Math.random() * Math.PI * 2,
+          wanderTimer: rand(0.8, 2.6), hostileUntil: 0, dead: false, respawnToken: 0, isSpawning:false, isDespawning:false, spawnCooldownUntil:0,
+          terrainLift:0, activeObject:null
         });
       }
     }
+    function generateRiverData() {
+      riverData.length = 0;
+      const used = [];
+      while (riverData.length < RIVER_COUNT) {
+        const p = randomWorldPoint(70);
+        if (Math.hypot(p.x, p.z) < 60) continue;
+        let ok = true;
+        for (const u of used) {
+          if (Math.hypot(u.x - p.x, u.z - p.z) < 80) { ok = false; break; }
+        }
+        if (!ok) continue;
+        used.push(p);
+        riverData.push({
+          id: nextEntityId++, x: p.x, z: p.z, yaw: Math.random() * Math.PI * 2, length: 50, width: 10, height: 1,
+          activeObject: null, removed: false, isSpawning:false, isDespawning:false, spawnCooldownUntil:0, terrainLift:0,
+          collisionRadius: 27, slowFactor: 0.2
+        });
+      }
+    }
+
+    function createBoarTag(level, hp, hpMax) {
+      const el = document.createElement("div"); el.className = "boarTag";
+      el.innerHTML = `<div class="boarLevel">Lv.${level}</div><div class="boarBarWrap"><div class="boarBarFill"></div></div><div class="boarHpText">${Math.ceil(hp)} / ${Math.ceil(hpMax)}</div>`;
+      worldUI.appendChild(el);
+      return { el, fill: el.querySelector(".boarBarFill"), text: el.querySelector(".boarHpText") };
+    }
+    function updateBoarTag(data) {
+      const o = data.activeObject;
+      if (!o || data.dead || !o.root?.visible) { if (o?.tag?.el) o.tag.el.style.opacity = "0"; return; }
+      const pos = tmp.v1.set(o.root.position.x, o.root.position.y + (data.uiOffset || 2.0), o.root.position.z).project(camera);
+      const inFront = pos.z > -1 && pos.z < 1, onScreen = pos.x >= -1.2 && pos.x <= 1.2 && pos.y >= -1.2 && pos.y <= 1.2;
+      if (!inFront || !onScreen) { o.tag.el.style.opacity = "0"; return; }
+      const x = (pos.x * 0.5 + 0.5) * innerWidth; const y = (-pos.y * 0.5 + 0.5) * innerHeight;
+      o.tag.el.style.opacity = "1"; o.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`; o.tag.fill.style.width = `${clamp((data.hp / data.hpMax) * 100, 0, 100)}%`; o.tag.text.textContent = `HP ${Math.ceil(data.hp)} / ${Math.ceil(data.hpMax)}`;
+    }
+    function updateBoarTags() { for (const data of activeBoars.values()) updateBoarTag(data); }
 
     function spawnTree(data) {
-      if (data.activeObject || data.isSpawning || data.removed || performance.now() < data.spawnCooldownUntil) return;
+      if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
-        const root = deepCloneUnique(treeTemplate);
-        fitAndGroundUniform(root, TREE_TARGET_HEIGHT * data.scale, TREE_GROUND_LIFT);
-        data.terrainLift = root.position.y;
-        placeOnTerrain(root, data.x, data.z, data.terrainLift);
-        root.rotation.y = data.rotY;
-        root.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-        const box = new THREE.Box3().setFromObject(root);
-        const size = box.getSize(new THREE.Vector3());
-        data.collisionRadius = Math.max(size.x, size.z) * 0.42 + 0.7;
-        data.activeObject = { root };
-        scene.add(root);
-        activeTrees.set(data.id, data);
-      } finally {
-        data.isSpawning = false;
-      }
+        const root = deepCloneUnique(treeTemplate); fitAndGround(root, TREE_TARGET_HEIGHT * data.scale, TREE_GROUND_LIFT); data.terrainLift = root.position.y; placeOnTerrain(root, data.x, data.z, data.terrainLift); root.rotation.y = data.rotY;
+        const box = new THREE.Box3().setFromObject(root); const size = box.getSize(new THREE.Vector3()); data.collisionRadius = Math.max(size.x, size.z) * 0.42 + 0.7;
+        data.activeObject = { root }; scene.add(root); activeTrees.set(data.id, data);
+      } finally { data.isSpawning = false; }
     }
-
-    function despawnTree(data, now = performance.now()) {
-      if (!data?.activeObject || data.isDespawning) return;
-      data.isDespawning = true;
-      try {
-        const root = data.activeObject.root;
-        if (root?.parent) root.parent.remove(root);
-        disposeObject3D(root);
-        data.activeObject = null;
-        activeTrees.delete(data.id);
-        data.spawnCooldownUntil = now + 280;
-      } finally {
-        data.isDespawning = false;
-      }
-    }
-
+    function despawnTree(data, now = performance.now()) { if (!data?.activeObject || data.isDespawning) return; data.isDespawning = true; try { const root = data.activeObject.root; root?.parent?.remove(root); disposeObject3D(root); data.activeObject = null; activeTrees.delete(data.id); data.spawnCooldownUntil = now + 300; } finally { data.isDespawning = false; } }
     function spawnHerb(data) {
-      if (data.activeObject || data.isSpawning || data.removed || performance.now() < data.spawnCooldownUntil) return;
-      data.isSpawning = true;
+      if (data.activeObject || data.isSpawning || data.removed) return; data.isSpawning = true;
       try {
-        const root = deepCloneUnique(herbTemplate);
-        fitAndGroundUniform(root, HERB_TARGET_HEIGHT * data.scale, HERB_GROUND_LIFT);
-        data.terrainLift = root.position.y;
-        placeOnTerrain(root, data.x, data.z, data.terrainLift);
-        root.rotation.y = data.rotY;
-        root.userData.herbId = data.id;
-        root.traverse((child) => {
-          child.userData.herbId = data.id;
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-        data.baseY = root.position.y;
-        data.activeObject = { root };
-        scene.add(root);
-        activeHerbs.set(data.id, data);
-      } finally {
-        data.isSpawning = false;
-      }
+        const root = deepCloneUnique(herbTemplate); fitAndGround(root, HERB_TARGET_HEIGHT * data.scale, HERB_GROUND_LIFT); data.terrainLift = root.position.y; placeOnTerrain(root, data.x, data.z, data.terrainLift); root.rotation.y = data.rotY; root.userData.herbId = data.id;
+        root.traverse((child) => { child.userData.herbId = data.id; if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+        data.baseY = root.position.y; data.activeObject = { root }; scene.add(root); activeHerbs.set(data.id, data);
+      } finally { data.isSpawning = false; }
     }
-
-    function despawnHerb(data, now = performance.now()) {
-      if (!data?.activeObject || data.isDespawning) return;
-      data.isDespawning = true;
-      try {
-        const root = data.activeObject.root;
-        if (root?.parent) root.parent.remove(root);
-        disposeObject3D(root);
-        data.activeObject = null;
-        activeHerbs.delete(data.id);
-        data.spawnCooldownUntil = now + 280;
-      } finally {
-        data.isDespawning = false;
-      }
-    }
-
+    function despawnHerb(data, now = performance.now()) { if (!data?.activeObject || data.isDespawning) return; data.isDespawning = true; try { const root = data.activeObject.root; root?.parent?.remove(root); disposeObject3D(root); data.activeObject = null; activeHerbs.delete(data.id); data.spawnCooldownUntil = now + 300; } finally { data.isDespawning = false; } }
     function spawnRock(data) {
-      if (data.activeObject || data.isSpawning || data.removed || performance.now() < data.spawnCooldownUntil) return;
-      data.isSpawning = true;
+      if (data.activeObject || data.isSpawning || data.removed) return; data.isSpawning = true;
       try {
-        const root = deepCloneUnique(rockTemplate);
-        fitAndGroundUniform(root, ROCK_TARGET_HEIGHT * data.scale, ROCK_GROUND_LIFT);
-        data.terrainLift = root.position.y;
-        placeOnTerrain(root, data.x, data.z, data.terrainLift);
-        root.rotation.y = data.rotY;
-        root.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-        const box = new THREE.Box3().setFromObject(root);
-        const size = box.getSize(new THREE.Vector3());
-        data.collisionRadius = clamp(Math.max(size.x, size.z) * 0.45 + 0.8, 1.2, 2.0);
-        data.activeObject = { root };
-        scene.add(root);
-        activeRocks.set(data.id, data);
-      } finally {
-        data.isSpawning = false;
-      }
+        const root = deepCloneUnique(rockTemplate); fitAndGround(root, ROCK_TARGET_HEIGHT * data.scale, ROCK_GROUND_LIFT); data.terrainLift = root.position.y; placeOnTerrain(root, data.x, data.z, data.terrainLift); root.rotation.y = data.rotY;
+        root.scale.multiplyScalar(1.1); // 見た目を少しさらに大きく
+        const box = new THREE.Box3().setFromObject(root); const size = box.getSize(new THREE.Vector3()); data.collisionRadius = clamp(Math.max(size.x, size.z) * 0.48 + 0.6, 1.2, 2.0);
+        data.activeObject = { root }; scene.add(root); activeRocks.set(data.id, data);
+      } finally { data.isSpawning = false; }
     }
-
-    function despawnRock(data, now = performance.now()) {
-      if (!data?.activeObject || data.isDespawning) return;
-      data.isDespawning = true;
+    function despawnRock(data, now = performance.now()) { if (!data?.activeObject || data.isDespawning) return; data.isDespawning = true; try { const root = data.activeObject.root; root?.parent?.remove(root); disposeObject3D(root); data.activeObject = null; activeRocks.delete(data.id); data.spawnCooldownUntil = now + 300; } finally { data.isDespawning = false; } }
+    function spawnBoar(data) {
+      if (data.activeObject || data.isSpawning || data.dead) return; data.isSpawning = true;
       try {
-        const root = data.activeObject.root;
-        if (root?.parent) root.parent.remove(root);
-        disposeObject3D(root);
-        data.activeObject = null;
-        activeRocks.delete(data.id);
-        data.spawnCooldownUntil = now + 280;
-      } finally {
-        data.isDespawning = false;
-      }
+        const levelScale = 0.95 + (data.level - 1) * 0.07;
+        const root = deepCloneUnique(boarTemplate); fitAndGround(root, BOAR_TARGET_HEIGHT * data.scale * levelScale, BOAR_GROUND_LIFT); data.terrainLift = root.position.y; placeOnTerrain(root, data.x, data.z, data.terrainLift); root.rotation.y = data.rotY;
+        const parts = root.userData.parts || null; root.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+        const tag = createBoarTag(data.level, data.hpMax, data.hpMax); const box = new THREE.Box3().setFromObject(root); const size = box.getSize(new THREE.Vector3()); data.uiOffset = Math.max(1.6, size.y * 1.15); data.collisionRadius = Math.max(size.x, size.z) * 0.22 + 0.35;
+        data.activeObject = { root, tag, parts }; scene.add(root); activeBoars.set(data.id, data);
+      } finally { data.isSpawning = false; }
+    }
+    function despawnBoarForStream(data, now = performance.now()) { if (!data?.activeObject || data.isDespawning) return; data.isDespawning = true; try { const o = data.activeObject; o?.tag?.el?.parentNode?.removeChild(o.tag.el); o?.root?.parent?.remove(o.root); disposeObject3D(o.root); data.activeObject = null; activeBoars.delete(data.id); data.spawnCooldownUntil = now + 300; } finally { data.isDespawning = false; } }
+    function removeBoarAfterDeath(data, shouldRespawn = true) { if (!data || data.dead) return; if (data.activeObject) despawnBoarForStream(data); data.dead = true; if (shouldRespawn) scheduleBoarRespawn(data); }
+    function scheduleBoarRespawn(data) { const token = (data.respawnToken || 0) + 1; data.respawnToken = token; setTimeout(() => { if (gameOver) return; if (data.respawnToken !== token) return; respawnBoar(data); }, rand(2200, 4200)); }
+    function respawnBoar(data) {
+      if (!data) return; const p = randomWorldPosition(20); const d = Math.hypot(p.x, p.z); const level = getBoarLevelForDistance(d); const stats = getStatsByLevel(level);
+      data.dead = false; data.x = p.x; data.z = p.z; data.rotY = Math.random() * Math.PI * 2; data.scale = 0.95; data.level = level; data.hpMax = stats.hpMax; data.hp = stats.hpMax; data.atkDps = stats.atkDps;
+      data.attackRange = config.boarAttackRange + (level - 1) * 0.08; data.aggroRange = config.boarAggroRange + (level - 1) * 0.8; data.moveSpeed = config.boarMoveSpeed; data.state = "wander"; data.stateTime = 0; data.wanderYaw = Math.random() * Math.PI * 2; data.wanderTimer = rand(0.8, 2.6); data.hostileUntil = 0; data.activeObject = null; data.spawnCooldownUntil = 0;
     }
 
     function spawnRiver(data) {
-      if (data.activeObject || data.isSpawning || data.removed || performance.now() < data.spawnCooldownUntil) return;
-      data.isSpawning = true;
+      if (data.activeObject || data.isSpawning || data.removed) return; data.isSpawning = true;
       try {
-        const root = deepCloneUnique(riverTemplate);
-        fitAndGroundToDimensions(root, RIVER_TARGET_LENGTH, RIVER_TARGET_THICKNESS, RIVER_TARGET_WIDTH, RIVER_GROUND_LIFT);
-        data.terrainLift = root.position.y;
-        placeOnTerrain(root, data.x, data.z, data.terrainLift);
-        root.rotation.y = data.rotY;
-        root.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = false;
-            child.receiveShadow = false;
-          }
-        });
+        const root = deepCloneUnique(riverTemplate); fitAndGround(root, RIVER_TARGET_HEIGHT, RIVER_GROUND_LIFT); data.terrainLift = root.position.y; placeOnTerrain(root, data.x, data.z, data.terrainLift);
+        root.rotation.y = data.yaw; root.scale.set(1, 1, 1);
+        const mesh = root.getObjectByProperty("type", "Mesh");
+        if (mesh) {
+          mesh.scale.set(data.length / 50, 1, data.width / 10);
+          mesh.material = mesh.material.clone();
+          mesh.material.opacity = 0.82;
+          mesh.material.transparent = true;
+          mesh.material.color.setHex(0x2f86ff);
+        }
         data.activeObject = { root };
         scene.add(root);
         activeRivers.set(data.id, data);
-      } finally {
-        data.isSpawning = false;
-      }
+      } finally { data.isSpawning = false; }
     }
-
-    function despawnRiver(data, now = performance.now()) {
-      if (!data?.activeObject || data.isDespawning) return;
-      data.isDespawning = true;
-      try {
-        const root = data.activeObject.root;
-        if (root?.parent) root.parent.remove(root);
-        disposeObject3D(root);
-        data.activeObject = null;
-        activeRivers.delete(data.id);
-        data.spawnCooldownUntil = now + 280;
-      } finally {
-        data.isDespawning = false;
-      }
-    }
-
-    function spawnBoar(data) {
-      if (data.activeObject || data.isSpawning || data.dead || performance.now() < data.spawnCooldownUntil) return;
-      data.isSpawning = true;
-      try {
-        const root = deepCloneUnique(boarTemplate);
-        const visualScale = 0.95 + (data.level - 1) * 0.11;
-        fitAndGroundUniform(root, BOAR_TARGET_HEIGHT * data.scale * visualScale, BOAR_GROUND_LIFT);
-        data.terrainLift = root.position.y;
-        placeOnTerrain(root, data.x, data.z, data.terrainLift);
-        root.rotation.y = data.rotY;
-        root.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-
-        const tag = createBoarTag(data.level, data.hpMax, data.hpMax);
-        const box = new THREE.Box3().setFromObject(root);
-        const size = box.getSize(new THREE.Vector3());
-        data.uiOffset = Math.max(1.6, size.y * 1.15);
-        data.collisionRadius = Math.max(size.x, size.z) * 0.22 + 0.35;
-
-        data.activeObject = { root, tag };
-        scene.add(root);
-        activeBoars.set(data.id, data);
-      } finally {
-        data.isSpawning = false;
-      }
-    }
-
-    function despawnBoar(data, now = performance.now()) {
-      if (!data?.activeObject || data.isDespawning) return;
-      data.isDespawning = true;
-      try {
-        const o = data.activeObject;
-        if (o.tag?.el?.parentNode) o.tag.el.parentNode.removeChild(o.tag.el);
-        if (o.root?.parent) o.root.parent.remove(o.root);
-        disposeObject3D(o.root);
-        data.activeObject = null;
-        activeBoars.delete(data.id);
-        data.spawnCooldownUntil = now + 280;
-      } finally {
-        data.isDespawning = false;
-      }
-    }
-
-    function removeBoarAfterDeath(data, shouldRespawn = true) {
-      if (!data || data.dead) return;
-      if (data.activeObject) despawnBoar(data);
-      data.dead = true;
-      if (shouldRespawn) scheduleBoarRespawn(data);
-    }
-
-    function scheduleBoarRespawn(data) {
-      const token = (data.respawnToken || 0) + 1;
-      data.respawnToken = token;
-      const delay = rand(2200, 4200);
-      setTimeout(() => {
-        if (gameOver) return;
-        if (data.respawnToken !== token) return;
-        respawnBoar(data);
-      }, delay);
-    }
-
-    function respawnBoar(data) {
-      const p = randomWorldPoint(20);
-      const d = Math.hypot(p.x, p.z);
-      const level = getBoarLevelForDistance(d);
-      const stats = getStatsByLevel(level);
-      data.dead = false;
-      data.x = p.x;
-      data.z = p.z;
-      data.rotY = RNG() * Math.PI * 2;
-      data.scale = 0.85 + RNG() * 0.45;
-      data.level = level;
-      data.hpMax = stats.hpMax;
-      data.hp = stats.hpMax;
-      data.atkDps = stats.atkDps;
-      data.attackRange = config.boarAttackRange + (level - 1) * 0.08;
-      data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
-      data.moveSpeed = config.boarMoveSpeed;
-      data.state = "wander";
-      data.stateTime = 0;
-      data.patrolYaw = RNG() * Math.PI * 2;
-      data.patrolChangeTimer = rand(1.5, 4.0);
-      data.hostileUntil = 0;
-      data.activeObject = null;
-      data.spawnCooldownUntil = 0;
-    }
+    function despawnRiver(data, now = performance.now()) { if (!data?.activeObject || data.isDespawning) return; data.isDespawning = true; try { const root = data.activeObject.root; root?.parent?.remove(root); disposeObject3D(root); data.activeObject = null; activeRivers.delete(data.id); data.spawnCooldownUntil = now + 300; } finally { data.isDespawning = false; } }
 
     function spawnCompanionFromInventoryItem(item) {
       const stats = getStatsByLevel(item.level);
-      const scaleBoost = 0.95 + (item.level - 1) * 0.11;
+      const scaleBoost = 0.95 + (item.level - 1) * 0.07;
       const root = deepCloneUnique(boarTemplate);
-      const parts = root.userData.parts || null;
-
-      fitAndGroundUniform(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
-      const facing = getCharacterForwardVector();
-      const right = new THREE.Vector3(facing.z, 0, -facing.x).normalize();
+      fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
+      const facing = getCharacterForwardVector(); const right = new THREE.Vector3(facing.z, 0, -facing.x).normalize();
       const offset = facing.clone().multiplyScalar(-2.2).add(right.multiplyScalar(rand(-1.4, 1.4)));
-
-      root.position.set(
-        playerRoot.position.x + offset.x,
-        getTerrainGroundY(playerRoot.position.x + offset.x, playerRoot.position.z + offset.z) + root.position.y,
-        playerRoot.position.z + offset.z
-      );
+      root.position.set(playerRoot.position.x + offset.x, getTerrainHeight(playerRoot.position.x + offset.x, playerRoot.position.z + offset.z) + root.position.y, playerRoot.position.z + offset.z);
       root.rotation.y = Math.atan2(facing.x, facing.z);
-      root.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      companions.push({
-        id: makeId(),
-        root,
-        parts,
-        species: item.species,
-        level: item.level,
-        hpMax: stats.hpMax,
-        hp: stats.hpMax,
-        atkDps: stats.atkDps * 1.15,
-        followSpeed: config.boarMoveSpeed * (1.35 + (item.level - 1) * 0.08),
-        attackRange: 2.2 + (item.level - 1) * 0.05,
-        attackCooldown: 0,
-        attackDuration: 0.62,
-        attackTimer: 0,
-        attackHitDone: false,
-        attackHitTime: 0.24,
-        attackLunge: 1.15,
-        state: "follow",
-        stateTime: 0,
-        animT: RNG() * 10,
-        terrainLift: root.position.y - getTerrainGroundY(root.position.x, root.position.z),
-        attackStartPos: new THREE.Vector3(),
-        attackDir: new THREE.Vector3(),
-        attackTargetId: null,
-        dead: false
-      });
-
+      root.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+      companions.push({ id: makeId(), root, parts: root.userData.parts || null, species: item.species, level: item.level, hpMax: stats.hpMax, hp: stats.hpMax, atkDps: stats.atkDps * 1.15, followSpeed: config.boarMoveSpeed * (1.35 + (item.level - 1) * 0.06), attackRange: 2.2 + (item.level - 1) * 0.05, attackCooldown: 0, attackDuration: 0.62, attackTimer: 0, attackHitDone: false, attackHitTime: 0.24, attackLunge: 1.15, state: "follow", stateTime: 0, animT: Math.random() * 10, terrainLift: root.position.y - getTerrainHeight(root.position.x, root.position.z), attackStartPos: new THREE.Vector3(), attackDir: new THREE.Vector3(), attackTargetId: null, dead: false });
       scene.add(root);
     }
-
     function addInventoryCreature(species, level) {
       if (inventory.length >= INVENTORY_LIMIT) return false;
-      inventory.push({
-        id: makeId(),
-        species,
-        level: Math.max(1, Math.floor(level)),
-        capturedAt: Date.now()
-      });
-      saveInventory();
-      renderInventoryModal();
-      return true;
+      inventory.push({ id: makeId(), species, level: Math.max(1, Math.floor(level)), capturedAt: Date.now() });
+      saveInventory(); renderInventoryModal(); return true;
     }
 
-    function findNearestBoar(maxDist = 4.5) {
+    // -------------------- 当たり判定 --------------------
+    function isPointInsideRiver(x, z, river) {
+      const cos = Math.cos(-river.yaw), sin = Math.sin(-river.yaw);
+      const lx = (x - river.x) * cos - (z - river.z) * sin;
+      const lz = (x - river.x) * sin + (z - river.z) * cos;
+      return Math.abs(lx) <= river.length / 2 && Math.abs(lz) <= river.width / 2;
+    }
+    function clampPointOutsideRiver(x, z, river) {
+      const cos = Math.cos(-river.yaw), sin = Math.sin(-river.yaw);
+      let lx = (x - river.x) * cos - (z - river.z) * sin;
+      let lz = (x - river.x) * sin + (z - river.z) * cos;
+      lx = clamp(lx, -river.length / 2 - 0.6, river.length / 2 + 0.6);
+      lz = clamp(lz, -river.width / 2 - 0.6, river.width / 2 + 0.6);
+      const wx = lx * cos + lz * sin + river.x;
+      const wz = -lx * sin + lz * cos + river.z;
+      return { x: wx, z: wz };
+    }
+    function getRiverSlowFactorAt(x, z) {
+      for (const river of riverData) if (isPointInsideRiver(x, z, river)) return river.slowFactor;
+      return 1;
+    }
+    function pointVsSolidObstacles(x, z, radius) {
+      for (const d of activeTrees.values()) { if (!d.activeObject) continue; const p = d.activeObject.root.position; const rr = (d.collisionRadius || 2) + radius; const dx = x - p.x, dz = z - p.z; if (dx * dx + dz * dz <= rr * rr) return { type: "tree", data: d }; }
+      for (const d of activeRocks.values()) { if (!d.activeObject) continue; const p = d.activeObject.root.position; const rr = (d.collisionRadius || 1.5) + radius; const dx = x - p.x, dz = z - p.z; if (dx * dx + dz * dz <= rr * rr) return { type: "rock", data: d }; }
+      for (const d of activeBoars.values()) { if (d.dead || !d.activeObject) continue; const p = d.activeObject.root.position; const rr = (d.collisionRadius || 0.7) + radius; const dx = x - p.x, dz = z - p.z; if (dx * dx + dz * dz <= rr * rr) return { type: "boar", data: d }; }
+      for (const r of riverData) if (isPointInsideRiver(x, z, r)) return { type: "river", data: r };
+      return null;
+    }
+    function moveWithStrictCollision(obj3D, dx, dz, radius) {
+      const sx = obj3D.x, sz = obj3D.z; const ex = sx + dx, ez = sz + dz;
+      const hit = pointVsSolidObstacles(ex, ez, radius);
+      if (hit) { obj3D.x = sx; obj3D.z = sz; return false; }
+      obj3D.x = ex; obj3D.z = ez; return true;
+    }
+    function updatePlayerTerrainAndJump(delta) {
+      const groundY = getTerrainHeight(playerRoot.position.x, playerRoot.position.z);
+      if (physics.onGround) { physics.jumpOffset = 0; physics.vy = 0; playerRoot.position.y = groundY; }
+      else {
+        physics.vy += config.gravity * delta; physics.jumpOffset += physics.vy * delta;
+        if (physics.jumpOffset <= 0) { physics.jumpOffset = 0; physics.vy = 0; physics.onGround = true; }
+        playerRoot.position.y = groundY + physics.jumpOffset;
+      }
+    }
+    function syncPlayerVisualToTerrain() { const offset = getTerrainHeight(playerRoot.position.x, playerRoot.position.z) + physics.jumpOffset; playerRoot.position.y = offset; }
+    function updateAllActiveTerrainAlignment() {
+      syncPlayerVisualToTerrain();
+      for (const d of activeTrees.values()) if (d.activeObject?.root) d.activeObject.root.position.y = getTerrainHeight(d.activeObject.root.position.x, d.activeObject.root.position.z) + (d.terrainLift || 0);
+      for (const d of activeHerbs.values()) if (d.activeObject?.root) d.activeObject.root.position.y = getTerrainHeight(d.activeObject.root.position.x, d.activeObject.root.position.z) + (d.terrainLift || 0);
+      for (const d of activeRocks.values()) if (d.activeObject?.root) d.activeObject.root.position.y = getTerrainHeight(d.activeObject.root.position.x, d.activeObject.root.position.z) + (d.terrainLift || 0);
+      for (const d of activeBoars.values()) if (d.activeObject?.root) d.activeObject.root.position.y = getTerrainHeight(d.activeObject.root.position.x, d.activeObject.root.position.z) + (d.terrainLift || 0);
+      for (const d of activeRivers.values()) if (d.activeObject?.root) d.activeObject.root.position.y = getTerrainHeight(d.activeObject.root.position.x, d.activeObject.root.position.z) + (d.terrainLift || 0);
+      for (const c of companions) if (c?.root) c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+    }
+    function refreshCollisionCircles() {
+      collisionCircles.length = 0;
+      for (const data of activeTrees.values()) if (data.activeObject?.root) { const p = data.activeObject.root.position; collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || 1.5 }); }
+      for (const data of activeRocks.values()) if (data.activeObject?.root) { const p = data.activeObject.root.position; collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || 1.5 }); }
+    }
+    function segmentCircleHitT(startX, startZ, endX, endZ, cx, cz, radius) {
+      const dx = endX - startX, dz = endZ - startZ, fx = startX - cx, fz = startZ - cz, a = dx*dx + dz*dz; if (a < 1e-10) return (fx*fx + fz*fz) <= radius*radius ? 0 : null;
+      const b = 2 * (fx*dx + fz*dz), c = fx*fx + fz*fz - radius*radius; if (c <= 0) return 0; const disc = b*b - 4*a*c; if (disc < 0) return null; const s = Math.sqrt(disc); const t1 = (-b - s) / (2*a); const t2 = (-b + s) / (2*a); if (t1 >= 0 && t1 <= 1) return t1; if (t2 >= 0 && t2 <= 1) return t2; return null;
+    }
+    function moveWithStrictCollisionForMonster(obj3D, dx, dz, radius) {
+      const sx = obj3D.x, sz = obj3D.z, ex = sx + dx, ez = sz + dz;
+      let bestT = 1, hit = false;
+      for (const circle of collisionCircles) {
+        const t = segmentCircleHitT(sx, sz, ex, ez, circle.x, circle.z, radius + circle.r);
+        if (t !== null && t < bestT) { bestT = t; hit = true; }
+      }
+      // 川は四角形で判定。ぶつかったらランダム反転で停止を避ける。
+      for (const river of riverData) {
+        if (isPointInsideRiver(ex, ez, river)) {
+          const angle = Math.random() < 0.5 ? Math.PI * (0.6 + Math.random() * 0.8) : -(Math.PI * (0.6 + Math.random() * 0.8));
+          const cos = Math.cos(angle), sin = Math.sin(angle);
+          const ndx = dx * cos - dz * sin;
+          const ndz = dx * sin + dz * cos;
+          obj3D.x = sx + ndx * 0.25;
+          obj3D.z = sz + ndz * 0.25;
+          return false;
+        }
+      }
+      if (hit) {
+        const safeT = Math.max(0, bestT - 0.02);
+        obj3D.x = sx + dx * safeT; obj3D.z = sz + dz * safeT; return false;
+      }
+      obj3D.x = ex; obj3D.z = ez; return true;
+    }
+
+    // -------------------- プレイヤー・攻撃 --------------------
+    function getMoveState() {
+      const input = getMoveInput();
+      const moving = input.magnitude > 0.001;
+      return { input, moving };
+    }
+    function updateMovement(delta) {
+      if (gameOver) { setStatus("ゲームオーバー"); return; }
+      const input = getMoveInput();
+      if (input.jump) requestJump();
+      if (input.attack) startAttack();
+      const moving = input.magnitude > 0.001;
+      if (moving) {
+        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
+        if (moveDir.lengthSq() > 1e-8) {
+          tmp.m.lookAt(new THREE.Vector3(0,0,0), moveDir, upAxis); tmp.q.setFromRotationMatrix(tmp.m); playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
+          const currentForward = new THREE.Vector3(0,0,-1).applyQuaternion(playerRoot.quaternion).normalize();
+          const align = clamp(currentForward.dot(moveDir), 0, 1); const moveScale = align * align; let speed = currentSpeed() * input.magnitude * moveScale;
+          speed *= getRiverSlowFactorAt(playerRoot.position.x, playerRoot.position.z);
+          const oldX = playerRoot.position.x, oldZ = playerRoot.position.z;
+          const dx = currentForward.x * speed * delta, dz = currentForward.z * speed * delta;
+          moveWithStrictCollision(playerRoot.position, dx, dz, config.playerCollisionRadius);
+          // プレイヤーの引き戻し：前フレーム安全座標に戻す
+          const hit = pointVsSolidObstacles(playerRoot.position.x, playerRoot.position.z, config.playerCollisionRadius);
+          if (hit && hit.type === "river") {
+            playerRoot.position.x = oldX; playerRoot.position.z = oldZ;
+          } else if (hit) {
+            playerRoot.position.x = oldX; playerRoot.position.z = oldZ;
+          }
+          playerRoot.position.x = clamp(playerRoot.position.x, -WORLD_HALF + 2, WORLD_HALF - 2);
+          playerRoot.position.z = clamp(playerRoot.position.z, -WORLD_HALF + 2, WORLD_HALF - 2);
+          if (!attackPlaying) syncLocomotion(false);
+        }
+      } else if (!attackPlaying && currentActionName !== "idle") {
+        hardStopAction("walk"); hardStopAction("run"); currentActionName = "idle";
+      }
+      updatePlayerTerrainAndJump(delta);
+      setStatus(attackPlaying ? "攻撃中" : physics.onGround ? (moving ? (dashMode || dashHeld ? "ダッシュ中" : "移動中") : "待機中") : (moving ? "移動中 / ジャンプ中" : "ジャンプ中"));
+    }
+    function stopAllActions(fade = 0.12) { for (const key of ["walk", "run", "attack"]) { const a = actions[key]; if (a) a.fadeOut(fade); } }
+    function hardStopAction(name) { const a = actions[name]; if (!a) return; a.stop(); a.reset(); a.paused = false; }
+    function playAction(name, fade = 0.14) { const next = actions[name]; if (!next) return; for (const key of ["walk", "run"]) if (key !== name) hardStopAction(key); next.reset(); next.enabled = true; next.paused = false; next.setEffectiveWeight(1); next.fadeIn(fade).play(); currentActionName = name; }
+    function syncLocomotion(force = false) {
+      if (gameOver) return; if (attackPlaying && !force) return;
+      const input = getMoveInput(); const moving = input.magnitude > 0.001;
+      if (!moving) { if (currentActionName !== "idle") { hardStopAction("walk"); hardStopAction("run"); currentActionName = "idle"; } return; }
+      const desired = (dashMode || dashHeld) ? "run" : "walk";
+      if (force || currentActionName !== desired) { stopAllActions(0.08); playAction(desired, 0.08); }
+      else { const a = actions[desired]; if (a && !a.isRunning()) a.play(); if (a) a.paused = false; }
+    }
+    function startAttack() {
+      if (gameOver || attackPlaying) return;
+      attackPlaying = true; attackTimer = config.playerAttackDuration; attackBtn.classList.add("active"); stopAllActions(0.05);
+      const a = actions.attack;
+      if (a) { a.reset(); a.enabled = true; a.paused = false; a.clampWhenFinished = true; a.setLoop(THREE.LoopOnce, 1); const clipDuration = a.getClip()?.duration || 1.0; a.timeScale = clipDuration / config.playerAttackDuration; a.play(); }
+      currentActionName = "attack";
+    }
+    function finishAttack() { attackPlaying = false; attackTimer = 0; attackBtn.classList.remove("active"); if (actions.attack) hardStopAction("attack"); if (!gameOver) syncLocomotion(true); }
+    function setDashMode(on) { if (gameOver) return; dashMode = on; dashBtn.classList.toggle("active", dashMode); if (!attackPlaying) syncLocomotion(true); }
+    function applyPlayerAttackDamage(delta) {
+      if (!activeBoars.size) return; const playerPos = playerRoot.position; const forward = getCharacterForwardVector(); const damage = config.playerAttackDps * delta; const now = performance.now();
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue; const pos = data.activeObject.root.position; tmp.v2.set(pos.x, pos.y, pos.z); tmp.v3.copy(tmp.v2).sub(playerPos); tmp.v3.y = 0;
+        const dist = tmp.v3.length(); if (dist > config.attackRange) continue; const dir = tmp.v3.clone().normalize(); if (forward.dot(dir) < config.attackConeDot) continue;
+        data.hp -= damage; data.hostileUntil = now + 4500; if (data.hp <= 0) { data.hp = 0; removeBoarAfterDeath(data, true); }
+      }
+    }
+    function takePlayerAttackHitFromBoars(delta, now) {
+      if (gameOver || playerHp <= 0) return; const playerPos = playerRoot.position;
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue; const pos = data.activeObject.root.position; const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z); if (d > data.attackRange) continue;
+        data.hostileUntil = now + 5000; takePlayerDamage(data.atkDps * delta); if (gameOver) return;
+      }
+    }
+
+    // -------------------- 動的川・敵・仲間 --------------------
+    function updateRiverVisuals() {
+      for (const r of activeRivers.values()) {
+        const root = r.activeObject?.root; if (!root) continue;
+        root.position.y = getTerrainHeight(root.position.x, root.position.z) + (r.terrainLift || 0);
+      }
+    }
+    function updateWildBoarAnimation(data, delta) {
+      if (data.dead || !data.activeObject) return;
+      const o = data.activeObject; data.stateTime += delta; const t = data.stateTime; const isChase = data.state === "chase";
+      const baseY = getTerrainHeight(o.root.position.x, o.root.position.z) + (data.terrainLift || 0);
+      o.root.position.y = baseY; // 毎フレーム、正しい地形高さへ固定
+      if (o.parts) {
+        const sway = Math.sin(t * (isChase ? 18 : 8)) * (isChase ? 0.05 : 0.025);
+        o.parts.body.rotation.z = sway; o.parts.head.rotation.x = isChase ? 0.22 : 0.05; o.parts.head.rotation.z = -sway * 0.7; o.parts.snout.rotation.z = -sway * 0.55;
+        o.parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.4; o.parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.4;
+        const legSwing = Math.sin(t * (isChase ? 16 : 8)) * (isChase ? 0.75 : 0.55);
+        o.parts.legs[0].rotation.x = legSwing; o.parts.legs[3].rotation.x = legSwing; o.parts.legs[1].rotation.x = -legSwing; o.parts.legs[2].rotation.x = -legSwing;
+      } else { o.root.rotation.z = Math.sin(t * (isChase ? 14 : 8)) * (isChase ? 0.06 : 0.03); }
+    }
+    function updateWildBoars(delta, now) {
       const playerPos = playerRoot.position;
-      let best = null;
-      let bestDist = Infinity;
       for (const data of activeBoars.values()) {
         if (data.dead || !data.activeObject) continue;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
-        if (d < maxDist && d < bestDist) {
-          best = data;
-          bestDist = d;
+        const o = data.activeObject; const pos = o.root.position; const dist = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
+        // 100m以内で動作継続、常に内部座標は維持
+        if (dist <= data.aggroRange) { data.state = "chase"; data.hostileUntil = now + 4500; } else { data.state = "wander"; }
+        if (data.state === "chase") {
+          const dir = tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z); if (dir.lengthSq() > 1e-8) dir.normalize();
+          const speed = data.moveSpeed * 1.4; if (dist > data.attackRange * 0.95) {
+            const moved = moveWithStrictCollisionForMonster(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
+            if (!moved) { data.wanderYaw += (Math.random() < 0.5 ? -1 : 1) * (0.8 + Math.random() * 0.9); data.wanderTimer = rand(0.7, 1.5); }
+          }
+          const targetYaw = Math.atan2(dir.x, dir.z); o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
+          if (dist <= data.attackRange) { data.hostileUntil = now + 5000; takePlayerDamage(data.atkDps * delta); }
+        } else {
+          data.wanderTimer -= delta;
+          if (data.wanderTimer <= 0) { data.wanderYaw += rand(-1.2, 1.2); data.wanderTimer = rand(1.8, 4.2); }
+          const dir = new THREE.Vector3(Math.cos(data.wanderYaw), 0, Math.sin(data.wanderYaw));
+          const moved = moveWithStrictCollisionForMonster(o.root, dir.x * data.moveSpeed * delta, dir.z * data.moveSpeed * delta, data.collisionRadius || 0.7);
+          if (!moved) { data.wanderYaw += Math.random() < 0.5 ? Math.PI * (0.4 + Math.random() * 0.6) : -Math.PI * (0.4 + Math.random() * 0.6); data.wanderTimer = rand(0.5, 1.5); }
+          const targetYaw = Math.atan2(dir.x, dir.z); o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-2.5 * delta));
         }
+        data.x = o.root.position.x; data.z = o.root.position.z; data.rotY = o.root.rotation.y;
+        updateWildBoarAnimation(data, delta);
+      }
+    }
+    function findNearestBoar(maxDist = 4.5) {
+      const playerPos = playerRoot.position; let best = null, bestDist = Infinity;
+      for (const data of activeBoars.values()) {
+        if (data.dead || !data.activeObject) continue; const pos = data.activeObject.root.position; const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
+        if (d < maxDist && d < bestDist) { best = data; bestDist = d; }
       }
       return best ? { boar: best, dist: bestDist } : null;
     }
-
     function collectNearestBoar() {
       if (gameOver) return;
-
-      if (inventory.length >= INVENTORY_LIMIT) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
+      if (inventory.length >= INVENTORY_LIMIT) { showToast("かばんがいっぱい！"); setStatus("かばんがいっぱい"); return; }
       const found = findNearestBoar(4.5);
-      if (!found) {
-        showToast("近くにイノシシがいない！");
-        setStatus("近くにイノシシがいない");
-        return;
-      }
-
+      if (!found) { showToast("近くにイノシシがいない！"); setStatus("近くにイノシシがいない"); return; }
       const boar = found.boar;
-      if (boar.hp > boar.hpMax * 0.1) {
-        showToast("体力が多すぎて捕まえられない！");
-        setStatus("体力が多すぎて捕まえられない");
-        return;
-      }
-
-      if (!addInventoryCreature("イノシシ", boar.level)) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
-      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
-      removeBoarAfterDeath(boar, true);
+      if (boar.hp > boar.hpMax * 0.1) { showToast("体力が多すぎて捕まえられない！"); setStatus("体力が多すぎて捕まえられない"); return; }
+      const ok = addInventoryCreature("イノシシ", boar.level); if (!ok) { showToast("かばんがいっぱい！"); setStatus("かばんがいっぱい"); return; }
+      showToast(`イノシシ Lv.${boar.level} を捕獲！`); setStatus(`イノシシ Lv.${boar.level} を捕獲`); removeBoarAfterDeath(boar, true);
     }
-
     function findNearestHerb(maxDist = config.herbCollectRange) {
-      const playerPos = playerRoot.position;
-      let best = null;
-      let bestDist = Infinity;
+      const playerPos = playerRoot.position; let best = null, bestDist = Infinity;
       for (const data of activeHerbs.values()) {
-        if (data.removed || !data.activeObject) continue;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
-        if (d < maxDist && d < bestDist) {
-          best = data;
-          bestDist = d;
-        }
+        if (data.removed || !data.activeObject) continue; const pos = data.activeObject.root.position; const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
+        if (d < maxDist && d < bestDist) { best = data; bestDist = d; }
       }
       return best ? { herb: best, dist: bestDist } : null;
     }
-
     function collectHerb(data) {
       if (gameOver || !data || data.removed) return;
-      if (playerHp >= config.playerHpMax) {
-        showToast("体力は満タン！");
-        setStatus("体力は満タン");
-        return;
-      }
+      if (playerHp >= config.playerHpMax) { showToast("体力は満タン！"); setStatus("体力は満タン"); return; }
       const healed = healPlayer(config.herbHealAmount);
-      if (healed <= 0) {
-        showToast("体力は満タン！");
-        setStatus("体力は満タン");
-        return;
-      }
-      showToast(`薬草を回収！ 体力 +${healed}`);
-      setStatus(`薬草を回収 / 体力 +${healed}`);
+      if (healed <= 0) { showToast("体力は満タン！"); setStatus("体力は満タン"); return; }
+      showToast(`薬草を回収！ 体力 +${healed}`); setStatus(`薬草を回収 / 体力 +${healed}`);
+      const index = herbData.findIndex((h) => h.id === data.id); if (index >= 0) herbData.splice(index, 1);
       if (data.activeObject?.root?.parent) data.activeObject.root.parent.remove(data.activeObject.root);
       if (data.activeObject?.root) disposeObject3D(data.activeObject.root);
-      data.activeObject = null;
-      data.removed = true;
-      const idx = herbData.findIndex((h) => h.id === data.id);
-      if (idx >= 0) herbData.splice(idx, 1);
-      activeHerbs.delete(data.id);
+      data.activeObject = null; data.removed = true; activeHerbs.delete(data.id);
     }
-
-    function collectNearestHerb() {
-      if (gameOver) return;
-      const found = findNearestHerb(1.0);
-      if (!found) {
-        showToast("近くに薬草がない！");
-        setStatus("近くに薬草がない");
-        return;
-      }
-      collectHerb(found.herb);
-    }
-
+    function collectNearestHerb() { if (gameOver) return; const found = findNearestHerb(1.0); if (!found) { showToast("近くに薬草がない！"); setStatus("近くに薬草がない"); return; } collectHerb(found.herb); }
     function tryInteractHerbAtScreen(clientX, clientY) {
       if (gameOver) return false;
-      herbPointer.x = (clientX / window.innerWidth) * 2 - 1;
-      herbPointer.y = -(clientY / window.innerHeight) * 2 + 1;
-      herbRaycaster.setFromCamera(herbPointer, camera);
-
-      const targets = [];
-      for (const data of activeHerbs.values()) {
-        if (!data.activeObject || data.removed) continue;
-        targets.push(data.activeObject.root);
-      }
-
+      herbPointer.x = (clientX / innerWidth) * 2 - 1; herbPointer.y = -(clientY / innerHeight) * 2 + 1; herbRaycaster.setFromCamera(herbPointer, camera);
+      const targets = []; for (const data of activeHerbs.values()) if (data.activeObject && !data.removed) targets.push(data.activeObject.root);
       const hits = herbRaycaster.intersectObjects(targets, true);
       if (hits.length) {
-        const herbId = hits[0].object.userData.herbId;
-        const data = activeHerbs.get(herbId);
-        if (!data) return false;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerRoot.position.x, pos.z - playerRoot.position.z);
-        if (d <= config.herbCollectRange) {
-          collectHerb(data);
-          return true;
-        }
-        showToast("薬草に近づいてから回収！");
-        setStatus("薬草が遠い");
-        return true;
+        const herbId = hits[0].object.userData.herbId; const data = activeHerbs.get(herbId); if (!data) return false;
+        const pos = data.activeObject.root.position; const d = Math.hypot(pos.x - playerRoot.position.x, pos.z - playerRoot.position.z);
+        if (d <= config.herbCollectRange) { collectHerb(data); return true; }
+        showToast("薬草に近づいてから回収！"); setStatus("薬草が遠い"); return true;
       }
-
-      const near = findNearestHerb(1.0);
-      if (near) {
-        collectHerb(near.herb);
-        return true;
-      }
-      return false;
-    }
-
-    function updateTreeAnimation(data) {
-      if (!data.activeObject) return;
-      const root = data.activeObject.root;
-      root.position.y = getTerrainGroundY(root.position.x, root.position.z) + (data.terrainLift || 0);
-    }
-
-    function updateHerbAnimation(data, delta) {
-      if (!data.activeObject) return;
-      data.animT += delta;
-      const root = data.activeObject.root;
-      root.position.y = getTerrainGroundY(root.position.x, root.position.z) + (data.terrainLift || 0) + Math.sin(data.animT * 3.8) * 0.03;
-      root.rotation.y += delta * 0.2;
-    }
-
-    function updateRockAnimation(data) {
-      if (!data.activeObject) return;
-      const root = data.activeObject.root;
-      root.position.y = getTerrainGroundY(root.position.x, root.position.z) + (data.terrainLift || 0);
-    }
-
-    function updateRiverAnimation(data) {
-      if (!data.activeObject) return;
-      const root = data.activeObject.root;
-      root.position.y = getTerrainGroundY(root.position.x, root.position.z) + (data.terrainLift || 0);
-    }
-
-    function updateWildBoarAnimation(data, delta) {
-      if (data.dead || !data.activeObject) return;
-      const o = data.activeObject;
-      const root = o.root;
-      data.stateTime += delta;
-      const t = data.stateTime;
-      const isCombat = data.state === "chase";
-
-      root.position.y = getTerrainGroundY(root.position.x, root.position.z) + (data.terrainLift || 0) + (isCombat ? 0.05 : 0.03) * Math.sin(t * (isCombat ? 10 : 7));
-      root.rotation.z = Math.sin(t * (isCombat ? 14 : 8)) * (isCombat ? 0.05 : 0.025);
-
-      const parts = root.userData.parts || null;
-      if (parts) {
-        const sway = Math.sin(t * (isCombat ? 18 : 10)) * (isCombat ? 0.05 : 0.025);
-        parts.body.rotation.z = sway;
-        parts.head.rotation.x = isCombat ? 0.24 : 0.05;
-        parts.head.rotation.z = -sway * 0.7;
-        parts.snout.rotation.z = -sway * 0.55;
-        parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.4;
-        parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.4;
-        const legSwing = Math.sin(t * (isCombat ? 16 : 8)) * (isCombat ? 0.8 : 0.55);
-        parts.legs[0].rotation.x = legSwing;
-        parts.legs[3].rotation.x = legSwing;
-        parts.legs[1].rotation.x = -legSwing;
-        parts.legs[2].rotation.x = -legSwing;
-      }
-    }
-
-    function removeBoarFromScene(data, shouldRespawn = true) {
-      if (!data || data.dead) return;
-      if (data.activeObject) despawnBoar(data);
-      data.dead = true;
-      if (shouldRespawn) scheduleBoarRespawn(data);
-    }
-
-    function updateBoarAI(data, delta, now) {
-      if (data.dead) return;
-
-      data.stateTime += delta;
-      const root = data.activeObject?.root;
-      const playerPos = playerRoot.position;
-
-      const distToPlayer = Math.hypot(data.x - playerPos.x, data.z - playerPos.z);
-      if (distToPlayer <= data.aggroRange) data.hostileUntil = now + 3500;
-
-      const targetMode = distToPlayer <= data.aggroRange ? "chase" : "wander";
-      data.state = targetMode;
-
-      let desiredYaw = data.patrolYaw;
-
-      if (targetMode === "chase") {
-        const dx = playerPos.x - data.x;
-        const dz = playerPos.z - data.z;
-        desiredYaw = Math.atan2(dx, dz);
-      } else {
-        data.patrolChangeTimer -= delta;
-        if (data.patrolChangeTimer <= 0) {
-          data.patrolYaw += rand(-1.1, 1.1);
-          data.patrolChangeTimer = rand(1.5, 4.5);
-        }
-        desiredYaw = data.patrolYaw;
-      }
-
-      const speed = targetMode === "chase" ? data.moveSpeed * 1.25 : data.moveSpeed;
-      const dx = Math.sin(desiredYaw) * speed * delta;
-      const dz = Math.cos(desiredYaw) * speed * delta;
-
-      const prevX = data.x;
-      const prevZ = data.z;
-      const moved = moveBoarInternal(data, dx, dz, desiredYaw, delta, now);
-
-      if (!moved) {
-        data.patrolYaw = desiredYaw + Math.PI * (0.75 + RNG() * 0.5);
-        data.patrolChangeTimer = rand(0.4, 1.4);
-      } else {
-        data.patrolYaw = desiredYaw;
-      }
-
-      const newDist = Math.hypot(data.x - playerPos.x, data.z - playerPos.z);
-      if (newDist <= data.boarAttackRange) {
-        takePlayerDamage(data.atkDps * delta);
-      }
-
-      if (root) {
-        root.position.x = data.x;
-        root.position.z = data.z;
-        root.position.y = getTerrainGroundY(data.x, data.z) + (data.terrainLift || 0);
-        const targetYaw = Math.atan2(Math.sin(desiredYaw), Math.cos(desiredYaw));
-        root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
-      }
-
-      updateWildBoarAnimation(data, delta);
-    }
-
-    function moveBoarInternal(data, dx, dz, desiredYaw, delta, now) {
-      const sx = data.x;
-      const sz = data.z;
-      const ex = sx + dx;
-      const ez = sz + dz;
-
-      if (Math.abs(ex) > WORLD_HALF - 2 || Math.abs(ez) > WORLD_HALF - 2) {
-        data.patrolYaw = desiredYaw + Math.PI * (0.5 + RNG());
-        return false;
-      }
-
-      const obstacleHit = wouldCollideOnMove(sx, sz, ex, ez, data.collisionRadius || 0.7);
-
-      if (!obstacleHit) {
-        data.x = ex;
-        data.z = ez;
-        return true;
-      }
-
-      data.patrolYaw = desiredYaw + Math.PI * (0.6 + RNG() * 0.8);
-      data.patrolChangeTimer = rand(0.5, 1.6);
+      const near = findNearestHerb(1.0); if (near) { collectHerb(near.herb); return true; }
       return false;
     }
 
     function updateCompanionAnimation(companion, delta) {
       const t = companion.animT;
-      const parts = companion.parts;
-
       if (companion.state === "attack") {
-        const progress = 1 - (companion.attackTimer / companion.attackDuration);
-        const kick = Math.sin(progress * Math.PI);
-        companion.root.rotation.z = Math.sin(progress * Math.PI) * 0.08;
-
-        if (parts) {
-          parts.body.rotation.z = 0.14 * kick;
-          parts.head.rotation.x = 0.42 + 0.14 * kick;
-          parts.head.rotation.z = -0.08 * kick;
-          parts.snout.rotation.z = -0.2 * kick;
-          parts.ears[0].rotation.z = Math.PI / 2 + 0.45 * kick;
-          parts.ears[1].rotation.z = Math.PI / 2 - 0.45 * kick;
-          const legSwing = Math.sin(progress * Math.PI * 2) * 0.95;
-          parts.legs[0].rotation.x = legSwing;
-          parts.legs[3].rotation.x = legSwing;
-          parts.legs[1].rotation.x = -legSwing;
-          parts.legs[2].rotation.x = -legSwing;
+        const progress = 1 - (companion.attackTimer / companion.attackDuration); const kick = Math.sin(progress * Math.PI); companion.root.rotation.z = Math.sin(progress * Math.PI) * 0.08;
+        if (companion.parts) {
+          companion.parts.body.rotation.z = 0.14 * kick; companion.parts.head.rotation.x = 0.42 + 0.14 * kick; companion.parts.head.rotation.z = -0.08 * kick; companion.parts.snout.rotation.z = -0.2 * kick;
+          companion.parts.ears[0].rotation.z = Math.PI / 2 + 0.45 * kick; companion.parts.ears[1].rotation.z = Math.PI / 2 - 0.45 * kick;
+          const legSwing = Math.sin(progress * Math.PI * 2) * 0.95; companion.parts.legs[0].rotation.x = legSwing; companion.parts.legs[3].rotation.x = legSwing; companion.parts.legs[1].rotation.x = -legSwing; companion.parts.legs[2].rotation.x = -legSwing;
         }
       } else {
         companion.root.rotation.z = Math.sin(t * 10.0) * 0.02;
-        if (parts) {
-          const sway = Math.sin(t * 10.0) * 0.02;
-          parts.body.rotation.z = sway;
-          parts.head.rotation.x = 0.04;
-          parts.head.rotation.z = -sway * 0.7;
-          parts.snout.rotation.z = -sway * 0.4;
-          parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.35;
-          parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.35;
-          const legSwing = Math.sin(t * 8.0) * 0.5;
-          parts.legs[0].rotation.x = legSwing;
-          parts.legs[3].rotation.x = legSwing;
-          parts.legs[1].rotation.x = -legSwing;
-          parts.legs[2].rotation.x = -legSwing;
+        if (companion.parts) {
+          const sway = Math.sin(t * 10.0) * 0.02; companion.parts.body.rotation.z = sway; companion.parts.head.rotation.x = 0.04; companion.parts.head.rotation.z = -sway * 0.7; companion.parts.snout.rotation.z = -sway * 0.4;
+          companion.parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.35; companion.parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.35;
+          const legSwing = Math.sin(t * 8.0) * 0.5; companion.parts.legs[0].rotation.x = legSwing; companion.parts.legs[3].rotation.x = legSwing; companion.parts.legs[1].rotation.x = -legSwing; companion.parts.legs[2].rotation.x = -legSwing;
         }
       }
     }
-
-    function startCompanionAttack(companion, target, now) {
-      companion.state = "attack";
-      companion.attackTimer = companion.attackDuration;
-      companion.attackHitDone = false;
-      companion.attackTargetId = target.id;
-      companion.attackStartPos.copy(companion.root.position);
-
-      const targetPos = target.activeObject.root.position;
-      const dir = new THREE.Vector3(targetPos.x - companion.root.position.x, 0, targetPos.z - companion.root.position.z);
-      if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
-      else dir.normalize();
-
-      companion.attackDir.copy(dir);
-      companion.root.rotation.y = Math.atan2(dir.x, dir.z);
-      companion.attackCooldown = 0.9;
-      companion.animT = now * 0.001;
-    }
-
-    function applyCompanionHit(companion, target) {
-      if (!target || target.dead) return;
-      target.hostileUntil = performance.now() + 4500;
-      target.hp -= companion.atkDps * 1.8;
-      if (target.hp <= 0) {
-        target.hp = 0;
-        removeBoarFromScene(target, true);
-      }
-    }
-
     function findHostileBoarTarget(now) {
-      const playerPos = playerRoot.position;
-      let best = null;
-      let bestDist = Infinity;
+      const playerPos = playerRoot.position; let best = null, bestDist = Infinity;
       for (const data of activeBoars.values()) {
-        if (data.dead || !data.activeObject) continue;
-        if ((data.hostileUntil || 0) <= now) continue;
-        const d = Math.hypot(data.x - playerPos.x, data.z - playerPos.z);
-        if (d < bestDist) {
-          bestDist = d;
-          best = data;
-        }
+        if (data.dead || !data.activeObject) continue; if ((data.hostileUntil || 0) <= now) continue;
+        const pos = data.activeObject.root.position; const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z); if (d < bestDist) { bestDist = d; best = data; }
       }
       return best;
     }
-
-    function findBoarById(id) {
-      return activeBoars.get(id) || null;
+    function findBoarById(id) { return activeBoars.get(id) || null; }
+    function startCompanionAttack(companion, target, now) {
+      companion.state = "attack"; companion.attackTimer = companion.attackDuration; companion.attackHitDone = false; companion.attackTargetId = target.id; companion.attackStartPos.copy(companion.root.position);
+      const targetPos = target.activeObject.root.position; const dir = new THREE.Vector3(targetPos.x - companion.root.position.x, 0, targetPos.z - companion.root.position.z);
+      if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1); else dir.normalize();
+      companion.attackDir.copy(dir); companion.root.rotation.y = Math.atan2(dir.x, dir.z); companion.attackCooldown = 0.9; companion.animT = now * 0.001;
     }
-
+    function applyCompanionHit(companion, target) {
+      if (!target || target.dead) return;
+      target.hostileUntil = performance.now() + 4500; target.hp -= companion.atkDps * 1.8; if (target.hp <= 0) { target.hp = 0; removeBoarAfterDeath(target, true); }
+    }
     function updateCompanions(delta, now) {
       if (!companions.length) return;
-
-      const playerPos = playerRoot.position;
-      const forward = getCharacterForwardVector();
-      const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
-      const hostile = findHostileBoarTarget(now);
-
+      const playerPos = playerRoot.position; const forward = getCharacterForwardVector(); const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize(); const hostile = findHostileBoarTarget(now);
       for (let i = companions.length - 1; i >= 0; i--) {
-        const c = companions[i];
-        if (c.dead) continue;
-
-        c.stateTime += delta;
-        c.animT += delta;
-        c.attackCooldown = Math.max(0, c.attackCooldown - delta);
-
+        const c = companions[i]; if (c.dead) continue; c.stateTime += delta; c.animT += delta; c.attackCooldown = Math.max(0, c.attackCooldown - delta);
         if (c.state === "attack") {
-          c.attackTimer -= delta;
-          const progress = 1 - (c.attackTimer / c.attackDuration);
-          const lunge = Math.sin(progress * Math.PI);
-
-          const target = findBoarById(c.attackTargetId);
-          let dir = c.attackDir.clone();
-
+          c.attackTimer -= delta; const progress = 1 - (c.attackTimer / c.attackDuration); const lunge = Math.sin(progress * Math.PI);
+          const target = findBoarById(c.attackTargetId); let dir = c.attackDir.clone();
           if (target && !target.dead) {
-            const targetPos = target.activeObject.root.position;
-            const nowDir = new THREE.Vector3(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z);
-            if (nowDir.lengthSq() > 1e-8) {
-              nowDir.normalize();
-              dir = nowDir;
-            }
+            const targetPos = target.activeObject.root.position; const nowDir = new THREE.Vector3(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z); if (nowDir.lengthSq() > 1e-8) { nowDir.normalize(); dir = nowDir; }
           }
-
-          c.root.position.copy(c.attackStartPos).add(dir.clone().multiplyScalar(lunge * c.attackLunge));
-          c.root.position.y = getTerrainGroundY(c.root.position.x, c.root.position.z) + c.terrainLift + Math.sin(progress * Math.PI) * 0.15;
-          c.root.rotation.y = Math.atan2(dir.x, dir.z);
-
-          if (!c.attackHitDone && progress >= c.attackHitTime) {
-            c.attackHitDone = true;
-            applyCompanionHit(c, target);
-          }
-
-          if (c.attackTimer <= 0) {
-            c.state = "follow";
-            c.attackTargetId = null;
-            c.attackHitDone = false;
-          }
-
-          updateCompanionAnimation(c, delta);
-          continue;
+          c.root.position.copy(c.attackStartPos).add(dir.clone().multiplyScalar(lunge * c.attackLunge)); c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift + Math.sin(progress * Math.PI) * 0.15; c.root.rotation.y = Math.atan2(dir.x, dir.z);
+          if (!c.attackHitDone && progress >= c.attackHitTime) { c.attackHitDone = true; applyCompanionHit(c, target); }
+          if (c.attackTimer <= 0) { c.state = "follow"; c.attackTargetId = null; c.attackHitDone = false; }
+          updateCompanionAnimation(c, delta); continue;
         }
-
-        let target = hostile || null;
-        if (target && (target.dead || !target.activeObject)) target = null;
-
+        let target = hostile || null; if (target && (target.dead || !target.activeObject)) target = null;
         if (target) {
-          const targetPos = target.activeObject.root.position;
-          const toTarget = targetPos.clone().sub(c.root.position);
-          toTarget.y = 0;
-          const dist = toTarget.length();
-
+          const targetPos = target.activeObject.root.position; const toTarget = targetPos.clone().sub(c.root.position); toTarget.y = 0; const dist = toTarget.length();
           if (dist > 0.001) {
-            const dir = toTarget.clone().normalize();
-            const yaw = Math.atan2(dir.x, dir.z);
-            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.5 * delta));
-
-            if (dist <= c.attackRange && c.attackCooldown <= 0) {
-              startCompanionAttack(c, target, now);
-            } else {
-              moveWithStrictCollision(c.root.position, dir.x * c.followSpeed * 1.65 * delta, dir.z * c.followSpeed * 1.65 * delta, 0.62);
-              c.root.position.y = getTerrainGroundY(c.root.position.x, c.root.position.z) + c.terrainLift;
-            }
+            const dir = toTarget.clone().normalize(); const yaw = Math.atan2(dir.x, dir.z); c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.5 * delta));
+            if (dist <= c.attackRange && c.attackCooldown <= 0) startCompanionAttack(c, target, now);
+            else { moveWithStrictCollisionForMonster(c.root, dir.x * c.followSpeed * 1.65 * delta, dir.z * c.followSpeed * 1.65 * delta, 0.62); c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift; }
           }
         } else {
-          const slotIndex = i;
-          const lane = Math.floor(slotIndex / 2);
-          const side = slotIndex % 2 === 0 ? -1 : 1;
-
-          const desired = playerPos.clone()
-            .add(forward.clone().multiplyScalar(-(2.5 + lane * 0.45)))
-            .add(right.clone().multiplyScalar(side * (1.25 + lane * 0.72)));
-
-          const toSlot = desired.sub(c.root.position);
-          toSlot.y = 0;
-          const dist = toSlot.length();
-
-          if (dist > 0.12) {
-            const dir = toSlot.clone().normalize();
-            const yaw = Math.atan2(dir.x, dir.z);
-            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.0 * delta));
-            const speed = c.followSpeed * clamp(dist / 2.0, 0.4, 1.8);
-            moveWithStrictCollision(c.root.position, dir.x * speed * delta, dir.z * speed * delta, 0.62);
-          }
-          c.root.position.y = getTerrainGroundY(c.root.position.x, c.root.position.z) + c.terrainLift;
+          const slotIndex = i, lane = Math.floor(slotIndex / 2), side = slotIndex % 2 === 0 ? -1 : 1;
+          const desired = playerPos.clone().add(forward.clone().multiplyScalar(-(2.5 + lane * 0.45))).add(right.clone().multiplyScalar(side * (1.25 + lane * 0.72)));
+          const toSlot = desired.sub(c.root.position); toSlot.y = 0; const dist = toSlot.length();
+          if (dist > 0.12) { const dir = toSlot.clone().normalize(); const yaw = Math.atan2(dir.x, dir.z); c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.0 * delta)); const speed = c.followSpeed * clamp(dist / 2.0, 0.4, 1.8); moveWithStrictCollisionForMonster(c.root, dir.x * speed * delta, dir.z * speed * delta, 0.62); }
+          c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
         }
-
         updateCompanionAnimation(c, delta);
       }
     }
 
-    function startAttack() {
-      if (gameOver || attackPlaying) return;
-      attackPlaying = true;
-      attackTimer = config.playerAttackDuration;
-      attackBtn.classList.add("active");
-      currentActionName = "attack";
-    }
-
-    function finishAttack() {
-      attackPlaying = false;
-      attackTimer = 0;
-      attackBtn.classList.remove("active");
-      if (!gameOver) currentActionName = "idle";
-    }
-
-    function setDashMode(on) {
-      if (gameOver) return;
-      dashMode = on;
-      dashBtn.classList.toggle("active", dashMode);
-    }
-
-    function updatePlayerMotion(delta) {
-      if (gameOver) {
-        setStatus("ゲームオーバー");
-        return;
-      }
-
-      const input = getMoveInput();
-      if (input.jump) requestJump();
-      if (input.attack) startAttack();
-
-      const moving = input.magnitude > 0.001;
-
-      if (moving) {
-        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
-        if (moveDir.lengthSq() > 1e-8) {
-          tmp.m.lookAt(new THREE.Vector3(0, 0, 0), moveDir, upAxis);
-          tmp.q.setFromRotationMatrix(tmp.m);
-          playerRoot.quaternion.rotateTowards(tmp.q, config.turnSpeed * delta);
-
-          const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerRoot.quaternion).normalize();
-          const align = clamp(currentForward.dot(moveDir), 0, 1);
-          const moveScale = align * align;
-
-          const speed = currentSpeed() * input.magnitude * moveScale;
-          const dx = currentForward.x * speed * delta;
-          const dz = currentForward.z * speed * delta;
-
-          const prevX = playerRoot.position.x;
-          const prevZ = playerRoot.position.z;
-
-          const moved = moveWithStrictCollision(playerRoot.position, dx, dz, config.playerCollisionRadius);
-
-          if (!moved) {
-            playerRoot.position.x = prevX;
-            playerRoot.position.z = prevZ;
-          }
-
-          const riverPush = riverPushOut(playerRoot.position.x, playerRoot.position.z, config.playerCollisionRadius);
-          if (riverPush) {
-            playerRoot.position.x = riverPush.x;
-            playerRoot.position.z = riverPush.z;
-          }
-
-          playerRoot.position.x = clamp(playerRoot.position.x, -WORLD_HALF + 2, WORLD_HALF - 2);
-          playerRoot.position.z = clamp(playerRoot.position.z, -WORLD_HALF + 2, WORLD_HALF - 2);
-        }
-      }
-
-      updatePlayerTerrainAndJump(delta);
-
-      if (moving && !attackPlaying) currentActionName = (dashMode || dashHeld) ? "run" : "walk";
-      if (!moving && !attackPlaying) currentActionName = "idle";
-
-      const speedMode = (dashMode || dashHeld) ? 2 : 1;
-      applyPlayerPose(delta, moving, speedMode);
-
-      setStatus(
-        attackPlaying
-          ? "攻撃中"
-          : physics.onGround
-            ? (moving ? (dashMode || dashHeld ? "ダッシュ中" : "移動中") : "待機中")
-            : (moving ? "移動中 / ジャンプ中" : "ジャンプ中")
-      );
-    }
-
-    function applyPlayerAttackDamage(delta) {
-      if (!activeBoars.size) return;
-
-      const playerPos = playerRoot.position;
-      const forward = getCharacterForwardVector();
-      const damage = config.playerAttackDps * delta;
-      const now = performance.now();
-
-      for (const data of activeBoars.values()) {
-        if (data.dead || !data.activeObject) continue;
-        const pos = data.activeObject.root.position;
-        const dist = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
-        if (dist > config.attackRange) continue;
-        const dir = new THREE.Vector3(pos.x - playerPos.x, 0, pos.z - playerPos.z).normalize();
-        if (forward.dot(dir) < config.attackConeDot) continue;
-
-        data.hp -= damage;
-        data.hostileUntil = now + 4500;
-        if (data.hp <= 0) {
-          data.hp = 0;
-          removeBoarFromScene(data, true);
-        }
-      }
-    }
-
-    function applyBoarDamageToPlayer(delta, now) {
-      if (gameOver || playerHp <= 0) return;
-      const playerPos = playerRoot.position;
-
-      for (const data of activeBoars.values()) {
-        if (data.dead || !data.activeObject) continue;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
-        if (d > data.attackRange) continue;
-        data.hostileUntil = now + 5000;
-        takePlayerDamage(data.atkDps * delta);
-        if (gameOver) return;
-      }
-    }
-
+    // -------------------- ワールドストリーミング --------------------
     function syncStream(masterArray, spawnFn, despawnFn, now) {
-      const px = playerRoot.position.x;
-      const pz = playerRoot.position.z;
-      const r2 = ACTIVE_RADIUS_SQ;
-
+      const px = playerRoot.position.x, pz = playerRoot.position.z, r2 = ACTIVE_RADIUS_SQ;
       for (const data of masterArray) {
-        if (data.removed || data.dead) {
-          if (data.activeObject) despawnFn(data, now);
-          continue;
-        }
-
-        const dx = data.x - px;
-        const dz = data.z - pz;
-        const within = (dx * dx) + (dz * dz) <= r2;
-
-        if (within) {
-          if (!data.activeObject && !data.isSpawning && now >= (data.spawnCooldownUntil || 0)) {
-            spawnFn(data, now);
-          }
-        } else {
-          if (data.activeObject && !data.isDespawning) {
-            despawnFn(data, now);
-          }
-        }
+        if (data.removed || data.dead) { if (data.activeObject) despawnFn(data, now); continue; }
+        const dx = data.x - px, dz = data.z - pz, within = (dx * dx) + (dz * dz) <= r2;
+        if (within) { if (!data.activeObject && !data.isSpawning && now >= (data.spawnCooldownUntil || 0)) spawnFn(data, now); }
+        else { if (data.activeObject && !data.isDespawning) despawnFn(data, now); }
       }
     }
-
-    function updateWorldStreaming(now) {
+    function syncWorldEntities(now) {
       syncStream(treeData, spawnTree, despawnTree, now);
       syncStream(herbData, spawnHerb, despawnHerb, now);
       syncStream(rockData, spawnRock, despawnRock, now);
+      syncStream(boarData, spawnBoar, despawnBoarForStream, now);
       syncStream(riverData, spawnRiver, despawnRiver, now);
-      syncStream(boarData, spawnBoar, despawnBoar, now);
+    }
+    function updateHerbs(delta) { for (const data of activeHerbs.values()) if (data.activeObject) { data.animT += delta; const root = data.activeObject.root; root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0) + Math.sin(data.animT * 3.8) * 0.03; root.rotation.y += delta * 0.2; } }
+    function updateRocks(delta) { for (const data of activeRocks.values()) if (data.activeObject) { const root = data.activeObject.root; root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0); } }
+    function updateHerbActionUI() { const found = findNearestHerb(1.0); herbCollectBtn.style.display = found ? "block" : "none"; }
+    function updateCombat(delta, now) {
+      if (!gameOver) { if (attackPlaying) { attackTimer -= delta; applyPlayerAttackDamage(delta); if (attackTimer <= 0) finishAttack(); } takePlayerAttackHitFromBoars(delta, now); }
+      updatePlayerHud(); updateWildBoars(delta, now); updateCompanions(delta, now); updateHerbs(delta); updateRocks(delta); updateHerbActionUI(); updateRiverVisuals();
     }
 
-    function updateTerrainAlignment() {
-      for (const d of activeTrees.values()) updateTreeAnimation(d);
-      for (const d of activeHerbs.values()) updateHerbAnimation(d, 0);
-      for (const d of activeRocks.values()) updateRockAnimation(d);
-      for (const d of activeRivers.values()) updateRiverAnimation(d);
-      for (const d of activeBoars.values()) updateWildBoarAnimation(d, 0);
-    }
-
-    function pushPlayerOutIfInsideRiver() {
-      const pushed = riverPushOut(playerRoot.position.x, playerRoot.position.z, config.playerCollisionRadius);
-      if (pushed) {
-        playerRoot.position.x = pushed.x;
-        playerRoot.position.z = pushed.z;
-        updatePlayerTerrainAndJump(0);
-      }
-    }
-
+    // -------------------- カメラ・ミニマップ --------------------
     function updateCamera(delta) {
-      const cosPitch = Math.cos(cameraPitch);
-      const sinPitch = Math.sin(cameraPitch);
-
-      const offset = new THREE.Vector3(
-        Math.sin(cameraYaw) * cosPitch,
-        sinPitch,
-        Math.cos(cameraYaw) * cosPitch
-      ).multiplyScalar(7.0);
-
-      const target = new THREE.Vector3(
-        playerRoot.position.x,
-        playerRoot.position.y + config.targetHeight,
-        playerRoot.position.z
-      );
-
+      const cosPitch = Math.cos(cameraPitch), sinPitch = Math.sin(cameraPitch);
+      const offset = new THREE.Vector3(Math.sin(cameraYaw) * cosPitch, sinPitch, Math.cos(cameraYaw) * cosPitch).multiplyScalar(config.cameraDistance);
+      const target = new THREE.Vector3(playerRoot.position.x, playerRoot.position.y + config.targetHeight, playerRoot.position.z);
       const desiredCameraPos = new THREE.Vector3().copy(target).add(offset);
       const lerpAlpha = 1 - Math.exp(-config.cameraSmooth * delta);
-      camera.position.lerp(desiredCameraPos, lerpAlpha);
-      camera.lookAt(target);
+      camera.position.lerp(desiredCameraPos, lerpAlpha); camera.lookAt(target);
+    }
+    function drawWorldMap(canvas, mode) {
+      const ctx = canvas.getContext("2d");
+      const dpr = Math.max(1, Math.min(devicePixelRatio || 1, 2));
+      const cssW = canvas.clientWidth || 1, cssH = canvas.clientHeight || 1; const width = Math.floor(cssW * dpr), height = Math.floor(cssH * dpr);
+      if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+      ctx.clearRect(0, 0, width, height); ctx.save(); ctx.scale(dpr, dpr);
+      const W = cssW, H = cssH;
+      if (mode === "mini") {
+        const cx = W / 2, cy = H / 2, radius = Math.min(W, H) / 2;
+        ctx.fillStyle = "rgba(12,18,24,0.86)"; ctx.fillRect(0, 0, W, H); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, radius - 2, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = "#18301f"; ctx.fillRect(0, 0, W, H);
+        const range = 180, scale = (radius * 0.84) / range, player = { x: playerRoot.position.x, z: playerRoot.position.z };
+        ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.lineWidth = 1;
+        for (let d = -range; d <= range; d += 20) { const x = cx + d * scale; ctx.beginPath(); ctx.moveTo(x, cy - range * scale); ctx.lineTo(x, cy + range * scale); ctx.stroke(); const y = cy + d * scale; ctx.beginPath(); ctx.moveTo(cx - range * scale, y); ctx.lineTo(cx + range * scale, y); ctx.stroke(); }
+        ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, range * scale, 0, Math.PI * 2); ctx.stroke();
+        for (const r of riverData) {
+          const dx = r.x - player.x, dz = r.z - player.z; const cos = Math.cos(-playerYawForMap());
+          if (dx * dx + dz * dz > 200 * 200) continue;
+          const px = cx + dx * scale, py = cy + dz * scale; ctx.save(); ctx.translate(px, py); ctx.rotate(r.yaw); ctx.fillStyle = "rgba(80,160,255,0.9)"; ctx.fillRect(-r.length * scale * 0.5, -r.width * scale * 0.5, r.length * scale, r.width * scale); ctx.restore();
+        }
+        for (const data of boarData) {
+          if (data.dead) continue; const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z }; const dx = pos.x - player.x, dz = pos.z - player.z; if (dx * dx + dz * dz > range * range) continue;
+          const x = cx + dx * scale, y = cy + dz * scale; ctx.fillStyle = "#ff5b5b"; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#fff"; ctx.font = "10px system-ui, sans-serif"; ctx.fillText("M", x - 3, y - 7);
+        }
+        const forward = getCharacterForwardVector(), yaw = Math.atan2(forward.x, forward.z); ctx.save(); ctx.translate(cx, cy); ctx.rotate(yaw); ctx.fillStyle = "#4cff7e"; ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(7, 8); ctx.lineTo(0, 4); ctx.lineTo(-7, 8); ctx.closePath(); ctx.fill(); ctx.restore();
+        ctx.restore(); ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, radius - 2, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return;
+      }
+      const margin = 18, innerW = W - margin * 2, innerH = H - margin * 2, scaleX = innerW / WORLD_SIZE, scaleY = innerH / WORLD_SIZE;
+      ctx.fillStyle = "#0f1720"; ctx.fillRect(0, 0, W, H); ctx.fillStyle = "#17331f"; ctx.fillRect(margin, margin, innerW, innerH);
+      ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 1;
+      for (let x = -WORLD_HALF; x <= WORLD_HALF; x += 100) { const px = margin + (x + WORLD_HALF) * scaleX; ctx.beginPath(); ctx.moveTo(px, margin); ctx.lineTo(px, margin + innerH); ctx.stroke(); }
+      for (let z = -WORLD_HALF; z <= WORLD_HALF; z += 100) { const py = margin + (z + WORLD_HALF) * scaleY; ctx.beginPath(); ctx.moveTo(margin, py); ctx.lineTo(margin + innerW, py); ctx.stroke(); }
+      ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 2; ctx.strokeRect(margin, margin, innerW, innerH);
+      for (const river of riverData) {
+        const x = margin + (river.x + WORLD_HALF) * scaleX; const y = margin + (river.z + WORLD_HALF) * scaleY; ctx.save(); ctx.translate(x, y); ctx.rotate(river.yaw); ctx.fillStyle = "rgba(80,160,255,0.85)"; ctx.fillRect(-river.length * scaleX * 0.5, -river.width * scaleY * 0.5, river.length * scaleX, river.width * scaleY); ctx.restore();
+      }
+      for (const data of boarData) {
+        if (data.dead) continue; const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z }; const x = margin + (pos.x + WORLD_HALF) * scaleX; const y = margin + (pos.z + WORLD_HALF) * scaleY; ctx.fillStyle = "#ff5b5b"; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#fff"; ctx.font = "10px system-ui, sans-serif"; ctx.fillText("M", x - 3, y - 6); }
+      const player = playerRoot.position, px = margin + (player.x + WORLD_HALF) * scaleX, py = margin + (player.z + WORLD_HALF) * scaleY, forward = getCharacterForwardVector(), yaw = Math.atan2(forward.x, forward.z);
+      ctx.save(); ctx.translate(px, py); ctx.rotate(yaw); ctx.fillStyle = "#4cff7e"; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, 9); ctx.lineTo(0, 5); ctx.lineTo(-8, 9); ctx.closePath(); ctx.fill(); ctx.restore(); ctx.restore();
+    }
+    function playerYawForMap() { const forward = getCharacterForwardVector(); return Math.atan2(forward.x, forward.z); }
+    function updateMiniMap() { drawWorldMap(miniMapCanvas, "mini"); }
+    function updateFullMap() { drawWorldMap(fullMapCanvas, "full"); }
+
+    // -------------------- 入力バインド --------------------
+    function updateJoystickVisual() { joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`; }
+    function resetJoystick() { stick.active = false; stick.pointerId = null; stick.x = 0; stick.y = 0; updateJoystickVisual(); }
+    function updateJoystickBindings() {
+      const joystickEl = document.getElementById("joystick"); const joyKnob = document.getElementById("joyKnob"); const jumpBtn = document.getElementById("jumpBtn");
+      joystickEl.addEventListener("pointerdown", (e) => {
+        e.preventDefault(); stick.active = true; stick.pointerId = e.pointerId; joystickEl.setPointerCapture(e.pointerId);
+        const rect = joystickEl.getBoundingClientRect(); const cx = rect.left + rect.width / 2; const cy = rect.top + rect.height / 2; const dx = e.clientX - cx; const dy = e.clientY - cy; const len = Math.hypot(dx, dy); const maxLen = stick.radius;
+        let nx = dx / maxLen, ny = dy / maxLen; if (len > maxLen) { nx = dx / len; ny = dy / len; }
+        stick.x = clamp(nx, -1, 1); stick.y = clamp(ny, -1, 1); joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`;
+      });
+      joystickEl.addEventListener("pointermove", (e) => {
+        if (!stick.active || e.pointerId !== stick.pointerId) return; e.preventDefault();
+        const rect = joystickEl.getBoundingClientRect(); const cx = rect.left + rect.width / 2; const cy = rect.top + rect.height / 2; const dx = e.clientX - cx; const dy = e.clientY - cy; const len = Math.hypot(dx, dy); const maxLen = stick.radius;
+        let nx = dx / maxLen, ny = dy / maxLen; if (len > maxLen) { nx = dx / len; ny = dy / len; }
+        stick.x = clamp(nx, -1, 1); stick.y = clamp(ny, -1, 1); joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`;
+      });
+      function endJoystick(e) { if (e.pointerId !== stick.pointerId) return; resetJoystick(); }
+      joystickEl.addEventListener("pointerup", endJoystick); joystickEl.addEventListener("pointercancel", endJoystick); joystickEl.addEventListener("lostpointercapture", resetJoystick);
+      jumpBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); requestJump(); });
+    }
+    const cameraDrag = { active:false, pointerId:null, lastX:0, lastY:0 };
+    function shouldIgnoreCameraDragTarget(target) { return target instanceof Element && !!target.closest("#ui, #miniMapWrap, #fullMapModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn"); }
+    function bindCameraControls() {
+      renderer.domElement.addEventListener("pointerdown", (e) => { if (e.pointerType === "mouse" && e.button !== 0) return; if (shouldIgnoreCameraDragTarget(e.target)) return; if (e.target !== renderer.domElement) return; cameraDrag.active = true; cameraDrag.pointerId = e.pointerId; cameraDrag.lastX = e.clientX; cameraDrag.lastY = e.clientY; renderer.domElement.setPointerCapture(e.pointerId); });
+      renderer.domElement.addEventListener("pointermove", (e) => { if (!cameraDrag.active || e.pointerId !== cameraDrag.pointerId) return; const dx = e.clientX - cameraDrag.lastX; const dy = e.clientY - cameraDrag.lastY; cameraYaw -= dx * config.cameraYawSensitivity; cameraPitch = clamp(cameraPitch - dy * config.cameraPitchSensitivity, config.cameraPitchMin, config.cameraPitchMax); cameraDrag.lastX = e.clientX; cameraDrag.lastY = e.clientY; });
+      function endDrag(e) { if (e.pointerId !== cameraDrag.pointerId) return; cameraDrag.active = false; cameraDrag.pointerId = null; }
+      renderer.domElement.addEventListener("pointerup", endDrag); renderer.domElement.addEventListener("pointercancel", endDrag); renderer.domElement.addEventListener("lostpointercapture", () => { cameraDrag.active = false; cameraDrag.pointerId = null; });
+      renderer.domElement.addEventListener("click", (e) => { if (shouldIgnoreCameraDragTarget(e.target)) return; tryInteractHerbAtScreen(e.clientX, e.clientY); });
+    }
+    function bindKeyboardControls() {
+      window.addEventListener("keydown", (e) => {
+        if (["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyJ","KeyK"].includes(e.code)) e.preventDefault();
+        keys.add(e.code); if (e.code === "Space") requestJump(); if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = true; if (e.code === "KeyJ" || e.code === "KeyK") startAttack();
+      }, { passive:false });
+      window.addEventListener("keyup", (e) => { keys.delete(e.code); if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = false; });
+    }
+    function bindUI() {
+      dashBtn.addEventListener("click", () => setDashMode(!dashMode));
+      attackBtn.addEventListener("click", () => startAttack());
+      captureBtn.addEventListener("click", collectNearestBoar);
+      herbCollectBtn.addEventListener("click", collectNearestHerb);
+      inventoryBtn.addEventListener("click", openInventoryModal);
+      closeInventoryBtn.addEventListener("click", closeInventoryModal);
+      inventoryModal.addEventListener("click", (e) => { if (e.target === inventoryModal) closeInventoryModal(); });
+      inventoryList.addEventListener("click", (e) => {
+        const target = e.target; if (!(target instanceof HTMLElement)) return; const id = target.dataset.deployId; if (!id) return;
+        const index = inventory.findIndex((item) => item.id === id); if (index < 0) return; const item = inventory[index]; inventory.splice(index, 1); saveInventory(); renderInventoryModal(); spawnCompanionFromInventoryItem(item); showToast(`${item.species} Lv.${item.level} が出撃！`);
+      });
+      miniMapWrap.addEventListener("pointerdown", (e) => { e.preventDefault(); fullMapModal.classList.add("open"); fullMapModal.setAttribute("aria-hidden", "false"); updateFullMap(); });
+      fullMapClose.addEventListener("click", () => { fullMapModal.classList.remove("open"); fullMapModal.setAttribute("aria-hidden", "true"); });
+      fullMapModal.addEventListener("click", (e) => { if (e.target === fullMapModal) { fullMapModal.classList.remove("open"); fullMapModal.setAttribute("aria-hidden", "true"); } });
+      window.addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); updateMiniMap(); if (fullMapModal.classList.contains("open")) updateFullMap(); });
     }
 
-    function updateHerbButton() {
-      const found = findNearestHerb(1.0);
-      herbCollectBtn.style.display = found ? "block" : "none";
+    // -------------------- ローディングと初期化 --------------------
+    function spawnCompanionFromInventoryItemFactory(item) { spawnCompanionFromInventoryItem(item); }
+    async function loadTemplates() {
+      const [treeGLTF, boarGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
+        loadGLTFWithFallback(TREE_URLS, createFallbackTreeTemplate),
+        loadGLTFWithFallback(BOAR_URLS, createFallbackBoarTemplate),
+        loadGLTFWithFallback(HERB_URLS, createFallbackHerbTemplate),
+        loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate),
+        loadGLTFWithFallback(RIVER_URLS, createFallbackRiverTemplate)
+      ]);
+      treeTemplate = treeGLTF.scene; boarTemplate = boarGLTF.scene; herbTemplate = herbGLTF.scene; rockTemplate = rockGLTF.scene; riverTemplate = riverGLTF.scene;
+      treeUsesFallback = treeGLTF.fallback; boarUsesFallback = boarGLTF.fallback; herbUsesFallback = herbGLTF.fallback; rockUsesFallback = rockGLTF.fallback; riverUsesFallback = riverGLTF.fallback;
+    }
+    async function loadPlayerRig() {
+      const fbx = await loadFBXWithFallback([WALK_FBX_URL]);
+      if (fbx) { visualRoot = fbx; fitAndGround(visualRoot, config.modelHeight, 0.03); visualRoot.rotation.y = Math.PI; playerRoot.add(visualRoot); }
+      else { visualRoot = createFallbackPlayerRig(); fitAndGround(visualRoot, config.modelHeight, 0.03); visualRoot.rotation.y = Math.PI; playerRoot.add(visualRoot); }
+    }
+    async function loadAnimations() {
+      if (!visualRoot) return;
+      try {
+        const [walkFBX, runFBX, attackFBX] = await Promise.all([ loadFBXWithFallback([WALK_FBX_URL]), loadFBXWithFallback([RUN_FBX_URL]), loadFBXWithFallback([ATTACK_FBX_URL]) ]);
+        if (!walkFBX || !runFBX || !attackFBX) return;
+        const rootNames = collectRootNames(visualRoot); rootNames.push("Armature", "RootNode", "Scene");
+        const walkClip = stripRootMotionTracks(firstClip(walkFBX), rootNames); const runClip = stripRootMotionTracks(firstClip(runFBX), rootNames); const attackClip = stripRootMotionTracks(firstClip(attackFBX), rootNames);
+        mixer = new THREE.AnimationMixer(visualRoot);
+        if (walkClip) { actions.walk = mixer.clipAction(walkClip); actions.walk.setLoop(THREE.LoopRepeat, Infinity); actions.walk.clampWhenFinished = false; actions.walk.enabled = true; }
+        if (runClip) { actions.run = mixer.clipAction(runClip); actions.run.setLoop(THREE.LoopRepeat, Infinity); actions.run.clampWhenFinished = false; actions.run.enabled = true; }
+        if (attackClip) { actions.attack = mixer.clipAction(attackClip); actions.attack.setLoop(THREE.LoopOnce, 1); actions.attack.clampWhenFinished = true; actions.attack.enabled = true; }
+      } catch (e) { console.warn("animation load failed", e); }
+    }
+    function forceRegroundAllLoaded() {
+      updateAllActiveTerrainAlignment(); refreshCollisionCircles();
+    }
+    async function bootstrap() {
+      try {
+        safeLoadInventory(); updatePlayerHud(); setStatus("モデルを読み込み中…");
+        generateTreeData(); generateHerbData(); generateRockData(); generateBoarData(); generateRiverData();
+        await loadPlayerRig(); await loadAnimations(); await loadTemplates();
+        loading.classList.add("hidden"); setStatus("待機中");
+        syncWorldEntities(performance.now()); refreshCollisionCircles(); forceRegroundAllLoaded(); updateMiniMap();
+      } catch (err) {
+        console.error(err); loading.classList.add("hidden"); setStatus("読み込み失敗"); showToast("読み込みに失敗したけど、フォールバックで再試行中");
+      }
     }
 
-    function updateCombatAndEntities(delta, now) {
-      if (!gameOver) {
-        if (attackPlaying) {
-          attackTimer -= delta;
-          applyPlayerAttackDamage(delta);
-          if (attackTimer <= 0) finishAttack();
-        }
-        applyBoarDamageToPlayer(delta, now);
-      }
-
-      for (const d of activeHerbs.values()) updateHerbAnimation(d, delta);
-      for (const d of activeRocks.values()) updateRockAnimation(d);
-      for (const d of activeRivers.values()) updateRiverAnimation(d);
-      for (const d of activeTrees.values()) updateTreeAnimation(d);
-
-      for (const d of activeBoars.values()) {
-        updateBoarAI(d, delta, now);
-      }
-
-      for (const c of companions) {
-        if (!c.dead) {
-          c.animT += delta;
-        }
-      }
-
-      updateCompanions(delta, now);
+    // -------------------- メインループ --------------------
+    function updateMovementAndWorld(delta, now) {
+      updateMovement(delta);
+      syncWorldEntities(now);
+      refreshCollisionCircles();
+      updateAllActiveTerrainAlignment();
+      updateCombat(delta, now);
+      updateCamera(delta);
       updateBoarTags();
-      updateHerbButton();
-      updatePlayerHud();
+      updateMiniMap();
+      if (fullMapModal.classList.contains("open")) updateFullMap();
+      renderer.render(scene, camera);
     }
-
-    function updatePlayerVisual() {
-      playerRoot.position.y = getTerrainGroundY(playerRoot.position.x, playerRoot.position.z) + physics.jumpOffset;
-    }
-
     function animate() {
       requestAnimationFrame(animate);
       const delta = Math.min(clock.getDelta(), 0.033);
       const now = performance.now();
-
-      updatePlayerMotion(delta);
-      updateWorldStreaming(now);
-      refreshCollisionCaches();
-      pushPlayerOutIfInsideRiver();
-      updateCombatAndEntities(delta, now);
-      updatePlayerVisual();
-      updateCamera(delta);
-      renderer.render(scene, camera);
+      if (mixer) mixer.update(delta);
+      updateMovementAndWorld(delta, now);
+      if (!gameOver) updateHerbActionUI();
     }
 
-    function refreshCollisionCaches() {
-      // active sets are enough; no additional cache needed here, but the function keeps the structure clear.
-    }
+    // -------------------- 川・木・草・石の追加演出 --------------------
+    function updateMapAfterLoad() { updateMiniMap(); if (fullMapModal.classList.contains("open")) updateFullMap(); }
 
-    function bindJoystick() {
-      const joystickEl = document.getElementById("joystick");
-      const joyKnob = document.getElementById("joyKnob");
-      const jumpBtn = document.getElementById("jumpBtn");
-
-      joystickEl.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        stick.active = true;
-        stick.pointerId = e.pointerId;
-        joystickEl.setPointerCapture(e.pointerId);
-
-        const rect = joystickEl.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-
-        const dx = e.clientX - cx;
-        const dy = e.clientY - cy;
-        const len = Math.hypot(dx, dy);
-        const maxLen = stick.radius;
-
-        let nx = dx / maxLen;
-        let ny = dy / maxLen;
-        if (len > maxLen) {
-          nx = dx / len;
-          ny = dy / len;
-        }
-
-        stick.x = clamp(nx, -1, 1);
-        stick.y = clamp(ny, -1, 1);
-        joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`;
-      });
-
-      joystickEl.addEventListener("pointermove", (e) => {
-        if (!stick.active || e.pointerId !== stick.pointerId) return;
-        e.preventDefault();
-
-        const rect = joystickEl.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-
-        const dx = e.clientX - cx;
-        const dy = e.clientY - cy;
-        const len = Math.hypot(dx, dy);
-        const maxLen = stick.radius;
-
-        let nx = dx / maxLen;
-        let ny = dy / maxLen;
-        if (len > maxLen) {
-          nx = dx / len;
-          ny = dy / len;
-        }
-
-        stick.x = clamp(nx, -1, 1);
-        stick.y = clamp(ny, -1, 1);
-        joyKnob.style.transform = `translate(${stick.x * stick.radius}px, ${stick.y * stick.radius}px)`;
-      });
-
-      function endJoystick(e) {
-        if (e.pointerId !== stick.pointerId) return;
-        stick.active = false;
-        stick.pointerId = null;
-        stick.x = 0;
-        stick.y = 0;
-        joyKnob.style.transform = "translate(0,0)";
-      }
-
-      joystickEl.addEventListener("pointerup", endJoystick);
-      joystickEl.addEventListener("pointercancel", endJoystick);
-      joystickEl.addEventListener("lostpointercapture", () => {
-        stick.active = false;
-        stick.pointerId = null;
-        stick.x = 0;
-        stick.y = 0;
-        joyKnob.style.transform = "translate(0,0)";
-      });
-
-      jumpBtn.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        requestJump();
-      });
-    }
-
-    function bindKeyboardAndCamera() {
-      window.addEventListener("keydown", (e) => {
-        if (["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyJ","KeyK"].includes(e.code)) {
-          e.preventDefault();
-        }
-        keys.add(e.code);
-        if (e.code === "Space") requestJump();
-        if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = true;
-        if (e.code === "KeyJ" || e.code === "KeyK") startAttack();
-      }, { passive: false });
-
-      window.addEventListener("keyup", (e) => {
-        keys.delete(e.code);
-        if (e.code === "ShiftLeft" || e.code === "ShiftRight") dashHeld = false;
-      });
-
-      renderer.domElement.addEventListener("pointerdown", (e) => {
-        if (e.pointerType === "mouse" && e.button !== 0) return;
-        if (e.target !== renderer.domElement) return;
-        if (e.target.closest?.("#ui, #sideButtons, #inventoryModal, #joystick, #jumpBtn")) return;
-        cameraDrag.active = true;
-        cameraDrag.pointerId = e.pointerId;
-        cameraDrag.lastX = e.clientX;
-        cameraDrag.lastY = e.clientY;
-        renderer.domElement.setPointerCapture(e.pointerId);
-      });
-
-      renderer.domElement.addEventListener("pointermove", (e) => {
-        if (!cameraDrag.active || e.pointerId !== cameraDrag.pointerId) return;
-        const dx = e.clientX - cameraDrag.lastX;
-        const dy = e.clientY - cameraDrag.lastY;
-        cameraYaw -= dx * 0.005;
-        cameraPitch = clamp(cameraPitch - dy * 0.004, 0.08, 0.78);
-        cameraDrag.lastX = e.clientX;
-        cameraDrag.lastY = e.clientY;
-      });
-
-      function endCameraDrag(e) {
-        if (e.pointerId !== cameraDrag.pointerId) return;
-        cameraDrag.active = false;
-        cameraDrag.pointerId = null;
-      }
-
-      renderer.domElement.addEventListener("pointerup", endCameraDrag);
-      renderer.domElement.addEventListener("pointercancel", endCameraDrag);
-      renderer.domElement.addEventListener("lostpointercapture", () => {
-        cameraDrag.active = false;
-        cameraDrag.pointerId = null;
-      });
-
-      renderer.domElement.addEventListener("click", (e) => {
-        if (e.target.closest?.("#ui, #sideButtons, #inventoryModal, #joystick, #jumpBtn")) return;
-        tryInteractHerbAtScreen(e.clientX, e.clientY);
-      });
-    }
-
-    function bindUI() {
-      dashBtn.addEventListener("click", () => setDashMode(!dashMode));
-      attackBtn.addEventListener("click", () => startAttack());
-      herbCollectBtn.addEventListener("click", collectNearestHerb);
-      captureBtn.addEventListener("click", collectNearestBoar);
-      inventoryBtn.addEventListener("click", openInventoryModal);
-      closeInventoryBtn.addEventListener("click", closeInventoryModal);
-      inventoryModal.addEventListener("click", (e) => {
-        if (e.target === inventoryModal) closeInventoryModal();
-      });
-      inventoryList.addEventListener("click", (e) => {
-        const target = e.target;
-        if (!(target instanceof HTMLElement)) return;
-        const id = target.dataset.deployId;
-        if (!id) return;
-        const index = inventory.findIndex((item) => item.id === id);
-        if (index < 0) return;
-        const item = inventory[index];
-        inventory.splice(index, 1);
-        saveInventory();
-        renderInventoryModal();
-        spawnCompanionFromInventoryItem(item);
-        showToast(`${item.species} Lv.${item.level} が出撃！`);
-      });
-
-      window.addEventListener("resize", () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      });
-    }
-
-    function forceRegroundAllLoaded() {
-      for (const d of activeTrees.values()) updateTreeAnimation(d);
-      for (const d of activeHerbs.values()) updateHerbAnimation(d, 0);
-      for (const d of activeRocks.values()) updateRockAnimation(d);
-      for (const d of activeRivers.values()) updateRiverAnimation(d);
-      for (const d of activeBoars.values()) updateWildBoarAnimation(d, 0);
-      for (const c of companions) {
-        c.root.position.y = getTerrainGroundY(c.root.position.x, c.root.position.z) + c.terrainLift;
-      }
-      playerRoot.position.y = getTerrainGroundY(playerRoot.position.x, playerRoot.position.z);
-    }
-
-    function makeLoadingInvisibleImmediately() {
-      const el = document.getElementById("loading");
-      if (el) el.style.display = "none";
-    }
-
-    async function loadTemplatesBackground() {
-      const [treeGLTF, herbGLTF, boarGLTF, rockGLTF, riverGLTF] = await Promise.all([
-        loadGLTFWithPossibleFailure(TREE_URLS, createFallbackTreeTemplate),
-        loadGLTFWithPossibleFailure(HERB_URLS, createFallbackHerbTemplate),
-        loadGLTFWithPossibleFailure(BOAR_URLS, createFallbackBoarTemplate),
-        loadGLTFWithPossibleFailure(ROCK_URLS, createFallbackRockTemplate),
-        loadGLTFWithPossibleFailure(RIVER_URLS, createFallbackRiverTemplate)
-      ]);
-
-      treeTemplate = treeGLTF.scene || fallbackTemplates.tree;
-      herbTemplate = herbGLTF.scene || fallbackTemplates.herb;
-      boarTemplate = boarGLTF.scene || fallbackTemplates.boar;
-      rockTemplate = rockGLTF.scene || fallbackTemplates.rock;
-      riverTemplate = riverGLTF.scene || fallbackTemplates.river;
-
-      forceRegroundAllLoaded();
-    }
-
-    function loadInitialTemplatesAndPlay() {
-      treeTemplate = fallbackTemplates.tree;
-      herbTemplate = fallbackTemplates.herb;
-      boarTemplate = fallbackTemplates.boar;
-      rockTemplate = fallbackTemplates.rock;
-      riverTemplate = fallbackTemplates.river;
-      forceRegroundAllLoaded();
-      setStatus("待機中");
-    }
-
-    function bootstrapWorldData() {
-      safeLoadInventory();
-      generateTreeData();
-      generateHerbData();
-      generateRockData();
-      generateRiverData();
-      generateBoarData();
-    }
-
-    function applySafeCameraTarget() {
-      playerRoot.position.set(0, getTerrainGroundY(0, 0), 0);
-      camera.position.set(0, 6, 10);
-      camera.lookAt(0, 0, 0);
-    }
-
-    makeLoadingInvisibleImmediately();
-    bootstrapWorldData();
-    loadInitialTemplatesAndPlay();
-    initPlayer();
-    applySafeCameraTarget();
-    updatePlayerHud();
-    bindJoystick();
-    bindKeyboardAndCamera();
     bindUI();
-    updateHerbButton();
-    updateWorldStreaming(performance.now());
-    refreshCollisionCaches();
-    forceRegroundAllLoaded();
-    loadTemplatesBackground().catch((e) => console.warn("template load failed", e));
+    bindKeyboardControls();
+    bindCameraControls();
+    updateJoystickBindings();
+    bootstrap();
     animate();
   </script>
 </body>
