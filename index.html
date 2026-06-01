@@ -2526,12 +2526,15 @@ function findHostileBoarTarget(now) {
 
       const playerPos = playerRoot.position;
       const forward = getCharacterForwardVector();
-      const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
+      const right = tmp.v5.set(forward.z, 0, -forward.x).normalize();
       const hostile = findHostileBoarTarget(now);
 
       for (let i = companions.length - 1; i >= 0; i--) {
         const c = companions[i];
-        if (c.dead) continue;
+        if (c.dead || !c.root) {
+          companions.splice(i, 1);
+          continue;
+        }
 
         c.stateTime += delta;
         c.animT += delta;
