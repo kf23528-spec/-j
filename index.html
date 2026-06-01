@@ -314,6 +314,10 @@
       background: linear-gradient(180deg, #69d66f, #239b3a);
       display: none;
     }
+    #recall-btn {
+      background: linear-gradient(180deg, #34d27b, #15964c);
+      display: none;
+    }
     #captureBtn { background: linear-gradient(180deg, #ffb14d, #ff7b1f); }
     #inventoryBtn { background: linear-gradient(180deg, #4e92ff, #2f67d6); }
     .sideBtn:active { transform: scale(0.97); }
@@ -507,6 +511,7 @@
 
   <div id="sideButtons">
     <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
+    <button id="recall-btn" class="sideBtn">モンスターを回収</button>
     <button id="captureBtn" class="sideBtn">捕獲（ゲット）</button>
     <button id="inventoryBtn" class="sideBtn">インベントリ</button>
   </div>
@@ -543,7 +548,7 @@
     const STORAGE_KEY = "forest_tps_inventory_v3";
     const INVENTORY_LIMIT = 10;
 
-    const WORLD_SIZE = 1200;
+    const WORLD_SIZE = 1500;
     const WORLD_HALF = WORLD_SIZE / 2;
     const ACTIVE_RADIUS = 100;
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
@@ -676,7 +681,8 @@
     const inventoryBtn = document.getElementById("inventoryBtn");
     const captureBtn = document.getElementById("captureBtn");
     const herbCollectBtn = document.getElementById("herbCollectBtn");
-
+    const recallBtn = document.getElementById("recall-btn");
+    
     const miniMapWrap = document.getElementById("miniMapWrap");
     const miniMapCanvas = document.getElementById("miniMapCanvas");
 
@@ -743,16 +749,18 @@
       attackConeDot: -0.15,
 
       boarBaseHp: 100,
-      boarBaseAttack: 3,
+      boarBaseAttack: 5,
       boarLevelMin: 1,
-      boarLevelMax: 20,
+      boarLevelMax: 999,
       lowLevelMax: 10,
       highLevelMin: 11,
       boarMoveSpeed: 1.2,
       boarAggroRange: 18.0,
-      boarAttackRange: 2.1,
-     combatInterval: 1.5,
-      companionStatMultiplier: 0.8,
+      boarAttackRange: 1.15,
+      combatStopDistance: 0.8,
+      combatInterval: 1.5,
+      companionHpMultiplier: 0.8,
+      companionAttackMultiplier: 0.9,
       
       herbHealAmount: 30,
       herbCollectRange: 1.0,
@@ -1066,18 +1074,40 @@
     }
 
     function loadGLTFWithFallback(urls, fallbackFactory) {
+      const makeSafeFallback = () => {
+        try {
+          return fallbackFactory();
+        } catch (e) {
+          console.warn("fallback mesh creation failed", e);
+          const g = new THREE.Group();
+          const mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshStandardMaterial({ color: 0xff66aa, roughness: 1 })
+          );
+          mesh.position.y = 0.5;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          g.add(mesh);
+          return g;
+        }
+      };
       return new Promise((resolve) => {
         const tryAt = (index) => {
           if (index >= urls.length) {
-            resolve({ scene: fallbackFactory(), fallback: true, url: null });
+            resolve({ scene: makeSafeFallback(), fallback: true, url: null });
             return;
           }
-          gltfLoader.load(
-            urls[index],
-            (gltf) => resolve({ scene: gltf.scene, fallback: false, url: urls[index] }),
-            undefined,
-            () => tryAt(index + 1)
-          );
+        try {
+            gltfLoader.load(
+              urls[index],
+              (gltf) => resolve({ scene: gltf?.scene || makeSafeFallback(), fallback: !gltf?.scene, url: urls[index] }),
+              undefined,
+              () => tryAt(index + 1)
+            );
+          } catch (e) {
+            console.warn("GLTF load failed", urls[index], e);
+            tryAt(index + 1);
+          }
         };
         tryAt(0);
       });
@@ -1187,14 +1217,31 @@
     }
 
     function getStatsByLevel(level) {
-      const mult = Math.pow(1.5, level - 1);
+      const lv = clamp(Math.floor(safeNum(level, 1)), config.boarLevelMin, config.boarLevelMax);
       return {
-        level,
-        hpMax: config.boarBaseHp * mult,
-        atkDps: config.boarBaseAttack * mult
+        level: lv,
+        hpMax: config.boarBaseHp + lv * 10,
+        atkDps: config.boarBaseAttack + lv * 2
       };
     }
 
+    function getBoarLevelRangeForPosition(x, z) {
+      const col = x < -250 ? 0 : (x < 250 ? 1 : 2);
+      const row = z < -250 ? 0 : (z < 250 ? 1 : 2);
+      const ranges = [
+        [[50, 80], [20, 40], [70, 95]],
+        [[25, 50], [1, 10], [15, 30]],
+        [[100, 999], [10, 20], [80, 125]]
+      ];
+      const range = ranges[row][col];
+      return { min: range[0], max: range[1], row, col };
+    }
+
+    function getBoarLevelForPosition(x, z) {
+      const range = getBoarLevelRangeForPosition(x, z);
+      return range.min + Math.floor(Math.random() * (range.max - range.min + 1));
+    }
+    
     function randomWorldPoint(margin = 18) {
       return {
         x: rand(-WORLD_HALF + margin, WORLD_HALF - margin),
@@ -1291,21 +1338,14 @@
         });
       }
     }
-
-    function getBoarLevelForDistance(distanceFromCenter) {
-      if (distanceFromCenter <= 180) {
-        return config.boarLevelMin + Math.floor(Math.random() * (config.lowLevelMax - config.boarLevelMin + 1));
-      }
-      return config.highLevelMin + Math.floor(Math.random() * (config.boarLevelMax - config.highLevelMin + 1));
-    }
-
+    
     function generateBoarData() {
       boarData.length = 0;
       while (boarData.length < BOAR_SPAWN_CANDIDATE_COUNT) {
         const p = randomWorldPoint(20);
         const d = Math.hypot(p.x, p.z);
         if (d < 22) continue;
-        const level = getBoarLevelForDistance(d);
+        const level = getBoarLevelForPosition(p.x, p.z);
         const stats = getStatsByLevel(level);
         boarData.push({
           id: nextEntityId++,
@@ -1317,7 +1357,7 @@
           hpMax: stats.hpMax,
           hp: stats.hpMax,
           atkDps: stats.atkDps,
-          attackRange: config.boarAttackRange + (level - 1) * 0.08,
+          attackRange: config.boarAttackRange,
           aggroRange: config.boarAggroRange + (level - 1) * 0.8,
           moveSpeed: config.boarMoveSpeed,
           collisionRadius: 0.7,
@@ -1533,12 +1573,14 @@
       return river;
     }
 
-    function createBoarTag(level, hp, hpMax) {
+    function createBoarTag(level, hp, hpMax, options = {}) {
       const el = document.createElement("div");
       el.className = "boarTag";
+      const label = options.label || `Lv.${level}`;
+      const fillStyle = options.ally ? "background: linear-gradient(90deg, #2ecc71, #15964c);" : "";
       el.innerHTML = `
-        <div class="boarLevel">Lv.${level}</div>
-        <div class="boarBarWrap"><div class="boarBarFill"></div></div>
+        <div class="boarLevel">${label}</div>
+        <div class="boarBarWrap"><div class="boarBarFill" style="${fillStyle}"></div></div>
         <div class="boarHpText">${Math.ceil(hp)} / ${Math.ceil(hpMax)}</div>
       `;
       worldUI.appendChild(el);
@@ -1583,7 +1625,35 @@
       for (const data of activeBoars.values()) updateBoarTag(data);
     }
 
-    function randomWorldPosition(minR = 18, maxR = 95) {
+    function updateCompanionTag(companion) {
+      if (!companion?.tag?.el || companion.dead || !companion.root) {
+        if (companion?.tag?.el) companion.tag.el.style.opacity = "0";
+        return;
+      }
+      const pos = tmp.v1.set(
+        companion.root.position.x,
+        companion.root.position.y + (companion.uiOffset || 2.0),
+        companion.root.position.z
+      ).project(camera);
+      const inFront = pos.z > -1 && pos.z < 1;
+      const onScreen = pos.x >= -1.2 && pos.x <= 1.2 && pos.y >= -1.2 && pos.y <= 1.2;
+      if (!inFront || !onScreen) {
+        companion.tag.el.style.opacity = "0";
+        return;
+      }
+      const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+      companion.tag.el.style.opacity = "1";
+      companion.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+      companion.tag.fill.style.width = `${clamp((companion.hp / companion.hpMax) * 100, 0, 100)}%`;
+      companion.tag.text.textContent = `HP ${Math.ceil(companion.hp)} / ${Math.ceil(companion.hpMax)}`;
+    }
+
+    function updateCompanionTags() {
+      for (const companion of companions) updateCompanionTag(companion);
+    }
+      
+      function randomWorldPosition(minR = 18, maxR = 95) {
       const angle = Math.random() * Math.PI * 2;
       const dist = rand(minR, maxR);
       return { x: Math.cos(angle) * dist, z: Math.sin(angle) * dist };
@@ -1834,7 +1904,12 @@
       herbCollectBtn.style.display = found ? "block" : "none";
     }
 
-    function applyEntityGrounding(data) {
+    function updateRecallActionUI() {
+      const found = findNearestRecallableCompanion(3.0);
+      recallBtn.style.display = found ? "block" : "none";
+    }
+      
+      function applyEntityGrounding(data) {
       if (!data?.activeObject?.root) return;
       const root = data.activeObject.root;
       root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
@@ -2029,7 +2104,7 @@
       if (data.activeObject || data.isSpawning || data.dead) return;
       data.isSpawning = true;
       try {
-        const levelVisualScale = 0.95 + (data.level - 1) * 0.11;
+        const levelVisualScale = clamp(0.95 + Math.log2(Math.max(1, data.level)) * 0.16, 0.95, 2.6);
         const root = deepCloneUnique(boarTemplate);
         fitAndGround(root, BOAR_TARGET_HEIGHT * data.scale * levelVisualScale, BOAR_GROUND_LIFT);
         data.terrainLift = root.position.y;
@@ -2092,9 +2167,8 @@
 
     function respawnBoar(data) {
       if (!data) return;
-      const p = randomWorldPosition(20);
-      const d = Math.hypot(p.x, p.z);
-      const level = getBoarLevelForDistance(d);
+      const p = randomWorldPoint(20);
+      const level = getBoarLevelForPosition(p.x, p.z);
       const stats = getStatsByLevel(level);
       data.dead = false;
       data.x = p.x;
@@ -2105,9 +2179,9 @@
       data.hpMax = stats.hpMax;
       data.hp = stats.hpMax;
       data.atkDps = stats.atkDps;
-      data.attackRange = config.boarAttackRange + (level - 1) * 0.08;
+      data.attackRange = config.boarAttackRange;
       data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
-      data.moveSpeed = config.boarMoveSpeed * (1 + (level - 1) * 0.08);
+      data.moveSpeed = config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3);
       data.state = "move";
       data.stateTime = 0;
       data.wanderYaw = Math.random() * Math.PI * 2;
@@ -2122,7 +2196,7 @@
 
     function spawnCompanionFromInventoryItem(item) {
       const stats = getStatsByLevel(item.level);
-      const scaleBoost = 0.95 + (item.level - 1) * 0.11;
+      const scaleBoost = clamp(0.95 + Math.log2(Math.max(1, item.level)) * 0.16, 0.95, 2.6);
       let root;
       let parts = null;
 
@@ -2154,24 +2228,24 @@
         }
       });
 
-      companions.push({
+      const companion = {
         id: makeId(),
         root,
         parts,
         species: item.species,
         level: item.level,
-        hpMax: stats.hpMax * config.companionStatMultiplier,
-        hp: stats.hpMax * config.companionStatMultiplier,
-        atkDps: stats.atkDps * config.companionStatMultiplier,
-        followSpeed: config.boarMoveSpeed * (1.35 + (item.level - 1) * 0.08),
-        attackRange: 2.2 + (item.level - 1) * 0.05,
+        hpMax: stats.hpMax * config.companionHpMultiplier,
+        hp: stats.hpMax * config.companionHpMultiplier,
+        atkDps: stats.atkDps * config.companionAttackMultiplier,
+        followSpeed: config.boarMoveSpeed * clamp(1.35 + (item.level - 1) * 0.004, 1.35, 4.0),
+        attackRange: config.boarAttackRange,
         attackCooldown: 0,
         nextAttackAt: 0,
         attackDuration: 0.62,
         attackTimer: 0,
         attackHitDone: false,
         attackHitTime: 0.24,
-        attackLunge: 1.15,
+        attackLunge: 0.0,
         state: "follow",
         stateTime: 0,
         animT: Math.random() * 10,
@@ -2179,9 +2253,18 @@
         attackStartPos: new THREE.Vector3(),
         attackDir: new THREE.Vector3(),
         attackTargetId: null,
+        targetBoarId: null,
+        uiOffset: 2.0,
+        collisionRadius: 0.25,
+        tag: null,
         dead: false
-      });
+      };
 
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+      companion.uiOffset = Math.max(1.6, size.y * 1.15);
+      companion.tag = createBoarTag(item.level, companion.hp, companion.hpMax, { ally: true, label: `味方 Lv.${item.level}` });
+      companions.push(companion);
       scene.add(root);
     }
 
@@ -2382,9 +2465,13 @@
       if (!data || data.dead) return;
       data.targetType = type;
       data.targetId = id;
-      data.hostileUntil = now + 9000;
+      data.hostileUntil = Infinity;
       data.state = "chase";
       if (!Number.isFinite(data.nextAttackAt)) data.nextAttackAt = 0;
+    if (type === "companion") {
+        const c = companions.find((item) => item && item.id === id && !item.dead && item.root);
+        if (c) c.targetBoarId = data.id;
+      }
     }
 
     function clearBoarHateTarget(data) {
@@ -2416,9 +2503,15 @@
       }
     }
 
+    function removeCompanionTag(companion) {
+      if (companion?.tag?.el?.parentNode) companion.tag.el.parentNode.removeChild(companion.tag.el);
+      if (companion) companion.tag = null;
+    }
+    
     function killCompanion(companion) {
       if (!companion || companion.dead) return;
       companion.dead = true;
+      removeCompanionTag(companion);
       const root = companion.root;
       if (root?.parent) root.parent.remove(root);
       disposeObject3D(root);
