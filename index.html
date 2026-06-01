@@ -2753,7 +2753,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
               moveWithStrictCollision(c.root.position, dir.x * step, dir.z * step, 0.62);
               c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
             } else {
-              moveWithStrictCollision(c.root.position, dir.x * c.followSpeed * 1.65 * delta, dir.z * c.followSpeed * 1.65 * delta, 0.62);
               c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
             }
           }
@@ -2832,9 +2831,14 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
           const dir = tmp.v1.set(dx, 0, dz);
           if (dir.lengthSq() > 1e-8) dir.normalize();
 
-          if (dist > data.attackRange * 0.95) {
+          const desiredStop = config.combatStopDistance;
+          if (dist < desiredStop * 0.95) {
+            const push = Math.min(data.moveSpeed * delta, desiredStop - dist);
+            moveWithStrictCollision(o.root, -dir.x * push, -dir.z * push, data.collisionRadius || 0.7);
+          } else if (dist > desiredStop) {  
             const speed = data.moveSpeed * 1.25;
-            const moved = moveWithStrictCollision(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
+            const step = Math.min(speed * delta, Math.max(0, dist - desiredStop));
+            const moved = moveWithStrictCollision(o.root, dir.x * step, dir.z * step, data.collisionRadius || 0.7);
             if (!moved) randomizeBoarAvoidance(data, true);
           }
 
@@ -2843,7 +2847,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
           if (dist <= data.attackRange && now >= (data.nextAttackAt || 0)) {
             data.nextAttackAt = now + config.combatInterval * 1000;
-            data.hostileUntil = now + 9000;
+            data.hostileUntil = Infinity;
             if (targetInfo.type === "player") {
               takePlayerDamage(data.atkDps);
             } else if (targetInfo.type === "companion") {
@@ -3340,7 +3344,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function updateHerbs(delta) {
       for (const data of activeHerbs.values()) {
-        if (!data.activeObject) continue;
+        if (!data?.activeObject?.root) continue;
         data.animT += delta;
         const root = data.activeObject.root;
         root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0) + Math.sin(data.animT * 3.8) * 0.03;
@@ -3372,6 +3376,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       updateHerbs(delta);
       updateRocks(delta);
       updateHerbActionUI();
+      updateRecallActionUI();
     }
 
     function updateWorldStreamingAndCollision(now) {
@@ -3534,7 +3539,8 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       attackBtn.addEventListener("click", () => startAttack());
       captureBtn.addEventListener("click", collectNearestBoar);
       herbCollectBtn.addEventListener("click", collectNearestHerb);
-
+　　　　recallBtn.addEventListener("click", recallNearestCompanion);
+      
       inventoryBtn.addEventListener("click", openInventoryModal);
       closeInventoryBtn.addEventListener("click", closeInventoryModal);
       inventoryModal.addEventListener("click", (e) => {
@@ -3694,6 +3700,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       updateCombat(delta, now);
       updateCamera(delta);
       updateBoarTags();
+      updateCompanionTags();
       updateMiniMap();
       if (fullMapModal.classList.contains("open")) updateFullMap();
       renderer.render(scene, camera);
@@ -3826,6 +3833,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
       if (!gameOver) {
         updateHerbActionUI();
+        updateRecallActionUI();
       }
     }
 
