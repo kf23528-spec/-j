@@ -2522,14 +2522,72 @@
       showToast(`${companion.species} Lv.${companion.level} は倒れました`);
     }
     
-function findHostileBoarTarget(now) {
+function findNearestRecallableCompanion(maxDist = 3.0) {
+      let best = null;
+      let bestDist = Infinity;
       const playerPos = playerRoot.position;
+      for (const c of companions) {
+        if (!c || c.dead || !c.root) continue;
+        const d = Math.hypot(c.root.position.x - playerPos.x, c.root.position.z - playerPos.z);
+        if (d <= maxDist && d < bestDist) {
+          best = c;
+          bestDist = d;
+        }
+      }
+      return best ? { companion: best, dist: bestDist } : null;
+    }
+
+    function recallNearestCompanion() {
+      const found = findNearestRecallableCompanion(3.0);
+      if (!found) {
+        showToast("回収できる味方が近くにいません");
+        return;
+      }
+      const c = found.companion;
+      let ok = addInventoryCreature(c.species || "イノシシ", c.level || 1);
+      if (!ok) {
+        inventory.push({
+          id: makeId(),
+          species: c.species || "イノシシ",
+          level: Math.max(1, Math.floor(c.level || 1)),
+          capturedAt: Date.now()
+        });
+        saveInventory();
+        renderInventoryModal();
+        ok = true;
+      }
+      c.dead = true;
+      removeCompanionTag(c);
+      if (c.root?.parent) c.root.parent.remove(c.root);
+      disposeObject3D(c.root);
+      c.root = null;
+      for (const data of activeBoars.values()) {
+        if (data.targetType === "companion" && data.targetId === c.id) clearBoarHateTarget(data);
+      }
+      const index = companions.findIndex((item) => item.id === c.id);
+      if (index >= 0) companions.splice(index, 1);
+      showToast(`${c.species} Lv.${c.level} を回収しました`);
+      setStatus(`${c.species} Lv.${c.level} を回収`);
+      updateRecallActionUI();
+    }
+
+    function findHostileBoarTarget(now, companion = null) {
+      if (companion?.targetBoarId) {
+        const locked = findBoarById(companion.targetBoarId);
+        if (locked && !locked.dead && locked.activeObject?.root) return locked;
+        companion.targetBoarId = null;
+      }
+
+      const playerPos = companion?.root?.position || playerRoot.position;
       let best = null;
       let bestDist = Infinity;
 
       for (const data of activeBoars.values()) {
-        if (data.dead || !data.activeObject) continue;
-        if ((data.hostileUntil || 0) <= now) continue;
+        if (!data || data.dead || !data.activeObject?.root) continue;
+        const lockedOnCompanion = companion && data.targetType === "companion" && data.targetId === companion.id;
+        const hostileToPlayer = data.targetType === "player";
+        const generallyHostile = !companion && data.targetType === "companion";
+        if (!lockedOnCompanion && !hostileToPlayer && !generallyHostile) continue;
         const pos = data.activeObject.root.position;
         const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
         if (d < bestDist) {
@@ -2537,6 +2595,7 @@ function findHostileBoarTarget(now) {
           best = data;
         }
       }
+      if (companion && best) companion.targetBoarId = best.id;
       return best;
     }
 
@@ -2620,7 +2679,7 @@ function findHostileBoarTarget(now) {
       const playerPos = playerRoot.position;
       const forward = getCharacterForwardVector();
       const right = tmp.v5.set(forward.z, 0, -forward.x).normalize();
-      const hostile = findHostileBoarTarget(now);
+
 
       for (let i = companions.length - 1; i >= 0; i--) {
         const c = companions[i];
@@ -2669,8 +2728,8 @@ function findHostileBoarTarget(now) {
           continue;
         }
 
-        let target = hostile || null;
-        if (target && (target.dead || !target.activeObject)) target = null;
+        let target = findHostileBoarTarget(now, c);
+        if (target && (target.dead || !target.activeObject?.root)) target = null;
 
         if (target) {
           const targetPos = target.activeObject.root.position;
@@ -2682,8 +2741,17 @@ function findHostileBoarTarget(now) {
             const yaw = Math.atan2(dir.x, dir.z);
             c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.5 * delta));
 
-            if (dist <= c.attackRange && c.attackCooldown <= 0) {
+            const desiredStop = config.combatStopDistance;
+            if (dist < desiredStop * 0.95) {
+              const push = Math.min(c.followSpeed * delta, desiredStop - dist);
+              moveWithStrictCollision(c.root.position, -dir.x * push, -dir.z * push, 0.62);
+              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+            } else if (dist <= c.attackRange && c.attackCooldown <= 0) {
               startCompanionAttack(c, target, now);
+                        } else if (dist > desiredStop) {
+              const step = Math.min(c.followSpeed * 1.65 * delta, Math.max(0, dist - desiredStop));
+              moveWithStrictCollision(c.root.position, dir.x * step, dir.z * step, 0.62);
+              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
             } else {
               moveWithStrictCollision(c.root.position, dir.x * c.followSpeed * 1.65 * delta, dir.z * c.followSpeed * 1.65 * delta, 0.62);
               c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
