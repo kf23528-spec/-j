@@ -2546,18 +2546,18 @@ function findHostileBoarTarget(now) {
           const lunge = Math.sin(progress * Math.PI);
 
           const target = findBoarById(c.attackTargetId);
-          let dir = c.attackDir.clone();
+                    let dir = c.attackDir;
 
-          if (target && !target.dead) {
+          if (target && !target.dead && target.activeObject?.root) {
             const targetPos = target.activeObject.root.position;
-            const nowDir = new THREE.Vector3(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z);
+            const nowDir = tmp.v1.set(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z);
             if (nowDir.lengthSq() > 1e-8) {
               nowDir.normalize();
               dir = nowDir;
             }
           }
 
-          c.root.position.copy(c.attackStartPos).add(dir.clone().multiplyScalar(lunge * c.attackLunge));
+          c.root.position.copy(c.attackStartPos).add(tmp.v2.copy(dir).multiplyScalar(lunge * c.attackLunge));
           c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift + Math.sin(progress * Math.PI) * 0.15;
           c.root.rotation.y = Math.atan2(dir.x, dir.z);
 
@@ -2581,12 +2581,11 @@ function findHostileBoarTarget(now) {
 
         if (target) {
           const targetPos = target.activeObject.root.position;
-          const toTarget = targetPos.clone().sub(c.root.position);
-          toTarget.y = 0;
-                    const dist = toTarget.length();
+          const toTarget = tmp.v1.set(targetPos.x - c.root.position.x, 0, targetPos.z - c.root.position.z);
+          const dist = toTarget.length();
 
           if (dist > 0.001) {
-            const dir = toTarget.clone().normalize();
+            const dir = tmp.v2.copy(toTarget).normalize();
             const yaw = Math.atan2(dir.x, dir.z);
             c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.5 * delta));
 
@@ -2602,16 +2601,16 @@ function findHostileBoarTarget(now) {
           const lane = Math.floor(slotIndex / 2);
           const side = slotIndex % 2 === 0 ? -1 : 1;
 
-          const desired = playerPos.clone()
-            .add(forward.clone().multiplyScalar(-(2.5 + lane * 0.45)))
-            .add(right.clone().multiplyScalar(side * (1.25 + lane * 0.72)));
+          const desired = tmp.v1.copy(playerPos)
+            .add(tmp.v2.copy(forward).multiplyScalar(-(2.5 + lane * 0.45)))
+            .add(tmp.v3.copy(right).multiplyScalar(side * (1.25 + lane * 0.72)));
 
-          const toSlot = desired.sub(c.root.position);
+          const toSlot = tmp.v4.copy(desired).sub(c.root.position);
           toSlot.y = 0;
           const dist = toSlot.length();
 
           if (dist > 0.12) {
-            const dir = toSlot.clone().normalize();
+            const dir = tmp.v2.copy(toSlot).normalize();
             const yaw = Math.atan2(dir.x, dir.z);
             c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.0 * delta));
 
@@ -2627,9 +2626,13 @@ function findHostileBoarTarget(now) {
     }
 
     function updateInactiveBoarWander(delta) {
-      const allRiverRects = riverData.map(getRiverCollisionRect);
-      for (const data of boarData) {
-        if (data.dead || data.activeObject) continue;
+      if (!boarData.length) return;
+      const state = streamState.inactiveBoar;
+      const budget = Math.max(1, Math.ceil(boarData.length / 20));
+      for (let i = 0; i < budget; i++) {
+        const data = boarData[state.cursor % boarData.length];
+        state.cursor = (state.cursor + 1) % boarData.length;
+        if (!data || data.dead || data.activeObject) continue;
         data.wanderTimer -= delta;
         if (data.wanderTimer <= 0) {
           data.wanderYaw = Math.random() * Math.PI * 2;
@@ -2638,42 +2641,38 @@ function findHostileBoarTarget(now) {
 
         const dx = Math.cos(data.wanderYaw) * data.moveSpeed * delta;
         const dz = Math.sin(data.wanderYaw) * data.moveSpeed * delta;
-        const nx = clamp(data.x + dx, -WORLD_HALF + 4, WORLD_HALF - 4);
-        const nz = clamp(data.z + dz, -WORLD_HALF + 4, WORLD_HALF - 4);
-        if (collidesWithRiverRects(nx, nz, data.collisionRadius || 0.7, allRiverRects)) {
-          randomizeBoarAvoidance(data, true);
-        } else {
-          data.x = nx;
-          data.z = nz;
-          data.rotY = data.wanderYaw;
-        }
+        data.x = clamp(data.x + dx, -WORLD_HALF + 4, WORLD_HALF - 4);
+        data.z = clamp(data.z + dz, -WORLD_HALF + 4, WORLD_HALF - 4);
+        data.rotY = data.wanderYaw;
       }
     }
 
     function updateWildBoars(delta, now) {
-      const playerPos = playerRoot.position;
-
       for (const data of activeBoars.values()) {
         if (data.dead || !data.activeObject) continue;
-
         const o = data.activeObject;
+        if (!o.root) continue;
         const pos = o.root.position;
         pos.y = getTerrainHeight(pos.x, pos.z) + (data.terrainLift || 0);
-        const dist = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
 
-        if (dist <= data.aggroRange) {
-          data.state = "chase";
-          data.hostileUntil = now + 4500;
-        } else {
-          data.state = "move";
+        let targetInfo = getBoarTarget(data);
+        if (!targetInfo || (data.hostileUntil || 0) <= now) {
+          clearBoarHateTarget(data);
+          targetInfo = null;
         }
 
-        if (data.state === "chase") {
-          const dir = tmp.v1.set(playerPos.x - pos.x, 0, playerPos.z - pos.z);
+        if (targetInfo) {
+          data.state = "chase";
+          const targetPos = targetInfo.position;
+          const dx = targetPos.x - pos.x;
+          const dz = targetPos.z - pos.z;
+          const distSq = dx * dx + dz * dz;
+          const dist = Math.sqrt(distSq);
+          const dir = tmp.v1.set(dx, 0, dz);
           if (dir.lengthSq() > 1e-8) dir.normalize();
 
           if (dist > data.attackRange * 0.95) {
-            const speed = data.moveSpeed * 1.15;
+            const speed = data.moveSpeed * 1.25;
             const moved = moveWithStrictCollision(o.root, dir.x * speed * delta, dir.z * speed * delta, data.collisionRadius || 0.7);
             if (!moved) randomizeBoarAvoidance(data, true);
           }
@@ -2681,9 +2680,14 @@ function findHostileBoarTarget(now) {
           const targetYaw = Math.atan2(dir.x, dir.z);
           o.root.rotation.y = THREE.MathUtils.lerp(o.root.rotation.y, targetYaw, 1 - Math.exp(-8 * delta));
 
-          if (dist <= data.attackRange) {
-            data.hostileUntil = now + 5000;
-            takePlayerDamage(data.atkDps * delta);
+          if (dist <= data.attackRange && now >= (data.nextAttackAt || 0)) {
+            data.nextAttackAt = now + config.combatInterval * 1000;
+            data.hostileUntil = now + 9000;
+            if (targetInfo.type === "player") {
+              takePlayerDamage(data.atkDps);
+            } else if (targetInfo.type === "companion") {
+              damageCompanion(targetInfo.entity, data.atkDps);
+            }
           }
         } else {
           data.wanderTimer -= delta;
@@ -2692,7 +2696,7 @@ function findHostileBoarTarget(now) {
             data.wanderTimer = rand(1.2, 3.2);
           }
 
-          const dir = new THREE.Vector3(Math.cos(data.wanderYaw), 0, Math.sin(data.wanderYaw));
+          const dir = tmp.v1.set(Math.cos(data.wanderYaw), 0, Math.sin(data.wanderYaw));
           const moved = moveWithStrictCollision(o.root, dir.x * data.moveSpeed * delta, dir.z * data.moveSpeed * delta, data.collisionRadius || 0.7);
           if (!moved) randomizeBoarAvoidance(data, true);
 
@@ -2720,7 +2724,9 @@ function findHostileBoarTarget(now) {
 
       for (const data of activeBoars.values()) {
         if (data.dead || !data.activeObject) continue;
-        const pos = data.activeObject.root.position;
+        const root = data.activeObject.root;
+        if (!root) continue;
+        const pos = root.position;
         tmp.v2.set(pos.x, pos.y, pos.z);
         tmp.v3.copy(tmp.v2).sub(playerPos);
         tmp.v3.y = 0;
@@ -2728,11 +2734,12 @@ function findHostileBoarTarget(now) {
         const dist = tmp.v3.length();
         if (dist > config.attackRange) continue;
 
-        const dir = tmp.v3.clone().normalize();
-        if (forward.dot(dir) < config.attackConeDot) continue;
+        tmp.v4.copy(tmp.v3);
+        if (tmp.v4.lengthSq() > 1e-8) tmp.v4.normalize();
+        if (forward.dot(tmp.v4) < config.attackConeDot) continue;
 
         data.hp -= damage;
-        data.hostileUntil = now + 4500;
+        setBoarHateTarget(data, "player", null, now);
         if (data.hp <= 0) {
           data.hp = 0;
           removeBoarAfterDeath(data, true);
@@ -2741,18 +2748,7 @@ function findHostileBoarTarget(now) {
     }
 
     function applyBoarDamageToPlayer(delta, now) {
-      if (gameOver || playerHp <= 0) return;
-      const playerPos = playerRoot.position;
-
-      for (const data of activeBoars.values()) {
-        if (data.dead || !data.activeObject) continue;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
-        if (d > data.attackRange) continue;
-        data.hostileUntil = now + 5000;
-        takePlayerDamage(data.atkDps * delta);
-        if (gameOver) return;
-      }
+      // 野生モンスターの単体反撃は updateWildBoars() で1.5秒間隔に集約し、二重ダメージを防ぐ。
     }
 
     function startAttack() {
@@ -2967,9 +2963,9 @@ function findHostileBoarTarget(now) {
           ctx.restore();
         }
 
-        for (const data of boarData) {
-          if (data.dead) continue;
-          const pos = data.activeObject ? data.activeObject.root.position : { x: data.x, z: data.z };
+        for (const data of activeBoars.values()) {
+          if (data.dead || !data.activeObject?.root) continue;
+          const pos = data.activeObject.root.position;
           const dx = pos.x - player.x;
           const dz = pos.z - player.z;
           if (dx * dx + dz * dz > range * range) continue;
@@ -3108,40 +3104,78 @@ function findHostileBoarTarget(now) {
       // placeholder for future expansion
     }
 
-    function syncStream(masterArray, spawnFn, despawnFn, now) {
-      const px = playerRoot.position.x;
-      const pz = playerRoot.position.z;
-      const r2 = ACTIVE_RADIUS_SQ;
+    function isWithinActiveRadiusXZ(x, z) {
+      const dx = x - playerRoot.position.x;
+      const dz = z - playerRoot.position.z;
+      return (dx * dx + dz * dz) <= ACTIVE_RADIUS_SQ;
+    }
 
-      for (const data of masterArray) {
+    function despawnActiveOutsideRadius(activeMap, despawnFn, now) {
+      for (const data of activeMap.values()) {
+        const root = data.activeObject?.root;
+        if (!root) continue;
+        if (!isWithinActiveRadiusXZ(root.position.x, root.position.z)) {
+          despawnFn(data, now);
+        }
+      }
+    }
+
+    function despawnStrictOutOfRange(now) {
+      despawnActiveOutsideRadius(activeTrees, despawnTree, now);
+      despawnActiveOutsideRadius(activeHerbs, despawnHerb, now);
+      despawnActiveOutsideRadius(activeRocks, despawnRock, now);
+      despawnActiveOutsideRadius(activeRivers, despawnRiver, now);
+      despawnActiveOutsideRadius(activeBoars, despawnBoarForStream, now);
+      for (let i = companions.length - 1; i >= 0; i--) {
+        const c = companions[i];
+        if (!c?.root) {
+          companions.splice(i, 1);
+          continue;
+        }
+        if (!isWithinActiveRadiusXZ(c.root.position.x, c.root.position.z)) {
+          killCompanion(c);
+          companions.splice(i, 1);
+        }
+      }
+    }
+
+    function syncStream(masterArray, spawnFn, despawnFn, now, state, budget, canSpawnFn = null) {
+      if (!masterArray.length || budget <= 0) return;
+      if (state.cursor >= masterArray.length) state.cursor = 0;
+
+      for (let i = 0; i < budget; i++) {
+        const data = masterArray[state.cursor];
+        state.cursor = (state.cursor + 1) % masterArray.length;
+        if (!data) continue;
+
         if (data.removed || data.dead) {
           if (data.activeObject) despawnFn(data, now);
           continue;
         }
 
-        const dx = data.x - px;
-        const dz = data.z - pz;
-        const within = (dx * dx) + (dz * dz) <= r2;
-
-        if (within) {
-          if (!data.activeObject && !data.isSpawning && now >= (data.spawnCooldownUntil || 0)) {
-            spawnFn(data, now);
-          }
-        } else {
-          if (data.activeObject && !data.isDespawning) {
-            despawnFn(data, now);
-          }
+        if (!data.activeObject && !data.isSpawning && now >= (data.spawnCooldownUntil || 0)) {
+          if (canSpawnFn && !canSpawnFn()) continue;
+          if (isWithinActiveRadiusXZ(data.x, data.z)) spawnFn(data, now);
         }
       }
     }
 
     function syncWorldEntities(now) {
-      syncStream(treeData, spawnTree, despawnTree, now);
-      syncStream(herbData, spawnHerb, despawnHerb, now);
-      syncStream(rockData, spawnRock, despawnRock, now);
-      syncStream(riverData, spawnRiver, despawnRiver, now);
-      syncStream(boarData, spawnBoar, despawnBoarForStream, now);
-    }
+      despawnStrictOutOfRange(now);
+      syncStream(treeData, spawnTree, despawnTree, now, streamState.tree, Math.max(1, Math.ceil(treeData.length / 20)));
+      syncStream(herbData, spawnHerb, despawnHerb, now, streamState.herb, Math.max(1, Math.ceil(herbData.length / 20)));
+      syncStream(rockData, spawnRock, despawnRock, now, streamState.rock, Math.max(1, Math.ceil(rockData.length / 20)));
+      syncStream(riverData, spawnRiver, despawnRiver, now, streamState.river, Math.max(1, Math.ceil(riverData.length / 20)));
+      syncStream(
+        boarData,
+        spawnBoar,
+        despawnBoarForStream,
+        now,
+        streamState.boar,
+        Math.max(1, Math.ceil(boarData.length / 20)),
+        () => activeBoars.size < MAX_ACTIVE_BOARS
+      );
+          }
 
     function updateHerbs(delta) {
       for (const data of activeHerbs.values()) {
@@ -3399,6 +3433,7 @@ function findHostileBoarTarget(now) {
     }
 
     function spawnStone(data, now = performance.now()) {
+      if (!rockTemplate) return;
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
@@ -3493,6 +3528,7 @@ function findHostileBoarTarget(now) {
       syncWorldEntities(now);
       refreshCollisionCircles();
       updateMovement(delta);
+      despawnStrictOutOfRange(now);
       updateAllActiveTerrainAlignment();
       updateCombat(delta, now);
       updateCamera(delta);
