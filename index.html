@@ -3577,13 +3577,9 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       }
     }
 
-    function syncStream(masterArray, spawnFn, despawnFn, now, state, budget, canSpawnFn = null) {
-      if (!masterArray.length || budget <= 0) return;
-      if (state.cursor >= masterArray.length) state.cursor = 0;
-
-      for (let i = 0; i < budget; i++) {
-        const data = masterArray[state.cursor];
-        state.cursor = (state.cursor + 1) % masterArray.length;
+    function syncGridStream(type, spawnFn, despawnFn, now, canSpawnFn = null) {
+      const nearby = getNearbyGridItems(type);
+      for (const data of nearby) {
         if (!data) continue;
 
         if (data.removed || data.dead) {
