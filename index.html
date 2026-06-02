@@ -3112,6 +3112,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         updateWildBoarAnimation(data, delta);
         data.x = o.root.position.x;
         data.z = o.root.position.z;
+        updateSpatialGridItem("boar", data);
         data.rotY = o.root.rotation.y;
       }
     }
@@ -3291,6 +3292,41 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       drawWorldMap(fullMapCanvas, "full");
     }
 
+    function getActiveSecretMonster() {
+      if (activeSecretMonsterId !== null) {
+        const secret = activeBoars.get(activeSecretMonsterId);
+        if (secret && !secret.dead && secret.activeObject?.root && secret.speciesKey === "secret") return secret;
+      }
+      for (const data of activeBoars.values()) {
+        if (data?.speciesKey === "secret" && !data.dead && data.activeObject?.root) {
+          activeSecretMonsterId = data.id;
+          return data;
+        }
+      }
+      activeSecretMonsterId = null;
+      return null;
+    }
+
+    function updateSecretWarningUI() {
+      const secret = getActiveSecretMonster();
+      if (!secret) {
+        secretWarningEl.classList.remove("show");
+        secretMarkerEl.classList.remove("show");
+        return;
+      }
+      secretWarningEl.classList.add("show");
+      const root = secret.activeObject.root;
+      const pos = tmp.v1.set(root.position.x, root.position.y + (secret.uiOffset || 2.0), root.position.z).project(camera);
+      if (pos.z <= -1 || pos.z >= 1) {
+        secretMarkerEl.classList.remove("show");
+        return;
+      }
+      const x = clamp((pos.x * 0.5 + 0.5) * window.innerWidth, 16, window.innerWidth - 16);
+      const y = clamp((-pos.y * 0.5 + 0.5) * window.innerHeight, 16, window.innerHeight - 16);
+      secretMarkerEl.style.transform = `translate(${x}px, ${y}px)`;
+      secretMarkerEl.classList.add("show");
+    }
+    
     function drawWorldMap(canvas, mode) {
       const ctx = canvas.getContext("2d");
       const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
