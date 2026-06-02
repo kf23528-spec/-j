@@ -2703,7 +2703,7 @@
       data.hostileUntil = Infinity;
       data.state = "chase";
       if (!Number.isFinite(data.nextAttackAt)) data.nextAttackAt = 0;
-    if (type === "companion") {
+      if (type === "companion") {
         const c = companions.find((item) => item && item.id === id && !item.dead && item.root);
         if (c) c.targetBoarId = data.id;
       }
