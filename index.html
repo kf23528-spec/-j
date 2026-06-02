@@ -1651,6 +1651,70 @@
       return boar;
     }
 
+    function createFallbackGorillaTemplate() {
+      const gorilla = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d2b29, roughness: 1.0 });
+      const chestMat = new THREE.MeshStandardMaterial({ color: 0x5a524b, roughness: 1.0 });
+
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.7, 1.25, 5, 10), bodyMat);
+      body.position.y = 1.15;
+      body.scale.set(1.15, 1.0, 0.82);
+      const chest = new THREE.Mesh(new THREE.SphereGeometry(0.54, 14, 12), chestMat);
+      chest.position.set(0, 1.35, 0.38);
+      chest.scale.set(1.15, 0.72, 0.28);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), bodyMat);
+      head.position.set(0, 2.15, 0.05);
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.34), chestMat);
+      snout.position.set(0, 2.03, 0.36);
+
+      const armGeo = new THREE.CapsuleGeometry(0.17, 1.15, 4, 8);
+      const armL = new THREE.Mesh(armGeo, bodyMat);
+      armL.position.set(-0.78, 1.05, 0.12);
+      armL.rotation.z = -0.28;
+      const armR = armL.clone();
+      armR.position.x = 0.78;
+      armR.rotation.z = 0.28;
+
+      const legGeo = new THREE.CapsuleGeometry(0.16, 0.74, 4, 8);
+      const legL = new THREE.Mesh(legGeo, bodyMat);
+      legL.position.set(-0.32, 0.38, 0);
+      const legR = legL.clone();
+      legR.position.x = 0.32;
+      gorilla.add(body, chest, head, snout, armL, armR, legL, legR);
+      gorilla.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      gorilla.userData.parts = { body, head, snout, ears: [], legs: [legL, legR, armL, armR] };
+      return gorilla;
+    }
+
+    function createFallbackSecretTemplate() {
+      const secret = new THREE.Group();
+      const coreMat = new THREE.MeshStandardMaterial({ color: 0x1d65ff, roughness: 0.32, metalness: 0.1, emissive: 0x082f88, emissiveIntensity: 0.6 });
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0x9fe8ff, roughness: 0.25, transparent: true, opacity: 0.72, emissive: 0x228cff, emissiveIntensity: 0.85 });
+      const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72, 1), coreMat);
+      core.position.y = 1.35;
+      const ring1 = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.045, 8, 36), ringMat);
+      ring1.position.y = 1.35;
+      ring1.rotation.x = Math.PI / 2;
+      const ring2 = ring1.clone();
+      ring2.rotation.set(0.9, 0.0, 0.4);
+      const base = new THREE.Mesh(new THREE.ConeGeometry(0.44, 0.9, 5), coreMat);
+      base.position.y = 0.48;
+      secret.add(core, ring1, ring2, base);
+      secret.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      secret.userData.parts = { body: core, head: core, snout: base, ears: [], legs: [] };
+      return secret;
+    }
+    
     function createFallbackHerbTemplate() {
       const herb = new THREE.Group();
       const stemMat = new THREE.MeshStandardMaterial({ color: 0x2f8f3e, roughness: 1.0 });
