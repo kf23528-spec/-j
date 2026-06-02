@@ -1844,6 +1844,7 @@
       for (const data of activeBoars.values()) updateBoarTag(data);
     }
 
+  
     function updateCompanionTag(companion) {
       if (!companion?.tag?.el || companion.dead || !companion.root) {
         if (companion?.tag?.el) companion.tag.el.style.opacity = "0";
