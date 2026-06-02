@@ -3410,14 +3410,14 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
           const x = cx + dx * scale;
           const y = cy + dz * scale;
-          ctx.fillStyle = "#ff5b5b";
+          ctx.fillStyle = data.speciesKey === "secret" ? "#208cff" : "#ff5b5b";
           ctx.beginPath();
-          ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+          ctx.arc(x, y, data.speciesKey === "secret" ? 7 : 4.5, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = "#fff";
           ctx.font = "10px system-ui, sans-serif";
-          ctx.fillText("M", x - 3, y - 7);
+          ctx.fillText(data.speciesKey === "secret" ? "S" : "M", x - 3, y - 7);
         }
 
         const forward = getCharacterForwardVector();
