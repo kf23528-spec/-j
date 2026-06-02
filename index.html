@@ -2505,7 +2505,8 @@
       const def = getMonsterDefinition(speciesKey || species);
       inventory.push({
         id: makeId(),
-        species,
+        species: def.name,
+        speciesKey: def.key,
         level: Math.max(1, Math.floor(level)),
         capturedAt: Date.now()
       });
@@ -2543,8 +2544,8 @@
 
       const found = findNearestBoar(4.5);
       if (!found) {
-        showToast("近くにイノシシがいない！");
-        setStatus("近くにイノシシがいない");
+        showToast("近くにモンスターがいない！");
+        setStatus("近くにモンスターがいない");
         return;
       }
 
@@ -2555,15 +2556,15 @@
         return;
       }
 
-      const ok = addInventoryCreature("イノシシ", boar.level);
+      const ok = addInventoryCreature(boar.speciesName || "猪", boar.level, boar.speciesKey);
       if (!ok) {
         showToast("かばんがいっぱい！");
         setStatus("かばんがいっぱい");
         return;
       }
 
-      showToast(`イノシシ Lv.${boar.level} を捕獲！`);
-      setStatus(`イノシシ Lv.${boar.level} を捕獲`);
+      showToast(`${boar.speciesName || "モンスター"} Lv.${boar.level} を捕獲！`);
+      setStatus(`${boar.speciesName || "モンスター"} Lv.${boar.level} を捕獲`);
       removeBoarAfterDeath(boar, true);
     }
 
@@ -2610,6 +2611,7 @@
       if (data.activeObject?.root) disposeObject3D(data.activeObject.root);
       data.activeObject = null;
       data.removed = true;
+      removeFromSpatialGrid("herb", data);
       activeHerbs.delete(data.id);
     }
 
