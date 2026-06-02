@@ -2463,7 +2463,8 @@
         id: makeId(),
         root,
         parts,
-        species: item.species,
+        species: speciesDef.name,
+        speciesKey: speciesDef.key,
         level: item.level,
         hpMax: stats.hpMax * config.companionHpMultiplier,
         hp: stats.hpMax * config.companionHpMultiplier,
@@ -2499,8 +2500,9 @@
       scene.add(root);
     }
 
-    function addInventoryCreature(species, level) {
+    function addInventoryCreature(species, level, speciesKey = null) {
       if (inventory.length >= INVENTORY_LIMIT) return false;
+      const def = getMonsterDefinition(speciesKey || species);
       inventory.push({
         id: makeId(),
         species,
