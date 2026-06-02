@@ -3040,6 +3040,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         data.x = clamp(data.x + dx, -WORLD_HALF + 4, WORLD_HALF - 4);
         data.z = clamp(data.z + dz, -WORLD_HALF + 4, WORLD_HALF - 4);
         data.rotY = data.wanderYaw;
+        updateSpatialGridItem("boar", data);
       }
     }
 
