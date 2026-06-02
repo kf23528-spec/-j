@@ -3962,6 +3962,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       updateCamera(delta);
       updateBoarTags();
       updateCompanionTags();
+      updateSecretWarningUI();
       updateMiniMap();
       if (fullMapModal.classList.contains("open")) updateFullMap();
       renderer.render(scene, camera);
@@ -3973,9 +3974,11 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     async function loadTemplates() {
-      const [treeGLTF, boarGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
+      const [treeGLTF, boarGLTF, gorillaGLTF, secretGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
         loadGLTFWithFallback(TREE_URLS, createFallbackTreeTemplate),
         loadGLTFWithFallback(BOAR_URLS, createFallbackBoarTemplate),
+        loadGLTFWithFallback(GORILLA_URLS, createFallbackGorillaTemplate),
+        loadGLTFWithFallback(SECRET_URLS, createFallbackSecretTemplate),
         loadGLTFWithFallback(HERB_URLS, createFallbackHerbTemplate),
         loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate),
         loadGLTFWithFallback(RIVER_URLS, createFallbackRiverTemplate)
@@ -3983,12 +3986,22 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
       treeTemplate = treeGLTF.scene;
       boarTemplate = boarGLTF.scene;
+      gorillaTemplate = gorillaGLTF.scene;
+      secretTemplate = secretGLTF.scene;
       herbTemplate = herbGLTF.scene;
       rockTemplate = rockGLTF.scene;
       riverTemplate = riverGLTF.scene;
-
+      monsterTemplates.set("boar", boarTemplate);
+      monsterTemplates.set("gorilla", gorillaTemplate);
+      monsterTemplates.set("secret", secretTemplate);
+      
       treeUsesFallback = treeGLTF.fallback;
       boarUsesFallback = boarGLTF.fallback;
+      gorillaUsesFallback = gorillaGLTF.fallback;
+      secretUsesFallback = secretGLTF.fallback;
+      monsterFallbackFlags.set("boar", boarUsesFallback);
+      monsterFallbackFlags.set("gorilla", gorillaUsesFallback);
+      monsterFallbackFlags.set("secret", secretUsesFallback);
       herbUsesFallback = herbGLTF.fallback;
       rockUsesFallback = rockGLTF.fallback;
       riverUsesFallback = riverGLTF.fallback;
