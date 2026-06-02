@@ -1844,7 +1844,6 @@
       for (const data of activeBoars.values()) updateBoarTag(data);
     }
 
-  
     function updateCompanionTag(companion) {
       if (!companion?.tag?.el || companion.dead || !companion.root) {
         if (companion?.tag?.el) companion.tag.el.style.opacity = "0";
@@ -2320,7 +2319,9 @@
     }
 
     function spawnBoar(data) {
-      if (!boarTemplate) return;
+      const speciesDef = getMonsterDefinition(data?.speciesKey);
+      const template = monsterTemplates.get(speciesDef.key) || boarTemplate;
+      if (!template) return;
       if (data.activeObject || data.isSpawning || data.dead) return;
       data.isSpawning = true;
       try {
