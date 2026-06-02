@@ -2420,11 +2420,13 @@
       data.nextAttackAt = 0;
       data.activeObject = null;
       data.spawnCooldownUntil = 0;
+      addToSpatialGrid("boar", data);
     }
 
     function spawnCompanionFromInventoryItem(item) {
-      const stats = getStatsByLevel(item.level);
-      const scaleBoost = clamp(0.95 + Math.log2(Math.max(1, item.level)) * 0.16, 0.95, 2.6);
+      const speciesDef = getMonsterDefinition(item.speciesKey || item.species);
+      const stats = getStatsByLevel(item.level, speciesDef.key);
+      const scaleBoost = clamp(0.95 + Math.log2(Math.max(1, item.level)) * 0.16, 0.95, speciesDef.key === "secret" ? 3.0 : 2.6);
       let root;
       let parts = null;
 
