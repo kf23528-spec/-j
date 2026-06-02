@@ -2429,13 +2429,14 @@
       const scaleBoost = clamp(0.95 + Math.log2(Math.max(1, item.level)) * 0.16, 0.95, speciesDef.key === "secret" ? 3.0 : 2.6);
       let root;
       let parts = null;
-
-      if (!boarUsesFallback && boarTemplate) {
-        root = deepCloneUnique(boarTemplate);
+      const template = monsterTemplates.get(speciesDef.key) || boarTemplate;
+      
+      if (template && !monsterFallbackFlags.get(speciesDef.key)) {
+        root = deepCloneUnique(template);
         fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
         parts = root.userData.parts || null;
       } else {
-        root = createFallbackBoarTemplate();
+        root = speciesDef.fallbackFactory();
         fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
         parts = root.userData.parts || null;
       }
