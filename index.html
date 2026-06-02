@@ -3596,20 +3596,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function syncWorldEntities(now) {
       despawnStrictOutOfRange(now);
-      syncStream(treeData, spawnTree, despawnTree, now, streamState.tree, Math.max(1, Math.ceil(treeData.length / 20)));
-      syncStream(herbData, spawnHerb, despawnHerb, now, streamState.herb, Math.max(1, Math.ceil(herbData.length / 20)));
-      syncStream(rockData, spawnRock, despawnRock, now, streamState.rock, Math.max(1, Math.ceil(rockData.length / 20)));
-      syncStream(riverData, spawnRiver, despawnRiver, now, streamState.river, Math.max(1, Math.ceil(riverData.length / 20)));
-      syncStream(
-        boarData,
-        spawnBoar,
-        despawnBoarForStream,
-        now,
-        streamState.boar,
-        Math.max(1, Math.ceil(boarData.length / 20)),
-        () => activeBoars.size < MAX_ACTIVE_BOARS
-      );
-          }
+      syncGridStream("tree", spawnTree, despawnTree, now);
+      syncGridStream("herb", spawnHerb, despawnHerb, now);
+      syncGridStream("rock", spawnRock, despawnRock, now);
+      syncGridStream("river", spawnRiver, despawnRiver, now);
+      syncGridStream("boar", spawnBoar, despawnBoarForStream, now, () => activeBoars.size < MAX_ACTIVE_BOARS);
+    }
 
     function updateHerbs(delta) {
       for (const data of activeHerbs.values()) {
@@ -3623,7 +3615,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function updateRocks(delta) {
       for (const data of activeRocks.values()) {
-        if (!data.activeObject) continue;
+        if (!data?.activeObject?.root) continue;
         const root = data.activeObject.root;
         root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
       }
