@@ -152,6 +152,44 @@
       transition: width 0.08s linear;
     }
 
+    #secretWarning {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 65;
+      transform: translateX(-50%);
+      display: none;
+      max-width: min(92vw, 760px);
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: rgba(20, 0, 0, 0.82);
+      color: #ff3030;
+      font-size: 16px;
+      font-weight: 1000;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(255,0,0,0.55);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.30);
+      pointer-events: none;
+    }
+    #secretWarning.show { display: block; }
+    #secretMarker {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 66;
+      display: none;
+      width: 22px;
+      height: 22px;
+      margin-left: -11px;
+      margin-top: -11px;
+      border-radius: 50%;
+      background: #208cff;
+      border: 3px solid rgba(255,255,255,0.96);
+      box-shadow: 0 0 18px rgba(32,140,255,0.95), 0 0 36px rgba(32,140,255,0.45);
+      pointer-events: none;
+    }
+    #secretMarker.show { display: block; }
+    
     #miniMapWrap {
       position: fixed;
       right: 14px;
@@ -469,7 +507,9 @@
 <body>
   <div id="loading">読み込み中…</div>
   <div id="toast"></div>
-
+  <div id="secretWarning">【警告】伝説のシークレットモンスターが近くに出現しました！</div>
+  <div id="secretMarker" aria-hidden="true"></div>
+  
   <div id="ui">
     <div id="title">Forest TPS Open World</div>
 
