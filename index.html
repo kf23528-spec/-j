@@ -2325,8 +2325,8 @@
       if (data.activeObject || data.isSpawning || data.dead) return;
       data.isSpawning = true;
       try {
-        const levelVisualScale = clamp(0.95 + Math.log2(Math.max(1, data.level)) * 0.16, 0.95, 2.6);
-        const root = deepCloneUnique(boarTemplate);
+        const levelVisualScale = clamp(0.95 + Math.log2(Math.max(1, data.level)) * 0.16, 0.95, speciesDef.key === "secret" ? 3.0 : 2.6);
+        const root = deepCloneUnique(template);
         fitAndGround(root, BOAR_TARGET_HEIGHT * data.scale * levelVisualScale, BOAR_GROUND_LIFT);
         data.terrainLift = root.position.y;
         placeOnTerrain(root, data.x, data.z, data.terrainLift);
@@ -2339,7 +2339,7 @@
           }
         });
 
-        const tag = createBoarTag(data.level, data.hpMax, data.hpMax);
+        const tag = createBoarTag(data.level, data.hpMax, data.hpMax, { label: `${speciesDef.name} Lv.${data.level}` });
         const box = new THREE.Box3().setFromObject(root);
         const size = box.getSize(new THREE.Vector3());
         data.uiOffset = Math.max(1.6, size.y * 1.15);
@@ -2347,7 +2347,8 @@
         data.activeObject = { root, tag, parts };
         scene.add(root);
         activeBoars.set(data.id, data);
-      } finally {
+        if (speciesDef.key === "secret") activeSecretMonsterId = data.id;
+     } finally {
         data.isSpawning = false;
       }
     }
