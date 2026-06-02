@@ -1323,23 +1323,6 @@
       const range = ranges[row][col];
       return { min: range[0], max: range[1], row, col };
     }
-    
-    function getBoarLevelForPosition(x, z) {
-      const range = getBoarLevelRangeForPosition(x, z);
-      return range.min + Math.floor(Math.random() * (range.max - range.min + 1));
-    }
-    
-    function getBoarLevelRangeForPosition(x, z) {
-      const col = x < -250 ? 0 : (x < 250 ? 1 : 2);
-      const row = z < -250 ? 0 : (z < 250 ? 1 : 2);
-      const ranges = [
-        [[50, 80], [20, 40], [70, 95]],
-        [[25, 50], [1, 10], [15, 30]],
-        [[100, 999], [10, 20], [80, 125]]
-      ];
-      const range = ranges[row][col];
-      return { min: range[0], max: range[1], row, col };
-    }
 
     function getBoarLevelForPosition(x, z) {
       const range = getBoarLevelRangeForPosition(x, z);
@@ -1353,6 +1336,71 @@
       };
     }
 
+    function gridCoord(v) {
+      return Math.floor((safeNum(v, 0) + WORLD_HALF) / GRID_CELL_SIZE);
+    }
+
+    function gridKeyForXZ(x, z) {
+      return `${gridCoord(x)},${gridCoord(z)}`;
+    }
+
+    function clearSpatialGrids() {
+      for (const grid of Object.values(spatialGrids)) grid.clear();
+    }
+
+    function addToSpatialGrid(type, data) {
+      const grid = spatialGrids[type];
+      if (!grid || !data) return;
+      const key = gridKeyForXZ(data.x, data.z);
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(data);
+      data.gridKey = key;
+    }
+
+    function removeFromSpatialGrid(type, data) {
+      const grid = spatialGrids[type];
+      if (!grid || !data?.gridKey) return;
+      const bucket = grid.get(data.gridKey);
+      if (bucket) {
+        const index = bucket.indexOf(data);
+        if (index >= 0) bucket.splice(index, 1);
+        if (!bucket.length) grid.delete(data.gridKey);
+      }
+      data.gridKey = null;
+    }
+
+    function updateSpatialGridItem(type, data) {
+      if (!data) return;
+      const nextKey = gridKeyForXZ(data.x, data.z);
+      if (data.gridKey === nextKey) return;
+      removeFromSpatialGrid(type, data);
+      addToSpatialGrid(type, data);
+    }
+
+    function rebuildSpatialGrids() {
+      clearSpatialGrids();
+      for (const data of treeData) addToSpatialGrid("tree", data);
+      for (const data of herbData) addToSpatialGrid("herb", data);
+      for (const data of rockData) addToSpatialGrid("rock", data);
+      for (const data of riverData) addToSpatialGrid("river", data);
+      for (const data of boarData) addToSpatialGrid("boar", data);
+    }
+
+    function getNearbyGridItems(type, x = playerRoot.position.x, z = playerRoot.position.z) {
+      const grid = spatialGrids[type];
+      if (!grid) return [];
+      const cx = gridCoord(x);
+      const cz = gridCoord(z);
+      const result = [];
+      for (let gz = cz - 1; gz <= cz + 1; gz++) {
+        for (let gx = cx - 1; gx <= cx + 1; gx++) {
+          const bucket = grid.get(`${gx},${gz}`);
+          if (bucket?.length) result.push(...bucket);
+        }
+      }
+      return result;
+    }
+    
     function generateTreeData() {
       treeData.length = 0;
       while (treeData.length < TREE_COUNT) {
