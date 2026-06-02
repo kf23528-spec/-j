@@ -749,11 +749,17 @@
     let mixer = null;
     let treeTemplate = null;
     let boarTemplate = null;
+    let gorillaTemplate = null;
+    let secretTemplate = null;
+    const monsterTemplates = new Map();
+    const monsterFallbackFlags = new Map();
     let herbTemplate = null;
     let rockTemplate = null;
     let riverTemplate = null;
     let treeUsesFallback = false;
     let boarUsesFallback = false;
+    let gorillaUsesFallback = false;
+    let secretUsesFallback = false;
     let herbUsesFallback = false;
     let rockUsesFallback = false;
     let riverUsesFallback = false;
@@ -809,9 +815,9 @@
       boarMoveSpeed: 1.2,
       boarAggroRange: 18.0,
       boarAttackRange: 1.15,
-      combatStopDistance: 0.8,
+      combatStopDistance: 0.3,
       combatInterval: 1.5,
-      companionHpMultiplier: 0.8,
+      companionHpMultiplier: 0.9,
       companionAttackMultiplier: 0.9,
       
       herbHealAmount: 30,
@@ -867,6 +873,14 @@
     const activeRocks = new Map();
     const activeBoars = new Map();
     const activeRivers = new Map();
+    const spatialGrids = {
+      tree: new Map(),
+      herb: new Map(),
+      rock: new Map(),
+      river: new Map(),
+      boar: new Map()
+    };
+    let activeSecretMonsterId = null;
     const streamState = {
       tree: { cursor: 0 },
       herb: { cursor: 0 },
@@ -941,7 +955,8 @@
           if (!Number.isFinite(level)) continue;
           inventory.push({
             id: typeof item.id === "string" ? item.id : makeId(),
-            species: item.species,
+            species: getMonsterDefinition(item.speciesKey || item.species).name,
+            speciesKey: getMonsterDefinition(item.speciesKey || item.species).key,
             level: Math.max(1, Math.floor(level)),
             capturedAt: typeof item.capturedAt === "number" ? item.capturedAt : Date.now()
           });
@@ -1051,7 +1066,8 @@
     }
 
     function deepCloneUnique(root) {
-      const clone = root.clone(true);
+      if (!root) return new THREE.Group();
+      const clone = SkeletonUtils?.clone ? SkeletonUtils.clone(root) : root.clone(true);
       clone.traverse((obj) => {
         if (obj.isMesh) {
           if (obj.geometry) obj.geometry = obj.geometry.clone();
@@ -1268,15 +1284,51 @@
       return playerHp - before;
     }
 
-    function getStatsByLevel(level) {
+    function normalizeMonsterSpeciesKey(speciesOrKey) {
+      if (typeof speciesOrKey !== "string") return "boar";
+      const found = MONSTER_SPECIES_LIST.find((def) => def.key === speciesOrKey || def.name === speciesOrKey);
+      return found ? found.key : "boar";
+    }
+    
+    function getMonsterDefinition(speciesOrKey = "boar") {
+      return MONSTER_SPECIES[normalizeMonsterSpeciesKey(speciesOrKey)] || MONSTER_SPECIES.boar;
+    }
+    
+    function getRandomMonsterDefinition() {
+      const roll = Math.random();
+      if (roll < MONSTER_SPECIES.boar.probability) return MONSTER_SPECIES.boar;
+      if (roll < MONSTER_SPECIES.boar.probability + MONSTER_SPECIES.gorilla.probability) return MONSTER_SPECIES.gorilla;
+      return MONSTER_SPECIES.secret;
+    }
+    
+    function getStatsByLevel(level, speciesOrKey = "boar") {
+      const def = getMonsterDefinition(speciesOrKey);
       const lv = clamp(Math.floor(safeNum(level, 1)), config.boarLevelMin, config.boarLevelMax);
+      const scale = Math.pow(1.2, lv - 1);
       return {
         level: lv,
-        hpMax: config.boarBaseHp + lv * 10,
-        atkDps: config.boarBaseAttack + lv * 2
+        hpMax: def.baseHp * scale,
+        atkDps: def.baseAttack * scale
       };
     }
 
+    function getBoarLevelRangeForPosition(x, z) {
+      const col = x < -250 ? 0 : (x < 250 ? 1 : 2);
+      const row = z < -250 ? 0 : (z < 250 ? 1 : 2);
+      const ranges = [
+        [[50, 80], [20, 40], [70, 95]],
+        [[25, 50], [1, 10], [15, 30]],
+        [[100, 999], [10, 20], [80, 125]]
+      ];
+      const range = ranges[row][col];
+      return { min: range[0], max: range[1], row, col };
+    }
+    
+    function getBoarLevelForPosition(x, z) {
+      const range = getBoarLevelRangeForPosition(x, z);
+      return range.min + Math.floor(Math.random() * (range.max - range.min + 1));
+    }
+    
     function getBoarLevelRangeForPosition(x, z) {
       const col = x < -250 ? 0 : (x < 250 ? 1 : 2);
       const row = z < -250 ? 0 : (z < 250 ? 1 : 2);
