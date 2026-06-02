@@ -1497,10 +1497,13 @@
         const p = randomWorldPoint(20);
         const d = Math.hypot(p.x, p.z);
         if (d < 22) continue;
+        const speciesDef = getRandomMonsterDefinition();
         const level = getBoarLevelForPosition(p.x, p.z);
-        const stats = getStatsByLevel(level);
+        const stats = getStatsByLevel(level, speciesDef.key);
         boarData.push({
           id: nextEntityId++,
+          speciesKey: speciesDef.key,
+          speciesName: speciesDef.name,
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
