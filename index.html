@@ -2779,11 +2779,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         return;
       }
       const c = found.companion;
-      let ok = addInventoryCreature(c.species || "イノシシ", c.level || 1);
+      let ok = addInventoryCreature(c.species || "猪", c.level || 1, c.speciesKey);
       if (!ok) {
         inventory.push({
           id: makeId(),
-          species: c.species || "イノシシ",
+          species: getMonsterDefinition(c.speciesKey || c.species).name,
+          speciesKey: getMonsterDefinition(c.speciesKey || c.species).key,
           level: Math.max(1, Math.floor(c.level || 1)),
           capturedAt: Date.now()
         });
