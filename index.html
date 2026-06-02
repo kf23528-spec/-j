@@ -2363,6 +2363,7 @@
         disposeObject3D(o.root);
         data.activeObject = null;
         activeBoars.delete(data.id);
+        if (activeSecretMonsterId === data.id) activeSecretMonsterId = null;
         data.spawnCooldownUntil = now + 300;
       } finally {
         data.isDespawning = false;
@@ -2372,6 +2373,7 @@
     function removeBoarAfterDeath(data, shouldRespawn = true) {
       if (!data || data.dead) return;
       if (data.activeObject) despawnBoarForStream(data);
+      if (activeSecretMonsterId === data.id) activeSecretMonsterId = null;
       data.dead = true;
       if (shouldRespawn) scheduleBoarRespawn(data);
     }
@@ -2390,9 +2392,13 @@
     function respawnBoar(data) {
       if (!data) return;
       const p = randomWorldPoint(20);
+      const speciesDef = getRandomMonsterDefinition();
       const level = getBoarLevelForPosition(p.x, p.z);
-      const stats = getStatsByLevel(level);
+      const stats = getStatsByLevel(level, speciesDef.key);
+      removeFromSpatialGrid("boar", data);
       data.dead = false;
+      data.speciesKey = speciesDef.key;
+      data.speciesName = speciesDef.name;
       data.x = p.x;
       data.z = p.z;
       data.rotY = Math.random() * Math.PI * 2;
