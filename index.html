@@ -348,6 +348,14 @@
       -webkit-user-select: none;
       touch-action: none;
     }
+    #adminInteractBtn {
+      background: linear-gradient(180deg, #7d5cff, #5132c7);
+      display: none;
+    }
+    #rideBtn {
+      background: linear-gradient(180deg, #9b6a3a, #65401f);
+      display: none;
+    }
     #herbCollectBtn {
       background: linear-gradient(180deg, #69d66f, #239b3a);
       display: none;
@@ -454,6 +462,89 @@
     }
     #toast.show { opacity: 1; }
 
+    
+    
+    #upgradePanel {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      background: rgba(29,95,192,0.08);
+      border: 1px solid rgba(29,95,192,0.14);
+    }
+    #xpText {
+      font-size: 13px;
+      font-weight: 900;
+      color: #704400;
+      margin-bottom: 8px;
+    }
+    .upgradeGrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .upgradeBtn {
+      border: 0;
+      border-radius: 10px;
+      padding: 8px 6px;
+      background: linear-gradient(180deg, #ffe37a, #f0a51b);
+      color: #3b2600;
+      font-size: 11px;
+      font-weight: 1000;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(240,165,27,0.20);
+    }
+    .upgradeBtn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .upgradeCost { display: block; font-size: 10px; opacity: 0.78; margin-top: 2px; }
+    #adminCodeModal {
+      position: fixed;
+      inset: 0;
+      z-index: 75;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10,18,30,0.55);
+      backdrop-filter: blur(6px);
+      pointer-events: auto;
+    }
+    #adminCodeModal.open { display: flex; }
+    #adminCodePanel {
+      width: min(92vw, 330px);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.97);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.28);
+      padding: 18px;
+      color: #17233a;
+      text-align: center;
+    }
+    #adminCodeTitle { font-size: 18px; font-weight: 1000; margin-bottom: 8px; }
+    #adminCodeDisplay {
+      height: 44px;
+      line-height: 44px;
+      border-radius: 14px;
+      background: #ecf2ff;
+      border: 1px solid rgba(47,103,214,0.16);
+      font-size: 24px;
+      font-weight: 1000;
+      letter-spacing: 0.18em;
+      margin-bottom: 12px;
+    }
+    #adminKeypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .adminKey {
+      height: 48px;
+      border: 0;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #4e92ff, #2f67d6);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 1000;
+      cursor: pointer;
+    }
+    .adminKey.secondary { background: linear-gradient(180deg, #9aa8bd, #65758f); }
+    
     @media (max-width: 700px) {
       #ui {
         min-width: 0;
