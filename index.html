@@ -575,12 +575,21 @@
     import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 　　 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
+    
     const WALK_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
     const ATTACK_FBX_URL = "./Meshy_AI_biped_Animation_Attack_withSkin.fbx";
     const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
 
     const TREE_URLS = ["./tree.glb"];
     const BOAR_URLS = ["./boar.glb"];
+    const GORILLA_URLS = ["./gorira.glb"];
+    const SECRET_URLS = ["./seacret.glb"];
+    const MONSTER_SPECIES = {
+      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, probability: 0.6, fallbackFactory: createFallbackBoarTemplate },
+      gorilla: { key: "gorilla", name: "ゴリラ", urls: GORILLA_URLS, baseHp: 200, baseAttack: 10, probability: 0.399999, fallbackFactory: createFallbackGorillaTemplate },
+      secret: { key: "secret", name: "シークレット", urls: SECRET_URLS, baseHp: 1000, baseAttack: 50, probability: 0.000001, fallbackFactory: createFallbackSecretTemplate }
+    };
+    const MONSTER_SPECIES_LIST = [MONSTER_SPECIES.boar, MONSTER_SPECIES.gorilla, MONSTER_SPECIES.secret];
     const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
     const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
     const RIVER_URLS = ["./river.glb"];
@@ -592,7 +601,8 @@
     const WORLD_HALF = WORLD_SIZE / 2;
     const ACTIVE_RADIUS = 100;
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
-
+    const GRID_CELL_SIZE = 100;
+    
     const TREE_COUNT = 1000;
     const HERB_COUNT = 1500;
     const ROCK_COUNT = 500;
@@ -713,7 +723,9 @@
     const playerHpFill = document.getElementById("playerHpFill");
     const worldUI = document.getElementById("worldUI");
     const toastEl = document.getElementById("toast");
-
+    const secretWarningEl = document.getElementById("secretWarning");
+    const secretMarkerEl = document.getElementById("secretMarker");
+    
     const inventoryModal = document.getElementById("inventoryModal");
     const inventoryList = document.getElementById("inventoryList");
     const inventoryInfo = document.getElementById("inventoryInfo");
