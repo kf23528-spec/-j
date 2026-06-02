@@ -4078,7 +4078,8 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         generateRockData();
         generateRiverData();
         generateBoarData();
-
+        rebuildSpatialGrids();
+        
         await loadPlayerRig();
         await loadAnimations();
         await loadTemplates();
