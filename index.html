@@ -2421,6 +2421,11 @@
         return;
       }
 
+      if (ridingBoar) {
+        updateMountedMovement(delta);
+        return;
+      }
+      
       const input = getMoveInput();
 
       if (input.jump) requestJump();
@@ -2511,7 +2516,102 @@
       const found = findNearestRecallableCompanion(3.0);
       recallBtn.style.display = found ? "block" : "none";
     }
-      
+
+
+    function findNearestRideableBoar(maxDist = config.rideInteractRange) {
+      let best = null;
+      let bestDist = Infinity;
+      for (const data of activeBoars.values()) {
+        if (data.dead || data.speciesKey !== "boar" || !data.activeObject?.root) continue;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerRoot.position.x, pos.z - playerRoot.position.z);
+        if (d <= maxDist && d < bestDist) {
+          best = data;
+          bestDist = d;
+        }
+      }
+      return best ? { boar: best, dist: bestDist } : null;
+    }
+
+    function updateRideActionUI() {
+      if (ridingBoar) {
+        rideBtn.style.display = "block";
+        rideBtn.textContent = "降りる";
+        return;
+      }
+      const found = findNearestRideableBoar();
+      rideBtn.style.display = found ? "block" : "none";
+      rideBtn.textContent = "乗馬";
+    }
+
+    function dismountBoar() {
+      if (!ridingBoar) return;
+      const boar = ridingBoar;
+      const root = boar?.activeObject?.root;
+      ridingBoar = null;
+      if (visualRoot) visualRoot.visible = true;
+      const forward = getCharacterForwardVector();
+      if (root) {
+        playerRoot.position.x = clamp(root.position.x - forward.x * 1.4, -WORLD_HALF + 2, WORLD_HALF - 2);
+        playerRoot.position.z = clamp(root.position.z - forward.z * 1.4, -WORLD_HALF + 2, WORLD_HALF - 2);
+      }
+      updatePlayerTerrainAndJump(0);
+      showToast("猪から降りました");
+      updateRideActionUI();
+    }
+
+    function mountNearestBoar() {
+      if (gameOver) return;
+      if (ridingBoar) {
+        dismountBoar();
+        return;
+      }
+      const found = findNearestRideableBoar();
+      if (!found) {
+        showToast("近くに乗れる猪がいません");
+        return;
+      }
+      ridingBoar = found.boar;
+      clearBoarHateTarget(ridingBoar);
+      ridingBoar.hostileUntil = 0;
+      if (visualRoot) visualRoot.visible = false;
+      playerRoot.position.copy(ridingBoar.activeObject.root.position);
+      playerRoot.position.y = getTerrainHeight(playerRoot.position.x, playerRoot.position.z);
+      showToast("乗馬開始：移動速度 8m/s");
+      updateRideActionUI();
+    }
+
+    function updateMountedMovement(delta) {
+      if (!ridingBoar?.activeObject?.root || ridingBoar.dead) {
+        dismountBoar();
+        return;
+      }
+      const input = getMoveInput();
+      if (input.attack) startAttack();
+      const root = ridingBoar.activeObject.root;
+      const moving = input.magnitude > 0.001;
+      if (moving) {
+        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
+        if (moveDir.lengthSq() > 1e-8) {
+          const yaw = Math.atan2(moveDir.x, moveDir.z);
+          root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, yaw, 1 - Math.exp(-10 * delta));
+          const step = config.mountedSpeed * input.magnitude * delta;
+          moveWithStrictCollision(root.position, moveDir.x * step, moveDir.z * step, ridingBoar.collisionRadius || 0.7);
+          root.position.x = clamp(root.position.x, -WORLD_HALF + 4, WORLD_HALF - 4);
+          root.position.z = clamp(root.position.z, -WORLD_HALF + 4, WORLD_HALF - 4);
+        }
+      }
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (ridingBoar.terrainLift || 0);
+      updateWildBoarAnimation(ridingBoar, delta);
+      ridingBoar.x = root.position.x;
+      ridingBoar.z = root.position.z;
+      ridingBoar.rotY = root.rotation.y;
+      updateSpatialGridItem("boar", ridingBoar);
+      playerRoot.position.set(root.position.x, getTerrainHeight(root.position.x, root.position.z), root.position.z);
+      playerRoot.rotation.y = root.rotation.y;
+      setStatus(moving ? "乗馬中（8m/s）" : "乗馬中");
+    }
+    
       function applyEntityGrounding(data) {
       if (!data?.activeObject?.root) return;
       const root = data.activeObject.root;
