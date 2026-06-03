@@ -3392,6 +3392,8 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       setBoarHateTarget(target, "companion", companion.id, performance.now());
       target.hp -= companion.atkDps;
       if (target.hp <= 0) {
+        const root = target.activeObject?.root;
+        if (root) spawnXpDrop(root.position.x, root.position.z, target.level);
         target.hp = 0;
         removeBoarAfterDeath(target, true);
       }
@@ -3534,6 +3536,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function updateWildBoars(delta, now) {
       for (const data of activeBoars.values()) {
+        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const o = data.activeObject;
         if (!o.root) continue;
