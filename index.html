@@ -4550,6 +4550,22 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       });
     }
 
+    function bindZoomGuards() {
+      let lastTouchEnd = 0;
+      document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
+      document.addEventListener("gesturechange", (e) => e.preventDefault(), { passive: false });
+      document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: false });
+      document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
+      document.addEventListener("touchmove", (e) => {
+        if (e.scale !== 1 || e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+      document.addEventListener("touchend", (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 350) e.preventDefault();
+        lastTouchEnd = now;
+      }, { passive: false });
+    }
+    
     function bindKeyboardControls() {
       window.addEventListener("keydown", (e) => {
         if (["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyJ","KeyK"].includes(e.code)) {
@@ -4580,6 +4596,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 　　　　recallBtn.addEventListener("click", recallNearestCompanion);
       
       inventoryBtn.addEventListener("click", openInventoryModal);
+      cleanupSavesBtn.addEventListener("click", () => {
+        const removed = cleanupAllInventoryHistory();
+        pruneInventoryForStorage();
+        renderInventoryModal();
+        showToast(`古いセーブ履歴を${removed}件削除しました`);
+      });
       closeInventoryBtn.addEventListener("click", closeInventoryModal);
       inventoryModal.addEventListener("click", (e) => {
         if (e.target === inventoryModal) closeInventoryModal();
