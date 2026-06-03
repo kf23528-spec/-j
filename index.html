@@ -1489,16 +1489,33 @@
       return MONSTER_SPECIES.secret;
     }
     
-    function getStatsByLevel(level, speciesOrKey = "boar") {
+    function rollMonsterIv() {
+      // 指数分布で低い個体値を多くし、平均が10付近、100が極めて稀になるようにする。
+      const u = Math.max(1e-8, Math.random());
+      return clamp(1 + Math.floor(-Math.log(u) * 9.5), 1, 100);
+    }
+
+    function applyIvToStats(stats, iv) {
+      const multiplier = iv >= 100 ? 2 : 1;
+      return {
+        ...stats,
+        iv,
+        hpMax: stats.hpMax * multiplier,
+        atkDps: stats.atkDps * multiplier
+      };
+    }
+
+    function getStatsByLevel(level, speciesOrKey = "boar", iv = null) {
       const def = getMonsterDefinition(speciesOrKey);
       const lv = clamp(Math.floor(safeNum(level, 1)), config.boarLevelMin, config.boarLevelMax);
       const scale = Math.pow(1.2, lv - 1);
-      return {
+      const baseStats ={
         level: lv,
         hpMax: def.baseHp * scale,
         atkDps: def.baseAttack * scale
       };
-    }
+      return iv === null ? baseStats : applyIvToStats(baseStats, iv);
+   }
 
     function getBoarLevelRangeForPosition(x, z) {
       const col = x < -250 ? 0 : (x < 250 ? 1 : 2);
