@@ -3617,6 +3617,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       const now = performance.now();
 
       for (const data of activeBoars.values()) {
+        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const root = data.activeObject.root;
         if (!root) continue;
@@ -3635,6 +3636,8 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         data.hp -= damage;
         setBoarHateTarget(data, "player", null, now);
         if (data.hp <= 0) {
+          const root = data.activeObject?.root;
+          if (root) spawnXpDrop(root.position.x, root.position.z, data.level);
           data.hp = 0;
           removeBoarAfterDeath(data, true);
         }
@@ -4125,10 +4128,13 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       updatePlayerHud();
       updateWildBoars(delta, now);
       updateCompanions(delta, now);
+      updateXpDrops(delta);
       updateHerbs(delta);
       updateRocks(delta);
       updateHerbActionUI();
       updateRecallActionUI();
+      updateRideActionUI();
+      updateAdminActionUI();
     }
 
     function updateWorldStreamingAndCollision(now) {
@@ -4225,7 +4231,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function shouldIgnoreCameraDragTarget(target) {
       if (!(target instanceof Element)) return false;
-      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
+      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
     }
 
     function bindCameraControls() {
@@ -4289,6 +4295,11 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     function bindUI() {
       dashBtn.addEventListener("click", () => setDashMode(!dashMode));
       attackBtn.addEventListener("click", () => startAttack());
+      upgradeHpBtn.addEventListener("click", () => spendXpForUpgrade("hp"));
+      upgradeDefenseBtn.addEventListener("click", () => spendXpForUpgrade("defense"));
+      upgradeAttackBtn.addEventListener("click", () => spendXpForUpgrade("attack"));
+      adminInteractBtn.addEventListener("click", openAdminCodeModal);
+      rideBtn.addEventListener("click", mountNearestBoar);
       captureBtn.addEventListener("click", collectNearestBoar);
       herbCollectBtn.addEventListener("click", collectNearestHerb);
 　　　　recallBtn.addEventListener("click", recallNearestCompanion);
