@@ -579,6 +579,7 @@
         width: 132px;
         height: 132px;
       }
+      .upgradeGrid { grid-template-columns: 1fr; }
       #fullMapCanvas {
         width: min(84vw, 560px);
         height: min(84vw, 560px);
@@ -614,6 +615,15 @@
       </div>
     </div>
 
+    <div id="upgradePanel">
+      <div id="xpText">XP: 0 / 攻撃 5 / 防御 0</div>
+      <div class="upgradeGrid">
+        <button id="upgradeHpBtn" class="upgradeBtn">最大HP +20<span id="hpCostText" class="upgradeCost">XP 50</span></button>
+        <button id="upgradeDefenseBtn" class="upgradeBtn">防御 +2<span id="defenseCostText" class="upgradeCost">XP 50</span></button>
+        <button id="upgradeAttackBtn" class="upgradeBtn">攻撃 +2<span id="attackCostText" class="upgradeCost">XP 50</span></button>
+      </div>
+    </div>
+    
     <div id="status">待機中</div>
     <div id="buttons">
       <button id="dashBtn" class="modeBtn">ダッシュ</button>
@@ -641,6 +651,8 @@
   </div>
 
   <div id="sideButtons">
+    <button id="adminInteractBtn" class="sideBtn">コード入力</button>
+    <button id="rideBtn" class="sideBtn">乗馬</button>
     <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
     <button id="recall-btn" class="sideBtn">モンスターを回収</button>
     <button id="captureBtn" class="sideBtn">捕獲（ゲット）</button>
@@ -656,7 +668,15 @@
     </div>
   </div>
 
-  <div id="joystick" aria-label="joystick">
+  <div id="adminCodeModal" aria-hidden="true">
+    <div id="adminCodePanel">
+      <div id="adminCodeTitle">管理者コード</div>
+      <div id="adminCodeDisplay">-----</div>
+      <div id="adminKeypad"></div>
+    </div>
+  </div>
+  
+　<div id="joystick" aria-label="joystick">
     <div id="joyKnob"></div>
   </div>
   <button id="jumpBtn">JUMP</button>
