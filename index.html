@@ -852,6 +852,11 @@
     const captureBtn = document.getElementById("captureBtn");
     const herbCollectBtn = document.getElementById("herbCollectBtn");
     const recallBtn = document.getElementById("recall-btn");
+    const adminInteractBtn = document.getElementById("adminInteractBtn");
+    const rideBtn = document.getElementById("rideBtn");
+    const adminCodeModal = document.getElementById("adminCodeModal");
+    const adminCodeDisplay = document.getElementById("adminCodeDisplay");
+    const adminKeypad = document.getElementById("adminKeypad");
     
     const miniMapWrap = document.getElementById("miniMapWrap");
     const miniMapCanvas = document.getElementById("miniMapCanvas");
@@ -920,6 +925,11 @@
 
       playerHpMax: 200,
       playerAttackDps: 5,
+      playerDefense: 0,
+      xpCollectRange: 2.1,
+      adminPoleInteractRange: 3.0,
+      rideInteractRange: 4.0,
+      mountedSpeed: 8.0,
       playerAttackDuration: 5.0,
       attackRange: 5.6,
       attackConeDot: -0.15,
@@ -967,7 +977,12 @@
     let cameraYaw = Math.PI;
     let cameraPitch = 0.22;
     let playerHp = config.playerHpMax;
-
+    const playerProgress = { xp: 0, hpLevel: 0, defenseLevel: 0, attackLevel: 0 };
+    const xpDrops = [];
+    let adminPole = null;
+    let adminCodeInput = "";
+    let ridingBoar = null;
+    
     const tmp = {
       v1: new THREE.Vector3(),
       v2: new THREE.Vector3(),
