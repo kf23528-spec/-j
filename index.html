@@ -3008,6 +3008,7 @@
       let bestDist = Infinity;
 
       for (const data of activeBoars.values()) {
+        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const pos = data.activeObject.root.position;
         const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
