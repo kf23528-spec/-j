@@ -2912,8 +2912,11 @@
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
-        const root = deepCloneUnique(herbTemplate);
-        fitAndGround(root, HERB_TARGET_HEIGHT * data.scale, HERB_GROUND_LIFT);
+        const biome = getBiomeAt(data.x, data.z);
+        const root = biome.key === "forest" ? deepCloneUnique(herbTemplate) : createGrassClump(data);
+        fitAndGround(root, (biome.key === "forest" ? HERB_TARGET_HEIGHT : 0.95) * data.scale, HERB_GROUND_LIFT);
+        if (biome.key === "desert") tintObject(root, 0xd6b05d, 0.45);
+        if (biome.key === "snow") tintObject(root, 0xe8f7ff, 0.65);
         data.terrainLift = root.position.y;
         placeOnTerrain(root, data.x, data.z, data.terrainLift);
         root.rotation.y = data.rotY;
@@ -2954,8 +2957,11 @@
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
+        const biome = getBiomeAt(data.x, data.z);
         const root = deepCloneUnique(rockTemplate);
         fitAndGround(root, ROCK_TARGET_HEIGHT * data.scale, ROCK_GROUND_LIFT);
+        if (biome.key === "desert") tintObject(root, 0xb27a3d, 0.35);
+        if (biome.key === "snow") tintObject(root, 0xdceaf0, 0.55);
         data.terrainLift = root.position.y;
         placeOnTerrain(root, data.x, data.z, data.terrainLift);
         root.rotation.y = data.rotY;
