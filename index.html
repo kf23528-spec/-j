@@ -11,10 +11,16 @@
       margin: 0;
       overflow: hidden;
       background: #9fd3ff;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       touch-action: none;
+      overscroll-behavior: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-text-size-adjust: 100%;
     }
-    canvas { display: block; }
+    canvas { display: block; touch-action: none; }
+    button { font-family: "Trebuchet MS", system-ui, sans-serif; touch-action: manipulation; }
 
     #loading {
       position: fixed;
@@ -41,16 +47,18 @@
       max-width: min(92vw, 500px);
       padding: 12px 14px;
       border-radius: 16px;
-      background: rgba(255,255,255,0.84);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-      color: #222;
+      background: linear-gradient(145deg, rgba(8,13,20,0.78), rgba(22,35,51,0.58));
+      backdrop-filter: blur(14px) saturate(145%);
+      -webkit-backdrop-filter: blur(14px) saturate(145%);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.14);
+      color: #eef7ff;
       line-height: 1.5;
       font-size: 14px;
       user-select: none;
     }
-    #title { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
-    #status { margin-top: 8px; font-size: 13px; font-weight: 800; color: #1d3f7a; }
+    #title { font-weight: 1000; font-size: 15px; margin-bottom: 4px; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.45); letter-spacing: 0.04em; }
+    #status { margin-top: 8px; font-size: 13px; font-weight: 900; color: #a9d7ff; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
     #buttons { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .modeBtn {
       border: 0;
@@ -60,12 +68,15 @@
       font-weight: 800;
       color: #fff;
       cursor: pointer;
-      background: #2f82ff;
-      box-shadow: 0 8px 18px rgba(47,130,255,0.22);
+      letter-spacing: 0.04em;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.35);
+      background: linear-gradient(180deg, #55b4ff, #1468e8);
+      border: 1px solid rgba(255,255,255,0.24);
+      box-shadow: 0 8px 18px rgba(47,130,255,0.30), inset 0 1px 0 rgba(255,255,255,0.22);
     }
-    .modeBtn.active { background: #1d5fc0; }
-    .modeBtn.attack { background: #ff6a2c; box-shadow: 0 8px 18px rgba(255,106,44,0.22); }
-    .modeBtn.attack.active { background: #cc4e1d; }
+    .modeBtn.active { background: linear-gradient(180deg, #2f82ff, #0e3d9e); }
+    .modeBtn.attack { background: linear-gradient(180deg, #ff9a47, #e6421c); box-shadow: 0 8px 18px rgba(255,106,44,0.30); }
+    .modeBtn.attack.active { background: linear-gradient(180deg, #ff6a2c, #9c260e); }
 
     #help {
       margin-top: 8px;
@@ -90,15 +101,16 @@
       font-size: 12px;
       font-weight: 800;
       margin-bottom: 6px;
-      color: #1c3359;
+      color: dcecff;
     }
     .barWrap {
       width: 100%;
       height: 12px;
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(28,51,89,0.12);
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.32);
     }
     .barFill {
       width: 100%;
@@ -118,19 +130,20 @@
 
     .boarTag {
       position: absolute;
-      min-width: 120px;
+      min-width: 112px;
       transform: translate(-50%, -100%);
       color: #fff;
-      font-size: 12px;
-      font-weight: 800;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+      font-size: 10px;
+      font-weight: 900;
+      text-align: center;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.85);
       opacity: 1;
       transition: opacity 0.1s linear;
       will-change: transform, opacity;
     }
     .boarLevel {
       display: inline-block;
-      padding: 2px 6px;
+      padding: 2px 7px;
       border-radius: 999px;
       background: rgba(0,0,0,0.50);
       margin-bottom: 5px;
