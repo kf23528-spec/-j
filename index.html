@@ -4112,6 +4112,23 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         const scale = (radius * 0.84) / range;
         const player = { x: playerRoot.position.x, z: playerRoot.position.z };
 
+        const cell = 12;
+        for (let py = -range; py < range; py += cell) {
+          for (let px = -range; px < range; px += cell) {
+            const wx = player.x + px;
+            const wz = player.z + py;
+            const biome = getBiomeAt(wx, wz);
+            ctx.fillStyle = biome.map;
+            ctx.fillRect(cx + px * scale, cy + py * scale, cell * scale + 1, cell * scale + 1);
+          }
+        }
+        const currentBiome = getBiomeAt(player.x, player.z);
+        ctx.fillStyle = "rgba(5,10,18,0.62)";
+        ctx.fillRect(10, 10, 72, 22);
+        ctx.fillStyle = "#eaffff";
+        ctx.font = "bold 11px Trebuchet MS, system-ui, sans-serif";
+        ctx.fillText(`${currentBiome.emoji} ${currentBiome.name}`, 16, 25);
+        
         ctx.strokeStyle = "rgba(255,255,255,0.10)";
         ctx.lineWidth = 1;
         for (let d = -range; d <= range; d += 20) {
@@ -4199,8 +4216,15 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
       ctx.fillStyle = "#0f1720";
       ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = "#17331f";
-      ctx.fillRect(margin, margin, innerW, innerH);
+      for (const biome of BIOMES) {
+        const x0 = margin + (biome.minX + WORLD_HALF) * scaleX;
+        const x1 = margin + (biome.maxX + WORLD_HALF) * scaleX;
+        ctx.fillStyle = biome.map;
+        ctx.fillRect(x0, margin, x1 - x0, innerH);
+        ctx.fillStyle = "rgba(0,0,0,0.26)";
+        ctx.font = "bold 13px Trebuchet MS, system-ui, sans-serif";
+        ctx.fillText(`${biome.emoji} ${biome.name}`, x0 + 10, margin + 22);
+      }
 
       ctx.strokeStyle = "rgba(255,255,255,0.12)";
       ctx.lineWidth = 1;
