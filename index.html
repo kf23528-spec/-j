@@ -4343,6 +4343,18 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         }
       });
 
+      adminKeypad.innerHTML = "";
+      for (const key of ["1","2","3","4","5","6","7","8","9","clear","0","close"]) {
+        const btn = document.createElement("button");
+        btn.className = `adminKey ${key === "clear" || key === "close" ? "secondary" : ""}`;
+        btn.textContent = key === "clear" ? "消" : (key === "close" ? "閉" : key);
+        btn.addEventListener("click", () => submitAdminDigit(key));
+        adminKeypad.appendChild(btn);
+      }
+      adminCodeModal.addEventListener("click", (e) => {
+        if (e.target === adminCodeModal) closeAdminCodeModal();
+      });
+      
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -4573,6 +4585,8 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       try {
         safeLoadInventory();
         updatePlayerHud();
+        updateUpgradeUI();
+        createAdminPole();
         setStatus("モデルを読み込み中…");
 
         generateTreeData();
