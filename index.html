@@ -802,6 +802,58 @@
       return Number.isFinite(v) ? v : fallback;
     }
 
+    function createTerrainTexture() {
+      const size = 256;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#7f9f57";
+      ctx.fillRect(0, 0, size, size);
+      for (let i = 0; i < 3600; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = Math.random() * 2.4 + 0.4;
+        const palette = ["rgba(57,120,53,0.46)", "rgba(128,88,44,0.28)", "rgba(226,216,176,0.24)", "rgba(236,244,246,0.18)"];
+        ctx.fillStyle = palette[Math.floor(Math.random() * palette.length)];
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      for (let i = 0; i < 110; i++) {
+        ctx.strokeStyle = `rgba(255,255,255,${Math.random() * 0.08})`;
+        ctx.lineWidth = Math.random() * 1.8 + 0.4;
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * size, Math.random() * size);
+        ctx.lineTo(Math.random() * size, Math.random() * size);
+        ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(48, 48);
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    const BIOMES = [
+      { key: "forest", name: "森林", emoji: "🌲", minX: -WORLD_HALF, maxX: -250, ground: 0x4f9a45, dark: "#244b28", light: "#5db864", map: "#2f7d3d" },
+      { key: "desert", name: "砂漠", emoji: "🏜️", minX: -250, maxX: 250, ground: 0xc89a54, dark: "#9b6a31", light: "#dfbd72", map: "#c4954d" },
+      { key: "snow", name: "雪原", emoji: "❄️", minX: 250, maxX: WORLD_HALF, ground: 0xdfeff4, dark: "#9ab8c3", light: "#ffffff", map: "#d9eef7" }
+    ];
+
+    function getBiomeAt(x, z) {
+      return BIOMES.find((b) => x >= b.minX && x < b.maxX) || BIOMES[BIOMES.length - 1];
+    }
+
+    function colorForBiomePosition(x, z) {
+      const biome = getBiomeAt(x, z);
+      const color = new THREE.Color(biome.ground);
+      const noise = Math.sin(x * 0.037 + z * 0.021) * 0.06 + Math.cos(z * 0.044) * 0.04;
+      color.offsetHSL(0, 0, noise);
+      return color;
+    }
+    
     const MOUNTAIN_PEAKS = [
       { x: -420, z: -360, height: 26, radius: 50 },
       { x: -120, z: 310, height: 30, radius: 50 },
@@ -845,13 +897,20 @@
         const z = pos.getZ(i);
         pos.setY(i, getTerrainHeight(x, z));
       }
+      const colors = [];
+      const color = new THREE.Color();
+      for (let i = 0; i < pos.count; i++) {
+        color.copy(colorForBiomePosition(pos.getX(i), pos.getZ(i)));
+        colors.push(color.r, color.g, color.b);
+      }
+      terrainGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
       pos.needsUpdate = true;
       terrainGeometry.computeVertexNormals();
     }
 
     const ground = new THREE.Mesh(
       terrainGeometry,
-      new THREE.MeshStandardMaterial({ color: 0x4fa84f, roughness: 1.0, metalness: 0.0 })
+      new THREE.MeshStandardMaterial({ map: createTerrainTexture(), vertexColors: true, roughness: 1.0, metalness: 0.0 })
     );
     ground.receiveShadow = true;
     scene.add(ground);
@@ -886,6 +945,7 @@
     const inventoryList = document.getElementById("inventoryList");
     const inventoryInfo = document.getElementById("inventoryInfo");
     const closeInventoryBtn = document.getElementById("closeInventoryBtn");
+    const cleanupSavesBtn = document.getElementById("cleanupSavesBtn");
     const inventoryBtn = document.getElementById("inventoryBtn");
     const captureBtn = document.getElementById("captureBtn");
     const herbCollectBtn = document.getElementById("herbCollectBtn");
