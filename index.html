@@ -1251,16 +1251,77 @@
       }
     }
 
+    function getInventoryHistoryKeys() {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(INVENTORY_HISTORY_PREFIX)) keys.push(key);
+      }
+      return keys.sort();
+    }
+
+    function estimateLocalStorageBytes() {
+      let total = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i) || "";
+        const value = localStorage.getItem(key) || "";
+        total += (key.length + value.length) * 2;
+      }
+      return total;
+    }
+
+    function cleanupInventoryHistory(keepLatest = INVENTORY_HISTORY_LIMIT) {
+      const keys = getInventoryHistoryKeys();
+      const removeCount = Math.max(0, keys.length - keepLatest);
+      for (const key of keys.slice(0, removeCount)) localStorage.removeItem(key);
+      return removeCount;
+    }
+
+    function cleanupAllInventoryHistory() {
+      const keys = getInventoryHistoryKeys();
+      for (const key of keys) localStorage.removeItem(key);
+      return keys.length;
+    }
+
+    function pruneInventoryForStorage() {
+      cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
+      if (estimateLocalStorageBytes() > LOCAL_STORAGE_SOFT_LIMIT_BYTES) cleanupInventoryHistory(1);
+    }
+
+    function archiveCurrentInventorySnapshot() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const key = `${INVENTORY_HISTORY_PREFIX}${String(Date.now()).padStart(13, "0")}`;
+      try {
+        localStorage.setItem(key, raw);
+      } catch (e) {
+        cleanupInventoryHistory(0);
+      }
+    }
+    
     function saveInventory() {
       try {
+        pruneInventoryForStorage();
+        archiveCurrentInventorySnapshot();
+        cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
       } catch (e) {
+        if (e?.name === "QuotaExceededError" || e?.code === 22) {
+          try {
+            cleanupInventoryHistory(0);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+            showToast("古いセーブ履歴を削除して保存しました");
+            return;
+          } catch (retryError) {
+            console.warn("inventory save retry failed", retryError);
+          }
+        }
         console.warn("inventory save failed", e);
       }
     }
 
     function renderInventoryModal() {
-      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体`;
+      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体 / 履歴 ${getInventoryHistoryKeys().length} 件`;
       inventoryList.innerHTML = "";
       if (!inventory.length) {
         const empty = document.createElement("div");
