@@ -1875,7 +1875,8 @@
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
-          scale: 0.85 + Math.random() * 0.45,
+          biomeKey: getBiomeAt(p.x, p.z).key,
+          scale: speciesDef.key === "gorilla" ? 1.15 + Math.random() * 0.35 : 0.85 + Math.random() * 0.45,
           level,
           iv,
           hpMax: stats.hpMax,
@@ -2137,6 +2138,87 @@
       return rock;
     }
 
+    
+    
+    function createCactusObject(scale = 1) {
+      const cactus = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0x2f8c42, roughness: 0.92 });
+      const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe7ead0, roughness: 0.8 });
+      const trunk = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 2.7, 5, 10), mat);
+      trunk.position.y = 1.52;
+      const armGeo = new THREE.CapsuleGeometry(0.19, 1.15, 4, 8);
+      const armL = new THREE.Mesh(armGeo, mat);
+      armL.position.set(-0.55, 1.55, 0);
+      armL.rotation.z = -0.85;
+      const armR = armL.clone();
+      armR.position.x = 0.55;
+      armR.position.y = 1.95;
+      armR.rotation.z = 0.85;
+      for (let i = 0; i < 18; i++) {
+        const thorn = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.16, 5), spikeMat);
+        const a = (i / 18) * Math.PI * 2;
+        thorn.position.set(Math.cos(a) * 0.36, 0.55 + Math.random() * 2.4, Math.sin(a) * 0.36);
+        thorn.rotation.z = Math.PI / 2;
+        cactus.add(thorn);
+      }
+      cactus.add(trunk, armL, armR);
+      cactus.scale.setScalar(scale);
+      applyShadowsAndFixMaterials(cactus);
+      return cactus;
+    }
+
+    function addSnowCaps(root) {
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+      const snow = new THREE.Mesh(
+        new THREE.ConeGeometry(Math.max(size.x, size.z) * 0.32, Math.max(0.25, size.y * 0.10), 10),
+        new THREE.MeshStandardMaterial({ color: 0xf7fbff, roughness: 0.65 })
+      );
+      snow.position.set(0, size.y * 0.86, 0);
+      snow.castShadow = true;
+      snow.receiveShadow = true;
+      root.add(snow);
+      root.traverse((child) => {
+        if (child.isMesh && child.material?.color && Math.random() < 0.45) {
+          child.material = child.material.clone();
+          child.material.color.lerp(new THREE.Color(0xdbefff), 0.35);
+        }
+      });
+    }
+
+    function tintObject(root, color, amount = 0.35) {
+      const tint = new THREE.Color(color);
+      root.traverse((child) => {
+        if (!child.isMesh) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        child.material = Array.isArray(child.material) ? mats.map((mat) => mat?.clone?.() || mat) : (child.material?.clone?.() || child.material);
+        const nextMats = Array.isArray(child.material) ? child.material : [child.material];
+        for (const mat of nextMats) {
+          if (mat?.color) mat.color.lerp(tint, amount);
+          if (mat) mat.needsUpdate = true;
+        }
+      });
+    }
+
+    function createGrassClump(data) {
+      const group = new THREE.Group();
+      const biome = getBiomeAt(data.x, data.z);
+      const mat = new THREE.MeshStandardMaterial({ color: biome.key === "snow" ? 0xcfe7e8 : 0x61b84f, roughness: 1.0 });
+      const bladeGeo = new THREE.ConeGeometry(0.06, 0.7, 4);
+      const count = biome.key === "desert" ? 4 : 10;
+      for (let i = 0; i < count; i++) {
+        const blade = new THREE.Mesh(bladeGeo, mat);
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * 0.42;
+        blade.position.set(Math.cos(a) * r, 0.34, Math.sin(a) * r);
+        blade.rotation.set(Math.random() * 0.35, Math.random() * Math.PI, (Math.random() - 0.5) * 0.45);
+        blade.castShadow = true;
+        blade.receiveShadow = true;
+        group.add(blade);
+      }
+      group.scale.setScalar(data.scale);
+      return group;
+    }
     function createFallbackRiverTemplate() {
       const river = new THREE.Group();
       const waterMat = new THREE.MeshStandardMaterial({
@@ -2785,8 +2867,10 @@
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
-        const root = deepCloneUnique(treeTemplate);
-        fitAndGround(root, TREE_TARGET_HEIGHT * data.scale, TREE_GROUND_LIFT);
+        const biome = getBiomeAt(data.x, data.z);
+        const root = biome.key === "desert" ? createCactusObject(1) : deepCloneUnique(treeTemplate);
+        fitAndGround(root, (biome.key === "desert" ? 5.8 : TREE_TARGET_HEIGHT) * data.scale, TREE_GROUND_LIFT);
+        if (biome.key === "snow") addSnowCaps(root);
         data.terrainLift = root.position.y;
         placeOnTerrain(root, data.x, data.z, data.terrainLift);
         root.rotation.y = data.rotY;
