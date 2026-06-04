@@ -5436,11 +5436,17 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     async function loadTemplates() {
-      const [treeGLTF, boarGLTF, gorillaGLTF, secretGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
+      const [treeGLTF, boarGLTF, gorillaGLTF, secretGLTF, wolfGLTF, horseGLTF, bearGLTF, foxGLTF, monkeyGLTF, omoroGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
         loadGLTFWithFallback(TREE_URLS, createFallbackTreeTemplate),
         loadGLTFWithFallback(BOAR_URLS, createFallbackBoarTemplate),
         loadGLTFWithFallback(GORILLA_URLS, createFallbackGorillaTemplate),
         loadGLTFWithFallback(SECRET_URLS, createFallbackSecretTemplate),
+        loadGLTFWithFallback(WOLF_URLS, createFallbackWolfTemplate),
+        loadGLTFWithFallback(HORSE_URLS, createFallbackHorseTemplate),
+        loadGLTFWithFallback(BEAR_URLS, createFallbackBearTemplate),
+        loadGLTFWithFallback(FOX_URLS, createFallbackFoxTemplate),
+        loadGLTFWithFallback(MONKEY_URLS, createFallbackMonkeyTemplate),
+        loadGLTFWithFallback(OMORO_URLS, createFallbackOmoroTemplate),
         loadGLTFWithFallback(HERB_URLS, createFallbackHerbTemplate),
         loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate),
         loadGLTFWithFallback(RIVER_URLS, createFallbackRiverTemplate)
