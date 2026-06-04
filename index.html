@@ -5396,7 +5396,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       }
     }
    
-    function updateMovementAndWorld(delta, now) {
       function updateBiomeAmbience(delta) {
       const biome = inBossFight ? BIOMES.find((b) => b.key === "volcano") : getBiomeAt(playerRoot.position.x, playerRoot.position.z);
       if (!biome) return;
@@ -5410,6 +5409,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       sun.intensity = biome.key === "jungle" ? 1.6 : (biome.key === "volcano" ? 2.2 : 3.2);
     }
       
+    function updateMovementAndWorld(delta, now) {  
       updateInactiveBoarWander(delta);
       syncWorldEntities(now);
       refreshCollisionCircles();
