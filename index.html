@@ -4946,7 +4946,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     function syncWorldEntities(now) {
-      despawnStrictOutOfRange(now);
+      if (!inBossFight) despawnStrictOutOfRange(now);
       syncGridStream("tree", spawnTree, despawnTree, now, () => activeTrees.size < MAX_ACTIVE_TREES);
       syncGridStream("herb", spawnHerb, despawnHerb, now, () => activeHerbs.size < MAX_ACTIVE_HERBS);
       syncGridStream("rock", spawnRock, despawnRock, now, () => activeRocks.size < MAX_ACTIVE_ROCKS);
@@ -5088,7 +5088,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function shouldIgnoreCameraDragTarget(target) {
       if (!(target instanceof Element)) return false;
-      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
+      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn, #attackBtn");
     }
 
     function bindCameraControls() {
