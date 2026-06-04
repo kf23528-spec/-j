@@ -2089,19 +2089,21 @@
     function generateTreeData() {
       treeData.length = 0;
       while (treeData.length < TREE_COUNT) {
-        const p = randomWorldPoint(20);
+        const p = randomPointForPreferredTreeBiome();
         if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
+        const biomeKey = getBiomeAt(p.x, p.z).key;
+        const biomeScaleBoost = biomeKey === "jungle" ? 1.25 : (biomeKey === "desert" || biomeKey === "volcano" ? 0.62 : 1.0);
         treeData.push({
           id: nextEntityId++,
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
-          biomeKey: getBiomeAt(p.x, p.z).key,
-          scale: 0.75 + Math.random() * 1.55,
+          biomeKey,
+          scale: (0.75 + Math.random() * 1.55) * biomeScaleBoost,
           activeObject: null,
           removed: false,
           isSpawning: false,
-                    isDespawning: false,
+          isDespawning: false,
           spawnCooldownUntil: 0,
           terrainLift: 0,
           collisionRadius: 2.2
@@ -2185,7 +2187,7 @@
         const p = randomWorldPoint(20);
         const d = Math.hypot(p.x, p.z);
         if (d < 22) continue;
-        const speciesDef = getRandomMonsterDefinition();
+        const speciesDef = getRandomMonsterDefinition(p.x, p.z);
         const level = getBoarLevelForPosition(p.x, p.z);
         const iv = rollMonsterIv();
         const stats = getStatsByLevel(level, speciesDef.key, iv);
@@ -2197,7 +2199,7 @@
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
           biomeKey: getBiomeAt(p.x, p.z).key,
-          scale: speciesDef.key === "gorilla" ? 1.15 + Math.random() * 0.35 : 0.85 + Math.random() * 0.45,
+          scale: getSpeciesVisualScale(speciesDef.key) * (0.85 + Math.random() * 0.35),
           level,
           iv,
           hpMax: stats.hpMax,
@@ -2205,7 +2207,8 @@
           atkDps: stats.atkDps,
           attackRange: config.boarAttackRange,
           aggroRange: config.boarAggroRange + (level - 1) * 0.8,
-          moveSpeed: config.boarMoveSpeed,
+          defense: stats.defense || 0,
+          moveSpeed: stats.moveSpeed || config.boarMoveSpeed,
           collisionRadius: 0.7,
           uiOffset: 2.0,
           state: "move",
