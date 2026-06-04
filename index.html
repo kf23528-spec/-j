@@ -5462,6 +5462,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       monsterTemplates.set("boar", boarTemplate);
       monsterTemplates.set("gorilla", gorillaTemplate);
       monsterTemplates.set("secret", secretTemplate);
+      monsterTemplates.set("wolf", wolfGLTF.scene);
+      monsterTemplates.set("horse", horseGLTF.scene);
+      monsterTemplates.set("bear", bearGLTF.scene);
+      monsterTemplates.set("fox", foxGLTF.scene);
+      monsterTemplates.set("monkey", monkeyGLTF.scene);
+      monsterTemplates.set("omoro", omoroGLTF.scene);
       
       treeUsesFallback = treeGLTF.fallback;
       boarUsesFallback = boarGLTF.fallback;
@@ -5470,10 +5476,22 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       monsterFallbackFlags.set("boar", boarUsesFallback);
       monsterFallbackFlags.set("gorilla", gorillaUsesFallback);
       monsterFallbackFlags.set("secret", secretUsesFallback);
+      monsterFallbackFlags.set("wolf", wolfGLTF.fallback);
+      monsterFallbackFlags.set("horse", horseGLTF.fallback);
+      monsterFallbackFlags.set("bear", bearGLTF.fallback);
+      monsterFallbackFlags.set("fox", foxGLTF.fallback);
+      monsterFallbackFlags.set("monkey", monkeyGLTF.fallback);
+      monsterFallbackFlags.set("omoro", omoroGLTF.fallback);
       herbUsesFallback = herbGLTF.fallback;
       rockUsesFallback = rockGLTF.fallback;
       riverUsesFallback = riverGLTF.fallback;
 
+      bossTemplate = await loadFBXWithFallback([BOSS_FBX_URL]);
+      if (bossTemplate) {
+        applyShadowsAndFixMaterials(bossTemplate);
+      } else {
+        bossTemplate = createFallbackOmoroTemplate();
+      }
       forceRegroundAllLoaded();
     }
 
@@ -5538,10 +5556,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     async function bootstrap() {
       try {
         safeLoadInventory();
+        safeLoadWorldLevel();
         safeLoadPlayerStats();
         updatePlayerHud();
         updateUpgradeUI();
         createAdminPole();
+        createBossPortal();
         setStatus("モデルを読み込み中…");
 
         generateTreeData();
