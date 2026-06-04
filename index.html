@@ -1216,8 +1216,8 @@
     };
 
     const config = {
-      walkSpeed: 2.5,
-      dashMultiplier: 2.4,
+      walkSpeed: 6.0,
+      dashMultiplier: 1.0,
       gravity: -22.0,
       jumpVelocity: 8.8,
       cameraHeight: 2.55,
@@ -1282,6 +1282,13 @@
     let cameraPitch = 0.22;
     let playerHp = config.playerHpMax;
     const playerProgress = { xp: 0, hpLevel: 0, defenseLevel: 0, attackLevel: 0 };
+    let worldLevel = 1;
+    const WORLD_LEVEL_MAX = 100;
+    let bossPortal = null;
+    let bossTemplate = null;
+    let bossArena = null;
+    let activeBoss = null;
+    let inBossFight = false;
     const xpDrops = [];
     let adminPole = null;
     let adminCodeInput = "";
@@ -1379,6 +1386,32 @@
       }
     }
 
+    function getWorldLevelRange(level = worldLevel) {
+      const wl = clamp(Math.floor(safeNum(level, 1)), 1, WORLD_LEVEL_MAX);
+      return { min: (wl - 1) * 10 + 1, max: wl * 10 };
+    }
+
+    function saveWorldLevel() {
+      try { localStorage.setItem(WORLD_LEVEL_STORAGE_KEY, String(worldLevel)); }
+      catch (e) { console.warn("world level save failed", e); }
+    }
+
+    function safeLoadWorldLevel() {
+      try {
+        const raw = localStorage.getItem(WORLD_LEVEL_STORAGE_KEY);
+        worldLevel = clamp(Math.floor(safeNum(Number(raw), 1)), 1, WORLD_LEVEL_MAX);
+      } catch (e) {
+        console.warn("world level load failed", e);
+        worldLevel = 1;
+      }
+    }
+
+    function updateWorldLevelUI() {
+      const range = getWorldLevelRange();
+      const biome = getBiomeAt(playerRoot.position.x, playerRoot.position.z);
+      xpText.textContent = `世界Lv.${worldLevel}（野生Lv.${range.min}-${range.max}） / XP: ${Math.floor(playerProgress.xp)} / 攻撃 ${config.playerAttackDps} / 防御 ${config.playerDefense} / ${biome.emoji} ${biome.name}`;
+    }
+    
     function getUpgradeCost(type) {
       const levelKey = type === "hp" ? "hpLevel" : (type === "defense" ? "defenseLevel" : "attackLevel");
       const level = playerProgress[levelKey] || 0;
