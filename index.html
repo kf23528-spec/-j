@@ -5104,6 +5104,38 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     function spawnBoarWrapper(data) { spawnBoarAtGenerated(data); }
     function despawnBoarWrapper(data, now) { despawnBoarForStream(data, now); }
 
+    const cullFrustum = new THREE.Frustum();
+    const cullMatrix = new THREE.Matrix4();
+
+    function setActiveMapVisibility(activeMap) {
+      for (const data of activeMap.values()) {
+        const root = data.activeObject?.root;
+        if (!root) continue;
+        const sphere = new THREE.Sphere(root.position, Math.max(data.collisionRadius || 1, FRUSTUM_CULL_MARGIN));
+        root.visible = cullFrustum.intersectsSphere(sphere);
+      }
+    }
+
+    function updateFrustumCulling() {
+      camera.updateMatrixWorld();
+      cullMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      cullFrustum.setFromProjectionMatrix(cullMatrix);
+      setActiveMapVisibility(activeTrees);
+      setActiveMapVisibility(activeHerbs);
+      setActiveMapVisibility(activeRocks);
+      setActiveMapVisibility(activeRivers);
+      setActiveMapVisibility(activeBoars);
+      for (const c of companions) {
+        if (!c?.root) continue;
+        const sphere = new THREE.Sphere(c.root.position, Math.max(c.collisionRadius || 1, FRUSTUM_CULL_MARGIN));
+        c.root.visible = cullFrustum.intersectsSphere(sphere);
+      }
+      for (const drop of xpDrops) {
+        if (!drop?.group) continue;
+        drop.group.visible = cullFrustum.intersectsSphere(new THREE.Sphere(drop.group.position, 2));
+      }
+    }
+   
     function updateMovementAndWorld(delta, now) {
       updateInactiveBoarWander(delta);
       syncWorldEntities(now);
@@ -5118,6 +5150,8 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       updateSecretWarningUI();
       updateMiniMap();
       if (fullMapModal.classList.contains("open")) updateFullMap();
+      updateFrustumCulling();
+      skyDome.position.copy(camera.position);
       renderer.render(scene, camera);
     }
 
@@ -5223,6 +5257,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     async function bootstrap() {
       try {
         safeLoadInventory();
+        safeLoadPlayerStats();
         updatePlayerHud();
         updateUpgradeUI();
         createAdminPole();
