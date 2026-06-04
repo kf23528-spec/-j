@@ -5186,6 +5186,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         worldLevel = 1; gameOver = false;
         updatePlayerHud(); updateUpgradeUI(); renderInventoryModal();
         showToast(`ローカル保存データを${removed}件削除しました`);
+      });
       closeInventoryBtn.addEventListener("click", closeInventoryModal);
       inventoryModal.addEventListener("click", (e) => {
         if (e.target === inventoryModal) closeInventoryModal();
