@@ -5411,14 +5411,15 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
       
     function updateMovementAndWorld(delta, now) {  
-      updateInactiveBoarWander(delta);
-      syncWorldEntities(now);
+      if (!inBossFight) updateInactiveBoarWander(delta);
+      if (!inBossFight) syncWorldEntities(now);
       refreshCollisionCircles();
       updateMovement(delta);
-      despawnStrictOutOfRange(now);
+      if (!inBossFight) despawnStrictOutOfRange(now);
       updateAllActiveTerrainAlignment();
       updateCombat(delta, now);
       updateCamera(delta);
+      updateBiomeAmbience(delta);
       updateBoarTags();
       updateCompanionTags();
       updateSecretWarningUI();
