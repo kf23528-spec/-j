@@ -5166,7 +5166,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     function bindUI() {
-      dashBtn.addEventListener("click", () => setDashMode(!dashMode));
+      dashBtn?.addEventListener("click", () => setDashMode(true));
       attackBtn.addEventListener("click", () => startAttack());
       upgradeHpBtn.addEventListener("click", () => spendXpForUpgrade("hp"));
       upgradeDefenseBtn.addEventListener("click", () => spendXpForUpgrade("defense"));
@@ -5179,11 +5179,13 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       
       inventoryBtn.addEventListener("click", openInventoryModal);
       cleanupSavesBtn.addEventListener("click", () => {
-        const removed = cleanupAllInventoryHistory();
-        pruneInventoryForStorage();
-        renderInventoryModal();
-        showToast(`古いセーブ履歴を${removed}件削除しました`);
-      });
+        const removed = clearAllForestLocalData();
+        inventory.splice(0, inventory.length);
+        playerProgress.xp = 0; playerProgress.hpLevel = 0; playerProgress.defenseLevel = 0; playerProgress.attackLevel = 0;
+        config.playerHpMax = 200; config.playerAttackDps = 5; config.playerDefense = 0; playerHp = config.playerHpMax;
+        worldLevel = 1; gameOver = false;
+        updatePlayerHud(); updateUpgradeUI(); renderInventoryModal();
+        showToast(`ローカル保存データを${removed}件削除しました`);
       closeInventoryBtn.addEventListener("click", closeInventoryModal);
       inventoryModal.addEventListener("click", (e) => {
         if (e.target === inventoryModal) closeInventoryModal();
@@ -5395,6 +5397,19 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
    
     function updateMovementAndWorld(delta, now) {
+      function updateBiomeAmbience(delta) {
+      const biome = inBossFight ? BIOMES.find((b) => b.key === "volcano") : getBiomeAt(playerRoot.position.x, playerRoot.position.z);
+      if (!biome) return;
+      const bg = biome.key === "volcano" ? 0x2a0505 : (biome.key === "snow" ? 0xdff7ff : (biome.key === "jungle" ? 0x16301f : (biome.key === "desert" ? 0xffd06d : 0x9fd3ff)));
+      scene.background = new THREE.Color(bg);
+      if (scene.fog) {
+        scene.fog.color.setHex(biome.key === "volcano" ? 0x300606 : (biome.key === "snow" ? 0xeefcff : (biome.key === "jungle" ? 0x102316 : bg)));
+        scene.fog.near = biome.key === "jungle" || biome.key === "snow" ? 45 : 80;
+        scene.fog.far = biome.key === "jungle" ? 260 : (biome.key === "volcano" ? 330 : 520);
+      }
+      sun.intensity = biome.key === "jungle" ? 1.6 : (biome.key === "volcano" ? 2.2 : 3.2);
+    }
+      
       updateInactiveBoarWander(delta);
       syncWorldEntities(now);
       refreshCollisionCircles();
