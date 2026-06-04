@@ -1423,7 +1423,7 @@
       const hpCost = getUpgradeCost("hp");
       const defenseCost = getUpgradeCost("defense");
       const attackCost = getUpgradeCost("attack");
-      xpText.textContent = `XP: ${Math.floor(playerProgress.xp)} / 攻撃 ${config.playerAttackDps} / 防御 ${config.playerDefense}`;
+      updateWorldLevelUI();
       hpCostText.textContent = `XP ${hpCost}`;
       defenseCostText.textContent = `XP ${defenseCost}`;
       attackCostText.textContent = `XP ${attackCost}`;
@@ -1478,7 +1478,8 @@
           playerHp,
           playerHpMax: config.playerHpMax,
           playerAttackDps: config.playerAttackDps,
-          playerDefense: config.playerDefense
+          playerDefense: config.playerDefense,
+          worldLevel
         }));
       } catch (e) {
         console.warn("player stats save failed", e);
@@ -1499,6 +1500,7 @@
         config.playerAttackDps = Math.max(0, Math.floor(safeNum(Number(parsed.playerAttackDps), config.playerAttackDps)));
         config.playerDefense = Math.max(0, Math.floor(safeNum(Number(parsed.playerDefense), config.playerDefense)));
         playerHp = clamp(Math.floor(safeNum(Number(parsed.playerHp), config.playerHpMax)), 1, config.playerHpMax);
+        if (Number.isFinite(Number(parsed.worldLevel))) worldLevel = clamp(Math.floor(Number(parsed.worldLevel)), 1, WORLD_LEVEL_MAX);
       } catch (e) {
         console.warn("player stats load failed", e);
       }
@@ -1561,6 +1563,17 @@
       return keys.length;
     }
 
+    function clearAllForestLocalData() {
+      const prefixes = [STORAGE_KEY, PLAYER_STATS_STORAGE_KEY, WORLD_LEVEL_STORAGE_KEY, INVENTORY_HISTORY_PREFIX, "forest_tps_"];
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && prefixes.some((prefix) => key === prefix || key.startsWith(prefix))) keys.push(key);
+      }
+      for (const key of keys) localStorage.removeItem(key);
+      return keys.length;
+    }
+    
     function pruneInventoryForStorage() {
       cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
       if (estimateLocalStorageBytes() > LOCAL_STORAGE_SOFT_LIMIT_BYTES) cleanupInventoryHistory(1);
@@ -1839,7 +1852,7 @@
     }
 
     function currentSpeed() {
-      return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
+      return config.walkSpeed;
     }
 
     function getKeyboardMoveVector() {
