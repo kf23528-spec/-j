@@ -2732,6 +2732,81 @@
         }
       }
     }
+
+    function refreshAdminPanelValues() {
+      if (!adminPanelModal) return;
+      adminHpInput.value = Math.max(1, Math.ceil(playerHp));
+      adminMaxHpInput.value = config.playerHpMax;
+      adminAttackInput.value = config.playerAttackDps;
+      adminDefenseInput.value = config.playerDefense;
+      adminForceCaptureToggle.checked = adminForceCaptureMode;
+    }
+
+    function openAdminPanel() {
+      refreshAdminPanelValues();
+      adminPanelModal.classList.add("open");
+      adminPanelModal.setAttribute("aria-hidden", "false");
+      showToast("管理者パネルを開きました", 1600);
+      setStatus("管理者パネル起動");
+    }
+
+    function closeAdminPanel() {
+      adminPanelModal.classList.remove("open");
+      adminPanelModal.setAttribute("aria-hidden", "true");
+    }
+
+    function applyAdminStats() {
+      const maxHp = Math.max(1, Math.floor(safeNum(Number(adminMaxHpInput.value), config.playerHpMax)));
+      config.playerHpMax = maxHp;
+      config.playerAttackDps = Math.max(0, Math.floor(safeNum(Number(adminAttackInput.value), config.playerAttackDps)));
+      config.playerDefense = Math.max(0, Math.floor(safeNum(Number(adminDefenseInput.value), config.playerDefense)));
+      playerHp = clamp(Math.floor(safeNum(Number(adminHpInput.value), playerHp)), 1, config.playerHpMax);
+      gameOver = false;
+      updatePlayerHud();
+      updateUpgradeUI();
+      savePlayerStats();
+      refreshAdminPanelValues();
+      showToast("プレイヤーステータスを変更しました");
+    }
+
+    function createAdminMonsterData(speciesKey, level, x, z, angleOffset = 0) {
+      const speciesDef = getMonsterDefinition(speciesKey);
+      const iv = rollMonsterIv();
+      const stats = getStatsByLevel(level, speciesDef.key, iv);
+      return {
+        id: nextEntityId++, speciesKey: speciesDef.key, speciesName: speciesDef.name,
+        x: clamp(x, -WORLD_HALF + 4, WORLD_HALF - 4), z: clamp(z, -WORLD_HALF + 4, WORLD_HALF - 4),
+        rotY: angleOffset + Math.PI, biomeKey: getBiomeAt(x, z).key,
+        scale: speciesDef.key === "gorilla" ? 1.25 : (speciesDef.key === "secret" ? 1.1 : 1.0),
+        level, iv, hpMax: stats.hpMax, hp: stats.hpMax, atkDps: stats.atkDps,
+        attackRange: config.boarAttackRange, aggroRange: config.boarAggroRange + (level - 1) * 0.8,
+        moveSpeed: config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3),
+        collisionRadius: 0.7, uiOffset: 2.0, state: "move", stateTime: 0,
+        wanderYaw: Math.random() * Math.PI * 2, wanderTimer: rand(0.8, 2.6), hostileUntil: 0,
+        targetType: null, targetId: null, nextAttackAt: 0, dead: false, respawnToken: 0,
+        isSpawning: false, isDespawning: false, spawnCooldownUntil: 0, terrainLift: 0, activeObject: null,
+        adminSpawned: true
+      };
+    }
+
+    function adminSpawnMonsters() {
+      const speciesKey = adminMonsterSelect.value || "boar";
+      const count = clamp(Math.floor(safeNum(Number(adminMonsterCount.value), 1)), 1, 50);
+      const level = clamp(Math.floor(safeNum(Number(adminMonsterLevel.value), 1)), config.boarLevelMin, config.boarLevelMax);
+      const forward = getCharacterForwardVector();
+      const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
+      for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / 8);
+        const col = i % 8 - 3.5;
+        const pos = tmp.v1.copy(playerRoot.position).add(forward.clone().multiplyScalar(5 + row * 3)).add(right.clone().multiplyScalar(col * 2.2));
+        const data = createAdminMonsterData(speciesKey, level, pos.x, pos.z, Math.atan2(forward.x, forward.z));
+        boarData.push(data);
+        addToSpatialGrid("boar", data);
+        if (isWithinActiveRadiusXZ(data.x, data.z) && activeBoars.size < MAX_ACTIVE_BOARS + count) spawnBoar(data);
+      }
+      showToast(`${getMonsterDefinition(speciesKey).name} Lv.${level} を${count}体召喚`);
+      updateMiniMap();
+    }
     
     function refreshCollisionCircles() {
       collisionCircles.length = 0;
@@ -3085,15 +3160,42 @@
       root.position.y = getTerrainHeight(root.position.x, root.position.z) + (data.terrainLift || 0);
     }
 
+    function applyBiomeObjectVisual(root, biomeKey, kind) {
+      const biome = BIOMES.find((b) => b.key === biomeKey) || BIOMES[0];
+      const tint = kind === "rock" ? biome.rockTint : (kind === "herb" ? biome.herbTint : biome.treeTint);
+      tintObject(root, tint, kind === "rock" ? 0.42 : 0.34);
+      if (biome.key === "snow") addSnowCaps(root);
+      if (biome.key === "volcano" && kind === "rock") {
+        root.traverse((child) => {
+          if (child.isMesh && child.material?.emissive) {
+            child.material.emissive.setHex(0xff3a12);
+            child.material.emissiveIntensity = 0.12;
+          }
+        });
+      }
+    }
+
+    function shouldUseCactusBiome(key) {
+      return key === "desert" || key === "canyon" || key === "volcano";
+    }
+
+    function getTreeHeightForBiome(key) {
+      if (key === "desert") return 5.8;
+      if (key === "canyon" || key === "volcano" || key === "rocky") return 4.8;
+      if (key === "jungle") return 12.5;
+      if (key === "plains") return 5.4;
+      return TREE_TARGET_HEIGHT;
+    }
+    
     function spawnTree(data) {
       if (!treeTemplate) return;
       if (data.activeObject || data.isSpawning || data.removed) return;
       data.isSpawning = true;
       try {
         const biome = getBiomeAt(data.x, data.z);
-        const root = biome.key === "desert" ? createCactusObject(1) : deepCloneUnique(treeTemplate);
-        fitAndGround(root, (biome.key === "desert" ? 5.8 : TREE_TARGET_HEIGHT) * data.scale, TREE_GROUND_LIFT);
-        if (biome.key === "snow") addSnowCaps(root);
+        const root = shouldUseCactusBiome(biome.key) ? createCactusObject(1) : deepCloneUnique(treeTemplate);
+        fitAndGround(root, getTreeHeightForBiome(biome.key) * data.scale, TREE_GROUND_LIFT);
+        applyBiomeObjectVisual(root, biome.key, "tree");
         data.terrainLift = root.position.y;
         placeOnTerrain(root, data.x, data.z, data.terrainLift);
         root.rotation.y = data.rotY;
@@ -3136,10 +3238,9 @@
       data.isSpawning = true;
       try {
         const biome = getBiomeAt(data.x, data.z);
-        const root = biome.key === "forest" ? deepCloneUnique(herbTemplate) : createGrassClump(data);
-        fitAndGround(root, (biome.key === "forest" ? HERB_TARGET_HEIGHT : 0.95) * data.scale, HERB_GROUND_LIFT);
-        if (biome.key === "desert") tintObject(root, 0xd6b05d, 0.45);
-        if (biome.key === "snow") tintObject(root, 0xe8f7ff, 0.65);
+        const root = (biome.key === "forest" || biome.key === "jungle") ? deepCloneUnique(herbTemplate) : createGrassClump(data);
+        fitAndGround(root, ((biome.key === "forest" || biome.key === "jungle") ? HERB_TARGET_HEIGHT : 0.95) * data.scale, HERB_GROUND_LIFT);
+        applyBiomeObjectVisual(root, biome.key, "herb");
         data.terrainLift = root.position.y;
         placeOnTerrain(root, data.x, data.z, data.terrainLift);
         root.rotation.y = data.rotY;
@@ -3182,9 +3283,9 @@
       try {
         const biome = getBiomeAt(data.x, data.z);
         const root = deepCloneUnique(rockTemplate);
-        fitAndGround(root, ROCK_TARGET_HEIGHT * data.scale, ROCK_GROUND_LIFT);
-        if (biome.key === "desert") tintObject(root, 0xb27a3d, 0.35);
-        if (biome.key === "snow") tintObject(root, 0xdceaf0, 0.55);
+        const rockyBoost = (biome.key === "rocky" || biome.key === "canyon" || biome.key === "volcano") ? 1.45 : 1.0;
+        fitAndGround(root, ROCK_TARGET_HEIGHT * data.scale * rockyBoost, ROCK_GROUND_LIFT);
+        applyBiomeObjectVisual(root, biome.key, "rock");
         data.terrainLift = root.position.y;
         placeOnTerrain(root, data.x, data.z, data.terrainLift);
         root.rotation.y = data.rotY;
@@ -3515,7 +3616,7 @@
       }
 
       const boar = found.boar;
-      if (boar.hp > boar.hpMax * 0.1) {
+      if (!adminForceCaptureMode && boar.hp > boar.hpMax * 0.1) {
         showToast("体力が多すぎて捕まえられない！");
         setStatus("体力が多すぎて捕まえられない");
         return;
@@ -4588,9 +4689,9 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function syncWorldEntities(now) {
       despawnStrictOutOfRange(now);
-      syncGridStream("tree", spawnTree, despawnTree, now);
-      syncGridStream("herb", spawnHerb, despawnHerb, now);
-      syncGridStream("rock", spawnRock, despawnRock, now);
+      syncGridStream("tree", spawnTree, despawnTree, now, () => activeTrees.size < MAX_ACTIVE_TREES);
+      syncGridStream("herb", spawnHerb, despawnHerb, now, () => activeHerbs.size < MAX_ACTIVE_HERBS);
+      syncGridStream("rock", spawnRock, despawnRock, now, () => activeRocks.size < MAX_ACTIVE_ROCKS);
       syncGridStream("river", spawnRiver, despawnRiver, now);
       syncGridStream("boar", spawnBoar, despawnBoarForStream, now, () => activeBoars.size < MAX_ACTIVE_BOARS);
     }
@@ -4875,11 +4976,29 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         if (e.target === adminCodeModal) closeAdminCodeModal();
       });
       
+      adminMonsterSelect.innerHTML = "";
+      for (const def of MONSTER_SPECIES_LIST) {
+        const option = document.createElement("option");
+        option.value = def.key;
+        option.textContent = def.name;
+        adminMonsterSelect.appendChild(option);
+      }
+      closeAdminPanelBtn.addEventListener("click", closeAdminPanel);
+      adminPanelModal.addEventListener("click", (e) => { if (e.target === adminPanelModal) closeAdminPanel(); });
+      adminSpawnMonsterBtn.addEventListener("click", adminSpawnMonsters);
+      adminApplyStatsBtn.addEventListener("click", applyAdminStats);
+      adminGrantXpBtn.addEventListener("click", () => addPlayerXp(1000000000));
+      adminHealBtn.addEventListener("click", () => { playerHp = config.playerHpMax; gameOver = false; updatePlayerHud(); savePlayerStats(); refreshAdminPanelValues(); });
+      adminForceCaptureToggle.addEventListener("change", () => {
+        adminForceCaptureMode = adminForceCaptureToggle.checked;
+        showToast(adminForceCaptureMode ? "強制捕獲モードON" : "強制捕獲モードOFF");
+      });
+      
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         updateMiniMap();
         if (fullMapModal.classList.contains("open")) updateFullMap();
       });
