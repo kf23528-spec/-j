@@ -1932,11 +1932,33 @@
       return MONSTER_SPECIES[normalizeMonsterSpeciesKey(speciesOrKey)] || MONSTER_SPECIES.boar;
     }
     
-    function getRandomMonsterDefinition() {
-      const roll = Math.random();
-      if (roll < MONSTER_SPECIES.boar.probability) return MONSTER_SPECIES.boar;
-      if (roll < MONSTER_SPECIES.boar.probability + MONSTER_SPECIES.gorilla.probability) return MONSTER_SPECIES.gorilla;
-      return MONSTER_SPECIES.secret;
+    function getBiomeMonsterWeights(biomeKey = getBiomeAt(playerRoot.position.x, playerRoot.position.z).key) {
+      const weights = {};
+      for (const def of MONSTER_SPECIES_LIST) weights[def.key] = def.probability || 0;
+      const boost = (key, value) => { weights[key] = (weights[key] || 0) + value; };
+      if (biomeKey === "forest") { boost("wolf", 24); boost("monkey", 14); boost("fox", 5); }
+      if (biomeKey === "jungle") { boost("monkey", 55); boost("wolf", 10); boost("gorilla", 18); }
+      if (biomeKey === "desert") { boost("fox", 38); boost("horse", 18); weights.bear *= 0.35; }
+      if (biomeKey === "snow") { boost("wolf", 32); boost("bear", 18); weights.monkey *= 0.2; }
+      if (biomeKey === "plains") { boost("horse", 34); boost("fox", 8); }
+      if (biomeKey === "hills") { boost("bear", 18); boost("horse", 12); }
+      if (biomeKey === "canyon") { boost("fox", 20); boost("bear", 8); }
+      if (biomeKey === "volcano") { boost("omoro", 46); boost("bear", 10); weights.boar *= 0.45; }
+      if (biomeKey === "rocky") { boost("bear", 20); boost("wolf", 8); }
+      return weights;
+    }
+
+    function getRandomMonsterDefinition(x = playerRoot.position.x, z = playerRoot.position.z) {
+      const biomeKey = getBiomeAt(x, z).key;
+      const weights = getBiomeMonsterWeights(biomeKey);
+      let total = 0;
+      for (const def of MONSTER_SPECIES_LIST) total += Math.max(0, weights[def.key] || 0);
+      let roll = Math.random() * Math.max(total, 0.0001);
+      for (const def of MONSTER_SPECIES_LIST) {
+        roll -= Math.max(0, weights[def.key] || 0);
+        if (roll <= 0) return def;
+      }
+      return MONSTER_SPECIES.boar;
     }
     
     function rollMonsterIv() {
@@ -1952,32 +1974,29 @@
         ...stats,
         iv: normalizedIv,
         hpMax: Math.round(stats.hpMax * multiplier),
-        atkDps: Math.round(stats.atkDps * multiplier * 10) / 10
+        atkDps: Math.round(stats.atkDps * multiplier * 10) / 10,
+        defense: Math.round((stats.defense || 0) * multiplier * 10) / 10,
+        moveSpeed: Math.round((stats.moveSpeed || config.boarMoveSpeed) * (1 + normalizedIv / 250) * 100) / 100
       };
     }
 
     function getStatsByLevel(level, speciesOrKey = "boar", iv = null) {
       const def = getMonsterDefinition(speciesOrKey);
       const lv = clamp(Math.floor(safeNum(level, 1)), config.boarLevelMin, config.boarLevelMax);
-      const scale = Math.pow(1.2, lv - 1);
+      const scale = 1 + (lv - 1) * 0.18 + Math.pow(lv - 1, 1.08) * 0.025;
       const baseStats = {
         level: lv,
         hpMax: def.baseHp * scale,
-        atkDps: def.baseAttack * scale
+        atkDps: def.baseAttack * scale,
+        defense: (def.baseDefense || 0) * scale,
+        moveSpeed: (def.baseMoveSpeed || config.boarMoveSpeed) * clamp(1 + (lv - 1) * 0.002, 1, 2.2)
       };
       return iv === null ? baseStats : applyIvToStats(baseStats, iv);
    }
 
     function getBoarLevelRangeForPosition(x, z) {
-      const col = x < -250 ? 0 : (x < 250 ? 1 : 2);
-      const row = z < -250 ? 0 : (z < 250 ? 1 : 2);
-      const ranges = [
-        [[50, 80], [20, 40], [70, 95]],
-        [[25, 50], [1, 10], [15, 30]],
-        [[100, 999], [10, 20], [80, 125]]
-      ];
-      const range = ranges[row][col];
-      return { min: range[0], max: range[1], row, col };
+      const range = getWorldLevelRange();
+      return { min: range.min, max: range.max, row: 0, col: 0 };
     }
 
     function getBoarLevelForPosition(x, z) {
@@ -2055,6 +2074,16 @@
         }
       }
       return result;
+    }
+    
+    function randomPointForPreferredTreeBiome() {
+      const roll = Math.random();
+      const preferred = roll < 0.44 ? "jungle" : (roll < 0.66 ? "forest" : (roll < 0.78 ? "hills" : null));
+      for (let i = 0; i < 80; i++) {
+        const p = randomWorldPoint(20);
+        if (!preferred || getBiomeAt(p.x, p.z).key === preferred) return p;
+      }
+      return randomWorldPoint(20);
     }
     
     function generateTreeData() {
