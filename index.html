@@ -1354,7 +1354,7 @@
     function getUpgradeCost(type) {
       const levelKey = type === "hp" ? "hpLevel" : (type === "defense" ? "defenseLevel" : "attackLevel");
       const level = playerProgress[levelKey] || 0;
-      return 50 + level * level * 25 + level * 35;
+      return Math.floor(50 * Math.pow(1.42, level) + level * level * 32 + level * 40);
     }
 
     function updateUpgradeUI() {
@@ -1395,6 +1395,7 @@
       }
       updatePlayerHud();
       updateUpgradeUI();
+      savePlayerStats();
     }
 
     function addPlayerXp(amount) {
@@ -1403,6 +1404,43 @@
       showToast(`XP +${gained} 獲得！`);
       setStatus(`XP +${gained}`);
       updateUpgradeUI();
+      savePlayerStats();
+    }
+
+    function savePlayerStats() {
+      try {
+        localStorage.setItem(PLAYER_STATS_STORAGE_KEY, JSON.stringify({
+          xp: playerProgress.xp,
+          hpLevel: playerProgress.hpLevel,
+          defenseLevel: playerProgress.defenseLevel,
+          attackLevel: playerProgress.attackLevel,
+          playerHp,
+          playerHpMax: config.playerHpMax,
+          playerAttackDps: config.playerAttackDps,
+          playerDefense: config.playerDefense
+        }));
+      } catch (e) {
+        console.warn("player stats save failed", e);
+      }
+    }
+
+    function safeLoadPlayerStats() {
+      try {
+        const raw = localStorage.getItem(PLAYER_STATS_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        playerProgress.xp = Math.max(0, safeNum(Number(parsed.xp), playerProgress.xp));
+        playerProgress.hpLevel = Math.max(0, Math.floor(safeNum(Number(parsed.hpLevel), playerProgress.hpLevel)));
+        playerProgress.defenseLevel = Math.max(0, Math.floor(safeNum(Number(parsed.defenseLevel), playerProgress.defenseLevel)));
+        playerProgress.attackLevel = Math.max(0, Math.floor(safeNum(Number(parsed.attackLevel), playerProgress.attackLevel)));
+        config.playerHpMax = Math.max(1, Math.floor(safeNum(Number(parsed.playerHpMax), config.playerHpMax)));
+        config.playerAttackDps = Math.max(0, Math.floor(safeNum(Number(parsed.playerAttackDps), config.playerAttackDps)));
+        config.playerDefense = Math.max(0, Math.floor(safeNum(Number(parsed.playerDefense), config.playerDefense)));
+        playerHp = clamp(Math.floor(safeNum(Number(parsed.playerHp), config.playerHpMax)), 1, config.playerHpMax);
+      } catch (e) {
+        console.warn("player stats load failed", e);
+      }
     }
     
     function safeLoadInventory() {
@@ -1834,12 +1872,13 @@
     }
 
     function applyIvToStats(stats, iv) {
-      const multiplier = iv >= 100 ? 2 : 1;
+      const normalizedIv = clamp(Math.floor(safeNum(iv, 1)), 1, 100);
+      const multiplier = 1 + normalizedIv / 100;
       return {
         ...stats,
-        iv,
-        hpMax: stats.hpMax * multiplier,
-        atkDps: stats.atkDps * multiplier
+        iv: normalizedIv,
+        hpMax: Math.round(stats.hpMax * multiplier),
+        atkDps: Math.round(stats.atkDps * multiplier * 10) / 10
       };
     }
 
@@ -2533,6 +2572,11 @@
       group.position.set(x, getTerrainHeight(x, z) + 0.85, z);
       scene.add(group);
       xpDrops.push({ id: makeId(), group, amount, x, z, baseY: group.position.y, t: Math.random() * 10 });
+      while (xpDrops.length > MAX_XP_DROPS) {
+        const old = xpDrops.shift();
+        if (old?.group?.parent) old.group.parent.remove(old.group);
+        disposeObject3D(old?.group);
+      }
     }
 
     function updateXpDrops(delta) {
@@ -2681,7 +2725,7 @@
       if (adminCodeInput.length >= 5) {
         if (adminCodeInput === "23418") {
           closeAdminCodeModal();
-          forceSpawnSecretAtNearestSpawn();
+          openAdminPanel();
         } else {
           showToast("コードが違います");
           resetAdminCodeInput();
