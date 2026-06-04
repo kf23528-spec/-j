@@ -47,21 +47,19 @@
       max-width: min(92vw, 500px);
       padding: 12px 14px;
       border-radius: 16px;
-      background: none;
-      background-color: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      border: 0;
-      box-shadow: none;
-      color: #ffffff;
-      text-shadow: 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 3px 9px rgba(0,0,0,0.95);
+      background: linear-gradient(145deg, rgba(8,13,20,0.78), rgba(22,35,51,0.58));
+      backdrop-filter: blur(14px) saturate(145%);
+      -webkit-backdrop-filter: blur(14px) saturate(145%);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.14);
+      color: #eef7ff;
       line-height: 1.5;
       font-size: 14px;
       user-select: none;
     }
     #title { font-weight: 1000; font-size: 15px; margin-bottom: 4px; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.45); letter-spacing: 0.04em; }
     #status { margin-top: 8px; font-size: 13px; font-weight: 900; color: #a9d7ff; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
-    #buttons { display: none; }
+    #buttons { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .modeBtn {
       border: 0;
       border-radius: 12px;
@@ -77,19 +75,8 @@
       box-shadow: 0 8px 18px rgba(47,130,255,0.30), inset 0 1px 0 rgba(255,255,255,0.22);
     }
     .modeBtn.active { background: linear-gradient(180deg, #2f82ff, #0e3d9e); }
-    .modeBtn.attack {
-      position: fixed;
-      right: 28px;
-      bottom: 150px;
-      z-index: 38;
-      width: 124px;
-      height: 86px;
-      border-radius: 28px;
-      font-size: 20px;
-      background: linear-gradient(180deg, #ff4f4f, #b91212);
-      box-shadow: 0 14px 32px rgba(255, 40, 40, 0.42), inset 0 2px 0 rgba(255,255,255,0.24);
-    }
-    .modeBtn.attack.active { background: linear-gradient(180deg, #ff2828, #780707); transform: scale(0.97); }
+    .modeBtn.attack { background: linear-gradient(180deg, #ff9a47, #e6421c); box-shadow: 0 8px 18px rgba(255,106,44,0.30); }
+    .modeBtn.attack.active { background: linear-gradient(180deg, #ff6a2c, #9c260e); }
 
     #help {
       margin-top: 8px;
@@ -114,7 +101,7 @@
       font-size: 12px;
       font-weight: 800;
       margin-bottom: 6px;
-      color: #ffffff;
+      color: dcecff;
     }
     .barWrap {
       width: 100%;
@@ -511,11 +498,11 @@
     
     #upgradePanel {
       margin-top: 10px;
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-      border: 0;
-      box-shadow: none;
+      padding: 10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     }
     #xpText {
       font-size: 13px;
@@ -649,7 +636,6 @@
         max-width: calc(100vw - 24px);
       }
       #help { font-size: 11px; }
-        .modeBtn.attack { right: 18px; bottom: 132px; width: 108px; height: 72px; font-size: 17px; }
       #jumpBtn {
         width: 94px;
         height: 94px;
@@ -725,10 +711,11 @@
     
     <div id="status">待機中</div>
     <div id="buttons">
-      <button id="dashBtn" class="modeBtn">常時走る</button>
+      <button id="dashBtn" class="modeBtn">ダッシュ</button>
+      <button id="attackBtn" class="modeBtn attack">攻撃</button>
     </div>
     <div id="help">
-      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃（右下）<br>
+      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
       薬草は1m以内で「薬草回収」ボタンが表示されます。ミニマップをタップすると全体マップを開けます。
     </div>
   </div>
@@ -762,7 +749,7 @@
       <div id="inventoryTitle">インベントリ</div>
       <div id="inventoryInfo">0 / 10 体</div>
       <div id="inventoryList"></div>
-     <button id="cleanupSavesBtn">🧹 履歴とローカル保存データを全削除</button>
+      <button id="cleanupSavesBtn">🧹 古いセーブデータを削除して容量を空ける</button>
       <button id="closeInventoryBtn">閉じる</button>
     </div>
   </div>
@@ -815,7 +802,6 @@
   <div id="joystick" aria-label="joystick">
     <div id="joyKnob"></div>
   </div>
-  <button id="attackBtn" class="modeBtn attack">攻撃</button>
   <button id="jumpBtn">JUMP</button>
 
   <script type="module">
@@ -827,37 +813,23 @@
     const WALK_FBX_URL = "./Meshy_AI_biped_Animation_Walking_withSkin.fbx";
     const ATTACK_FBX_URL = "./Meshy_AI_biped_Animation_Attack_withSkin.fbx";
     const RUN_FBX_URL = "./Meshy_AI_biped_Animation_Running_withSkin.fbx";
-    const BOSS_FBX_URL = "./Boss.fbx";
-    
+
     const TREE_URLS = ["./tree.glb"];
     const BOAR_URLS = ["./boar.glb"];
     const GORILLA_URLS = ["./gorira.glb"];
     const SECRET_URLS = ["./seacret.glb"];
-    const WOLF_URLS = ["./wolf.glb"];
-    const HORSE_URLS = ["./uma.glb"];
-    const BEAR_URLS = ["./kuma.glb"];
-    const FOX_URLS = ["./kitune.glb"];
-    const MONKEY_URLS = ["./monkey.glb"];
-    const OMORO_URLS = ["./omoro.glb"];
     const MONSTER_SPECIES = {
-      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, baseDefense: 2, baseMoveSpeed: 1.2, probability: 70, fallbackFactory: createFallbackBoarTemplate },
-      gorilla: { key: "gorilla", name: "ゴリラ", urls: GORILLA_URLS, baseHp: 220, baseAttack: 18, baseDefense: 8, baseMoveSpeed: 0.95, probability: 15, fallbackFactory: createFallbackGorillaTemplate },
-      horse: { key: "horse", name: "馬", urls: HORSE_URLS, baseHp: 150, baseAttack: 12, baseDefense: 3, baseMoveSpeed: 2.15, probability: 10, fallbackFactory: createFallbackHorseTemplate },
-      bear: { key: "bear", name: "熊", urls: BEAR_URLS, baseHp: 320, baseAttack: 26, baseDefense: 10, baseMoveSpeed: 0.9, probability: 3.9999, fallbackFactory: createFallbackBearTemplate },
-      wolf: { key: "wolf", name: "オオカミ", urls: WOLF_URLS, baseHp: 120, baseAttack: 22, baseDefense: 2, baseMoveSpeed: 1.9, probability: 1, fallbackFactory: createFallbackWolfTemplate },
-      fox: { key: "fox", name: "キツネ", urls: FOX_URLS, baseHp: 85, baseAttack: 14, baseDefense: 1, baseMoveSpeed: 2.05, probability: 0, fallbackFactory: createFallbackFoxTemplate },
-      monkey: { key: "monkey", name: "サル", urls: MONKEY_URLS, baseHp: 95, baseAttack: 13, baseDefense: 1, baseMoveSpeed: 1.75, probability: 0, fallbackFactory: createFallbackMonkeyTemplate },
-      omoro: { key: "omoro", name: "オモロ", urls: OMORO_URLS, baseHp: 420, baseAttack: 34, baseDefense: 14, baseMoveSpeed: 1.2, probability: 0, fallbackFactory: createFallbackOmoroTemplate },
-      secret: { key: "secret", name: "シークレット", urls: SECRET_URLS, baseHp: 1200, baseAttack: 60, baseDefense: 20, baseMoveSpeed: 1.5, probability: 0.0001, fallbackFactory: createFallbackSecretTemplate }
+      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, probability: 0.6, fallbackFactory: createFallbackBoarTemplate },
+      gorilla: { key: "gorilla", name: "ゴリラ", urls: GORILLA_URLS, baseHp: 200, baseAttack: 10, probability: 0.399999, fallbackFactory: createFallbackGorillaTemplate },
+      secret: { key: "secret", name: "シークレット", urls: SECRET_URLS, baseHp: 1000, baseAttack: 50, probability: 0.000001, fallbackFactory: createFallbackSecretTemplate }
     };
-    const MONSTER_SPECIES_LIST = Object.values(MONSTER_SPECIES);
+    const MONSTER_SPECIES_LIST = [MONSTER_SPECIES.boar, MONSTER_SPECIES.gorilla, MONSTER_SPECIES.secret];
     const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
     const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
     const RIVER_URLS = ["./river.glb"];
 
     const STORAGE_KEY = "forest_tps_inventory_v3";
     const PLAYER_STATS_STORAGE_KEY = "forest_tps_player_stats_v1";
-    const WORLD_LEVEL_STORAGE_KEY = "forest_tps_world_level_v1";
     const INVENTORY_HISTORY_PREFIX = `${STORAGE_KEY}_history_`;
     const INVENTORY_HISTORY_LIMIT = 5;
     const LOCAL_STORAGE_SOFT_LIMIT_BYTES = 4.5 * 1024 * 1024;
@@ -868,13 +840,13 @@
     const ACTIVE_RADIUS = 100;
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
     const FRUSTUM_CULL_MARGIN = 8;
-    const MAX_ACTIVE_TREES = 260;
+    const MAX_ACTIVE_TREES = 180;
     const MAX_ACTIVE_HERBS = 220;
     const MAX_ACTIVE_ROCKS = 120;
     const MAX_XP_DROPS = 80;
     const GRID_CELL_SIZE = 100;
     
-    const TREE_COUNT = 2700;
+    const TREE_COUNT = 1000;
     const HERB_COUNT = 1500;
     const ROCK_COUNT = 500;
     const RIVER_COUNT = 10;
@@ -998,15 +970,15 @@
     }
 
     const BIOMES = [
-           { key: "forest", name: "深緑の森", emoji: "🌲", ground: 0x116b24, dark: "#062713", light: "#45f06d", map: "#116b24", treeTint: 0x0b5a19, herbTint: 0x7dff72, rockTint: 0x394d34 },
-      { key: "plains", name: "黄金平原", emoji: "🌾", ground: 0xc4d84d, dark: "#6f7a18", light: "#f5ff78", map: "#c4d84d", treeTint: 0x8dbd2d, herbTint: 0xd8ff4d, rockTint: 0x9a9b68 },
-      { key: "desert", name: "灼熱砂漠", emoji: "🏜️", ground: 0xf3c43f, dark: "#b57a10", light: "#ffe483", map: "#f0bd38", treeTint: 0xd99120, herbTint: 0xffd166, rockTint: 0xc06f28 },
-      { key: "snow", name: "吹雪の雪山", emoji: "❄️", ground: 0xf3fbff, dark: "#7fb7d1", light: "#ffffff", map: "#e9fbff", treeTint: 0xc9f4ff, herbTint: 0xffffff, rockTint: 0xdceeff },
-      { key: "hills", name: "巨大丘陵", emoji: "⛰️", ground: 0x5b7f22, dark: "#263e0c", light: "#9bcf3f", map: "#638a28", treeTint: 0x3c6e1f, herbTint: 0xb6ee55, rockTint: 0x73775e },
-      { key: "canyon", name: "赤土渓谷", emoji: "🧱", ground: 0xd04a24, dark: "#5c1509", light: "#ff8958", map: "#c44726", treeTint: 0xb74a20, herbTint: 0xff9c38, rockTint: 0x8f2d16 },
-      { key: "jungle", name: "暗黒密林", emoji: "🌴", ground: 0x064b22, dark: "#02170c", light: "#0fd65a", map: "#07552a", treeTint: 0x043f18, herbTint: 0x1dff6f, rockTint: 0x263b2b },
-      { key: "volcano", name: "赤黒い溶岩山", emoji: "🌋", ground: 0x1a0b0b, dark: "#050000", light: "#ff2b00", map: "#431010", treeTint: 0x2b1208, herbTint: 0xff3b10, rockTint: 0x171010 },
-      { key: "rocky", name: "灰色岩石地帯", emoji: "🪨", ground: 0x595650, dark: "#1c1c1f", light: "#c4c0b8", map: "#67625b", treeTint: 0x505b3e, herbTint: 0xaab48a, rockTint: 0x4a4a4c }
+            { key: "forest", name: "森", emoji: "🌲", ground: 0x4f9a45, dark: "#244b28", light: "#5db864", map: "#2f7d3d", treeTint: 0x2f7d32, herbTint: 0x4ecb58, rockTint: 0x777f73 },
+      { key: "plains", name: "平原", emoji: "🌾", ground: 0x8cbc4f, dark: "#567d2d", light: "#b7d76b", map: "#93bf52", treeTint: 0x7aaa3b, herbTint: 0xa8d75d, rockTint: 0x8a8f79 },
+      { key: "desert", name: "砂漠", emoji: "🏜️", ground: 0xc89a54, dark: "#9b6a31", light: "#dfbd72", map: "#c4954d", treeTint: 0xd0a353, herbTint: 0xd6b05d, rockTint: 0xb27a3d },
+      { key: "snow", name: "雪山", emoji: "❄️", ground: 0xdfeff4, dark: "#9ab8c3", light: "#ffffff", map: "#d9eef7", treeTint: 0xbdd9df, herbTint: 0xe8f7ff, rockTint: 0xdceaf0 },
+      { key: "hills", name: "丘陵", emoji: "⛰️", ground: 0x789b42, dark: "#3f5e2c", light: "#9fbd63", map: "#75974b", treeTint: 0x5c8a38, herbTint: 0x95c665, rockTint: 0x777d68 },
+      { key: "canyon", name: "渓谷", emoji: "🧱", ground: 0xb55e38, dark: "#74341f", light: "#d17a4f", map: "#ad5937", treeTint: 0xa66a37, herbTint: 0xc28a42, rockTint: 0x9b4a32 },
+      { key: "jungle", name: "ジャングル", emoji: "🌴", ground: 0x247b3e, dark: "#123f26", light: "#34a75a", map: "#1f793b", treeTint: 0x1f7c33, herbTint: 0x28b85f, rockTint: 0x4e6f55 },
+      { key: "volcano", name: "溶岩山付近", emoji: "🌋", ground: 0x3b3030, dark: "#171212", light: "#7a3b2a", map: "#513535", treeTint: 0x4a3a2a, herbTint: 0x8a3c24, rockTint: 0x2f2b2b },
+      { key: "rocky", name: "岩石地帯", emoji: "🪨", ground: 0x77736b, dark: "#42403c", light: "#aaa49a", map: "#77736b", treeTint: 0x66704f, herbTint: 0x8c9a71, rockTint: 0x6f6f70 }
     ];
 
     const BIOME_CENTERS = [
@@ -1216,8 +1188,8 @@
     };
 
     const config = {
-      walkSpeed: 6.0,
-      dashMultiplier: 1.0,
+      walkSpeed: 2.5,
+      dashMultiplier: 2.4,
       gravity: -22.0,
       jumpVelocity: 8.8,
       cameraHeight: 2.55,
@@ -1282,13 +1254,6 @@
     let cameraPitch = 0.22;
     let playerHp = config.playerHpMax;
     const playerProgress = { xp: 0, hpLevel: 0, defenseLevel: 0, attackLevel: 0 };
-    let worldLevel = 1;
-    const WORLD_LEVEL_MAX = 100;
-    let bossPortal = null;
-    let bossTemplate = null;
-    let bossArena = null;
-    let activeBoss = null;
-    let inBossFight = false;
     const xpDrops = [];
     let adminPole = null;
     let adminCodeInput = "";
@@ -1386,32 +1351,6 @@
       }
     }
 
-    function getWorldLevelRange(level = worldLevel) {
-      const wl = clamp(Math.floor(safeNum(level, 1)), 1, WORLD_LEVEL_MAX);
-      return { min: (wl - 1) * 10 + 1, max: wl * 10 };
-    }
-
-    function saveWorldLevel() {
-      try { localStorage.setItem(WORLD_LEVEL_STORAGE_KEY, String(worldLevel)); }
-      catch (e) { console.warn("world level save failed", e); }
-    }
-
-    function safeLoadWorldLevel() {
-      try {
-        const raw = localStorage.getItem(WORLD_LEVEL_STORAGE_KEY);
-        worldLevel = clamp(Math.floor(safeNum(Number(raw), 1)), 1, WORLD_LEVEL_MAX);
-      } catch (e) {
-        console.warn("world level load failed", e);
-        worldLevel = 1;
-      }
-    }
-
-    function updateWorldLevelUI() {
-      const range = getWorldLevelRange();
-      const biome = getBiomeAt(playerRoot.position.x, playerRoot.position.z);
-      xpText.textContent = `世界Lv.${worldLevel}（野生Lv.${range.min}-${range.max}） / XP: ${Math.floor(playerProgress.xp)} / 攻撃 ${config.playerAttackDps} / 防御 ${config.playerDefense} / ${biome.emoji} ${biome.name}`;
-    }
-    
     function getUpgradeCost(type) {
       const levelKey = type === "hp" ? "hpLevel" : (type === "defense" ? "defenseLevel" : "attackLevel");
       const level = playerProgress[levelKey] || 0;
@@ -1423,7 +1362,7 @@
       const hpCost = getUpgradeCost("hp");
       const defenseCost = getUpgradeCost("defense");
       const attackCost = getUpgradeCost("attack");
-      updateWorldLevelUI();
+      xpText.textContent = `XP: ${Math.floor(playerProgress.xp)} / 攻撃 ${config.playerAttackDps} / 防御 ${config.playerDefense}`;
       hpCostText.textContent = `XP ${hpCost}`;
       defenseCostText.textContent = `XP ${defenseCost}`;
       attackCostText.textContent = `XP ${attackCost}`;
@@ -1478,8 +1417,7 @@
           playerHp,
           playerHpMax: config.playerHpMax,
           playerAttackDps: config.playerAttackDps,
-          playerDefense: config.playerDefense,
-          worldLevel
+          playerDefense: config.playerDefense
         }));
       } catch (e) {
         console.warn("player stats save failed", e);
@@ -1500,7 +1438,6 @@
         config.playerAttackDps = Math.max(0, Math.floor(safeNum(Number(parsed.playerAttackDps), config.playerAttackDps)));
         config.playerDefense = Math.max(0, Math.floor(safeNum(Number(parsed.playerDefense), config.playerDefense)));
         playerHp = clamp(Math.floor(safeNum(Number(parsed.playerHp), config.playerHpMax)), 1, config.playerHpMax);
-        if (Number.isFinite(Number(parsed.worldLevel))) worldLevel = clamp(Math.floor(Number(parsed.worldLevel)), 1, WORLD_LEVEL_MAX);
       } catch (e) {
         console.warn("player stats load failed", e);
       }
@@ -1563,17 +1500,6 @@
       return keys.length;
     }
 
-    function clearAllForestLocalData() {
-      const prefixes = [STORAGE_KEY, PLAYER_STATS_STORAGE_KEY, WORLD_LEVEL_STORAGE_KEY, INVENTORY_HISTORY_PREFIX, "forest_tps_"];
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && prefixes.some((prefix) => key === prefix || key.startsWith(prefix))) keys.push(key);
-      }
-      for (const key of keys) localStorage.removeItem(key);
-      return keys.length;
-    }
-    
     function pruneInventoryForStorage() {
       cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
       if (estimateLocalStorageBytes() > LOCAL_STORAGE_SOFT_LIMIT_BYTES) cleanupInventoryHistory(1);
@@ -1852,7 +1778,7 @@
     }
 
     function currentSpeed() {
-      return config.walkSpeed;
+      return config.walkSpeed * ((dashMode || dashHeld) ? config.dashMultiplier : 1.0);
     }
 
     function getKeyboardMoveVector() {
@@ -1932,33 +1858,11 @@
       return MONSTER_SPECIES[normalizeMonsterSpeciesKey(speciesOrKey)] || MONSTER_SPECIES.boar;
     }
     
-    function getBiomeMonsterWeights(biomeKey = getBiomeAt(playerRoot.position.x, playerRoot.position.z).key) {
-      const weights = {};
-      for (const def of MONSTER_SPECIES_LIST) weights[def.key] = def.probability || 0;
-      const boost = (key, value) => { weights[key] = (weights[key] || 0) + value; };
-      if (biomeKey === "forest") { boost("wolf", 24); boost("monkey", 14); boost("fox", 5); }
-      if (biomeKey === "jungle") { boost("monkey", 55); boost("wolf", 10); boost("gorilla", 18); }
-      if (biomeKey === "desert") { boost("fox", 38); boost("horse", 18); weights.bear *= 0.35; }
-      if (biomeKey === "snow") { boost("wolf", 32); boost("bear", 18); weights.monkey *= 0.2; }
-      if (biomeKey === "plains") { boost("horse", 34); boost("fox", 8); }
-      if (biomeKey === "hills") { boost("bear", 18); boost("horse", 12); }
-      if (biomeKey === "canyon") { boost("fox", 20); boost("bear", 8); }
-      if (biomeKey === "volcano") { boost("omoro", 46); boost("bear", 10); weights.boar *= 0.45; }
-      if (biomeKey === "rocky") { boost("bear", 20); boost("wolf", 8); }
-      return weights;
-    }
-
-    function getRandomMonsterDefinition(x = playerRoot.position.x, z = playerRoot.position.z) {
-      const biomeKey = getBiomeAt(x, z).key;
-      const weights = getBiomeMonsterWeights(biomeKey);
-      let total = 0;
-      for (const def of MONSTER_SPECIES_LIST) total += Math.max(0, weights[def.key] || 0);
-      let roll = Math.random() * Math.max(total, 0.0001);
-      for (const def of MONSTER_SPECIES_LIST) {
-        roll -= Math.max(0, weights[def.key] || 0);
-        if (roll <= 0) return def;
-      }
-      return MONSTER_SPECIES.boar;
+    function getRandomMonsterDefinition() {
+      const roll = Math.random();
+      if (roll < MONSTER_SPECIES.boar.probability) return MONSTER_SPECIES.boar;
+      if (roll < MONSTER_SPECIES.boar.probability + MONSTER_SPECIES.gorilla.probability) return MONSTER_SPECIES.gorilla;
+      return MONSTER_SPECIES.secret;
     }
     
     function rollMonsterIv() {
@@ -1974,29 +1878,32 @@
         ...stats,
         iv: normalizedIv,
         hpMax: Math.round(stats.hpMax * multiplier),
-        atkDps: Math.round(stats.atkDps * multiplier * 10) / 10,
-        defense: Math.round((stats.defense || 0) * multiplier * 10) / 10,
-        moveSpeed: Math.round((stats.moveSpeed || config.boarMoveSpeed) * (1 + normalizedIv / 250) * 100) / 100
+        atkDps: Math.round(stats.atkDps * multiplier * 10) / 10
       };
     }
 
     function getStatsByLevel(level, speciesOrKey = "boar", iv = null) {
       const def = getMonsterDefinition(speciesOrKey);
       const lv = clamp(Math.floor(safeNum(level, 1)), config.boarLevelMin, config.boarLevelMax);
-      const scale = 1 + (lv - 1) * 0.18 + Math.pow(lv - 1, 1.08) * 0.025;
+      const scale = Math.pow(1.2, lv - 1);
       const baseStats = {
         level: lv,
         hpMax: def.baseHp * scale,
-        atkDps: def.baseAttack * scale,
-        defense: (def.baseDefense || 0) * scale,
-        moveSpeed: (def.baseMoveSpeed || config.boarMoveSpeed) * clamp(1 + (lv - 1) * 0.002, 1, 2.2)
+        atkDps: def.baseAttack * scale
       };
       return iv === null ? baseStats : applyIvToStats(baseStats, iv);
    }
 
     function getBoarLevelRangeForPosition(x, z) {
-      const range = getWorldLevelRange();
-      return { min: range.min, max: range.max, row: 0, col: 0 };
+      const col = x < -250 ? 0 : (x < 250 ? 1 : 2);
+      const row = z < -250 ? 0 : (z < 250 ? 1 : 2);
+      const ranges = [
+        [[50, 80], [20, 40], [70, 95]],
+        [[25, 50], [1, 10], [15, 30]],
+        [[100, 999], [10, 20], [80, 125]]
+      ];
+      const range = ranges[row][col];
+      return { min: range[0], max: range[1], row, col };
     }
 
     function getBoarLevelForPosition(x, z) {
@@ -2076,34 +1983,22 @@
       return result;
     }
     
-    function randomPointForPreferredTreeBiome() {
-      const roll = Math.random();
-      const preferred = roll < 0.44 ? "jungle" : (roll < 0.66 ? "forest" : (roll < 0.78 ? "hills" : null));
-      for (let i = 0; i < 80; i++) {
-        const p = randomWorldPoint(20);
-        if (!preferred || getBiomeAt(p.x, p.z).key === preferred) return p;
-      }
-      return randomWorldPoint(20);
-    }
-    
     function generateTreeData() {
       treeData.length = 0;
       while (treeData.length < TREE_COUNT) {
-        const p = randomPointForPreferredTreeBiome();
+        const p = randomWorldPoint(20);
         if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
-        const biomeKey = getBiomeAt(p.x, p.z).key;
-        const biomeScaleBoost = biomeKey === "jungle" ? 1.25 : (biomeKey === "desert" || biomeKey === "volcano" ? 0.62 : 1.0);
         treeData.push({
           id: nextEntityId++,
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
-          biomeKey,
-          scale: (0.75 + Math.random() * 1.55) * biomeScaleBoost,
+          biomeKey: getBiomeAt(p.x, p.z).key,
+          scale: 0.75 + Math.random() * 1.55,
           activeObject: null,
           removed: false,
           isSpawning: false,
-          isDespawning: false,
+                    isDespawning: false,
           spawnCooldownUntil: 0,
           terrainLift: 0,
           collisionRadius: 2.2
@@ -2187,7 +2082,7 @@
         const p = randomWorldPoint(20);
         const d = Math.hypot(p.x, p.z);
         if (d < 22) continue;
-        const speciesDef = getRandomMonsterDefinition(p.x, p.z);
+        const speciesDef = getRandomMonsterDefinition();
         const level = getBoarLevelForPosition(p.x, p.z);
         const iv = rollMonsterIv();
         const stats = getStatsByLevel(level, speciesDef.key, iv);
@@ -2199,7 +2094,7 @@
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
           biomeKey: getBiomeAt(p.x, p.z).key,
-          scale: getSpeciesVisualScale(speciesDef.key) * (0.85 + Math.random() * 0.35),
+          scale: speciesDef.key === "gorilla" ? 1.15 + Math.random() * 0.35 : 0.85 + Math.random() * 0.45,
           level,
           iv,
           hpMax: stats.hpMax,
@@ -2207,8 +2102,7 @@
           atkDps: stats.atkDps,
           attackRange: config.boarAttackRange,
           aggroRange: config.boarAggroRange + (level - 1) * 0.8,
-          defense: stats.defense || 0,
-          moveSpeed: stats.moveSpeed || config.boarMoveSpeed,
+          moveSpeed: config.boarMoveSpeed,
           collisionRadius: 0.7,
           uiOffset: 2.0,
           state: "move",
@@ -2345,53 +2239,6 @@
       return boar;
     }
 
-    function getSpeciesVisualScale(key) {
-      return { gorilla: 1.25, horse: 1.18, bear: 1.45, wolf: 0.92, fox: 0.72, monkey: 0.78, omoro: 1.35, secret: 1.2 }[key] || 1.0;
-    }
-
-    function createFallbackAnimalTemplate(color = 0x8b6a43, accent = 0xffffff, shape = "wolf") {
-      const g = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9, emissive: shape === "omoro" ? 0x661100 : 0x000000, emissiveIntensity: shape === "omoro" ? 0.45 : 0 });
-      const accentMat = new THREE.MeshStandardMaterial({ color: accent, roughness: 0.85, emissive: shape === "omoro" ? 0xff2200 : 0x000000, emissiveIntensity: shape === "omoro" ? 0.7 : 0 });
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.38, shape === "horse" ? 1.6 : 1.05, 5, 10), mat);
-      body.rotation.z = Math.PI / 2;
-      body.position.y = shape === "monkey" ? 0.95 : 0.8;
-      const head = new THREE.Mesh(new THREE.SphereGeometry(shape === "bear" ? 0.42 : 0.3, 16, 12), mat);
-      head.position.set(0.85, body.position.y + 0.25, 0);
-      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.22, 0.22), accentMat);
-      snout.position.set(1.12, body.position.y + 0.18, 0);
-      const legGeo = new THREE.CylinderGeometry(0.08, 0.1, shape === "horse" ? 0.9 : 0.62, 6);
-      const legs = [];
-      for (const [x,z] of [[-0.48,0.25],[-0.48,-0.25],[0.42,0.25],[0.42,-0.25]]) {
-        const leg = new THREE.Mesh(legGeo, mat);
-        leg.position.set(x, 0.28, z);
-        g.add(leg);
-        legs.push(leg);
-      }
-      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.1, shape === "fox" ? 0.85 : 0.48, 8), accentMat);
-      tail.position.set(-0.85, body.position.y + 0.12, 0);
-      tail.rotation.z = -Math.PI / 2.5;
-      const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 5), mat);
-      ear1.position.set(0.72, body.position.y + 0.6, 0.15);
-      const ear2 = ear1.clone(); ear2.position.z = -0.15;
-      if (shape === "omoro") {
-        const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), accentMat);
-        core.position.set(0, body.position.y + 0.15, 0);
-        g.add(core);
-      }
-      g.add(body, head, snout, tail, ear1, ear2);
-      g.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-      g.userData.parts = { body, head, snout, ears: [ear1, ear2], legs };
-      return g;
-    }
-
-    function createFallbackWolfTemplate() { return createFallbackAnimalTemplate(0x5f6670, 0xd6dbe0, "wolf"); }
-    function createFallbackHorseTemplate() { return createFallbackAnimalTemplate(0x8b572a, 0x2b170c, "horse"); }
-    function createFallbackBearTemplate() { return createFallbackAnimalTemplate(0x4b2f1b, 0x9b714d, "bear"); }
-    function createFallbackFoxTemplate() { return createFallbackAnimalTemplate(0xe46f21, 0xffffff, "fox"); }
-    function createFallbackMonkeyTemplate() { return createFallbackAnimalTemplate(0x7b4a2b, 0xe0b18a, "monkey"); }
-    function createFallbackOmoroTemplate() { return createFallbackAnimalTemplate(0x220909, 0xff3300, "omoro"); }
-    
     function createFallbackGorillaTemplate() {
       const gorilla = new THREE.Group();
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d2b29, roughness: 1.0 });
@@ -2775,95 +2622,6 @@
       scene.add(group);
     }
 
-    
-    function createBossPortal() {
-      if (bossPortal) return;
-      const group = new THREE.Group();
-      const wood = new THREE.MeshStandardMaterial({ color: 0x5a3217, roughness: 0.85 });
-      const metal = new THREE.MeshStandardMaterial({ color: 0xd0a84c, metalness: 0.35, roughness: 0.35, emissive: 0x4a2600, emissiveIntensity: 0.15 });
-      const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 1.2), wood);
-      base.position.y = 0.45;
-      const lid = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.28, 1.3), metal);
-      lid.position.y = 1.04;
-      const lock = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.32, 0.12), metal);
-      lock.position.set(0, 0.72, 0.66);
-      const aura = new THREE.PointLight(0xff4f2a, 2.2, 12);
-      aura.position.y = 1.8;
-      group.add(base, lid, lock, aura);
-      placeOnTerrain(group, -4.0, 2.4, 0);
-      group.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-      bossPortal = group;
-      scene.add(group);
-    }
-
-    function createBossArena() {
-      if (bossArena) return;
-      bossArena = new THREE.Group();
-      const floor = new THREE.Mesh(
-        new THREE.CircleGeometry(34, 64),
-        new THREE.MeshStandardMaterial({ color: 0x201014, roughness: 0.9, emissive: 0x280000, emissiveIntensity: 0.25 })
-      );
-      floor.rotation.x = -Math.PI / 2;
-      floor.position.set(0, getTerrainHeight(0, -700) + 0.08, -700);
-      floor.receiveShadow = true;
-      bossArena.add(floor);
-      for (let i = 0; i < 18; i++) {
-        const a = (i / 18) * Math.PI * 2;
-        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.65, 4.0, 8), new THREE.MeshStandardMaterial({ color: 0x12090a, emissive: 0x5a0900, emissiveIntensity: 0.25, roughness: 0.8 }));
-        pillar.position.set(Math.sin(a) * 36, floor.position.y + 2, -700 + Math.cos(a) * 36);
-        pillar.castShadow = true; pillar.receiveShadow = true;
-        bossArena.add(pillar);
-      }
-      scene.add(bossArena);
-    }
-
-    function isNearBossPortal() {
-      if (!bossPortal) return false;
-      const dx = bossPortal.position.x - playerRoot.position.x;
-      const dz = bossPortal.position.z - playerRoot.position.z;
-      return dx * dx + dz * dz <= 12;
-    }
-
-    function startBossFight() {
-      if (inBossFight || gameOver) return;
-      createBossArena();
-      inBossFight = true;
-      for (const data of [...activeBoars.values()]) despawnBoarForStream(data);
-      playerRoot.position.set(0, getTerrainHeight(0, -690), -690);
-      physics.jumpOffset = 0; physics.vy = 0; physics.onGround = true;
-      const level = getWorldLevelRange().max + 5;
-      const iv = 60 + Math.floor(Math.random() * 41);
-      const bossDef = { ...MONSTER_SPECIES.omoro, key: "boss", name: `世界Lv.${worldLevel} ボス`, baseHp: 900 + worldLevel * 180, baseAttack: 38 + worldLevel * 5, baseDefense: 18 + worldLevel * 2, baseMoveSpeed: 1.18 };
-      const stats = applyIvToStats({ level, hpMax: bossDef.baseHp * (1 + worldLevel * 0.35), atkDps: bossDef.baseAttack * (1 + worldLevel * 0.12), defense: bossDef.baseDefense, moveSpeed: bossDef.baseMoveSpeed }, iv);
-      const data = { id: nextEntityId++, speciesKey: "omoro", speciesName: bossDef.name, x: 0, z: -710, rotY: Math.PI, biomeKey: "volcano", scale: 2.4, level, iv, hpMax: stats.hpMax, hp: stats.hpMax, atkDps: stats.atkDps, defense: stats.defense || 0, attackRange: 2.2, aggroRange: 999, moveSpeed: stats.moveSpeed || 1.2, collisionRadius: 1.3, uiOffset: 4.5, state: "chase", stateTime: 0, wanderYaw: 0, wanderTimer: 1, hostileUntil: Infinity, targetType: "player", targetId: null, nextAttackAt: 0, dead: false, respawnToken: 0, isSpawning: false, isDespawning: false, spawnCooldownUntil: 0, terrainLift: 0, activeObject: null, isBoss: true };
-      boarData.push(data);
-      addToSpatialGrid("boar", data);
-      const previousTemplate = monsterTemplates.get("omoro");
-      if (bossTemplate) monsterTemplates.set("omoro", bossTemplate);
-      spawnBoar(data);
-      if (previousTemplate) monsterTemplates.set("omoro", previousTemplate);
-      activeBoss = data;
-      showToast("謎の箱が開いた！専用ボス戦闘マップへ転送！", 2600);
-      setStatus("ボス戦開始");
-    }
-
-    function completeBossFight() {
-      if (!inBossFight) return;
-      inBossFight = false;
-      activeBoss = null;
-      const oldLevel = worldLevel;
-      worldLevel = clamp(worldLevel + 1, 1, WORLD_LEVEL_MAX);
-      saveWorldLevel();
-      savePlayerStats();
-      playerRoot.position.set(0, getTerrainHeight(0, 0), 0);
-      physics.jumpOffset = 0; physics.vy = 0; physics.onGround = true;
-      updateWorldLevelUI();
-      generateBoarData();
-      rebuildSpatialGrids();
-      showToast(oldLevel >= WORLD_LEVEL_MAX ? "世界レベルは最大です！" : `世界レベルが上昇した！ ${oldLevel} → ${worldLevel}`, 3600);
-      setStatus("初期スポーン地点へ帰還");
-    }
-    
     function isNearAdminPole() {
       if (!adminPole) return false;
       const dx = adminPole.position.x - playerRoot.position.x;
@@ -2872,15 +2630,7 @@
     }
 
     function updateAdminActionUI() {
-      if (isNearBossPortal()) {
-        adminInteractBtn.textContent = "ボス戦へ";
-        adminInteractBtn.style.display = "block";
-      } else if (isNearAdminPole()) {
-        adminInteractBtn.textContent = "コード入力";
-        adminInteractBtn.style.display = "block";
-      } else {
-        adminInteractBtn.style.display = "none";
-      }
+      adminInteractBtn.style.display = isNearAdminPole() ? "block" : "none";
     }
 
     function resetAdminCodeInput() {
@@ -2889,7 +2639,6 @@
     }
 
     function openAdminCodeModal() {
-      if (isNearBossPortal()) { startBossFight(); return; }
       if (!isNearAdminPole()) return;
       resetAdminCodeInput();
       adminCodeModal.classList.add("open");
@@ -2941,10 +2690,9 @@
       data.hpMax = stats.hpMax;
       data.hp = stats.hpMax;
       data.atkDps = stats.atkDps;
-      data.defense = stats.defense || 0;
       data.attackRange = config.boarAttackRange;
       data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
-      data.moveSpeed = stats.moveSpeed || (config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3));
+      data.moveSpeed = config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3);
       data.state = "move";
       data.stateTime = 0;
       data.wanderYaw = Math.random() * Math.PI * 2;
@@ -3029,10 +2777,10 @@
         id: nextEntityId++, speciesKey: speciesDef.key, speciesName: speciesDef.name,
         x: clamp(x, -WORLD_HALF + 4, WORLD_HALF - 4), z: clamp(z, -WORLD_HALF + 4, WORLD_HALF - 4),
         rotY: angleOffset + Math.PI, biomeKey: getBiomeAt(x, z).key,
-        scale: getSpeciesVisualScale(speciesDef.key),
-        level, iv, hpMax: stats.hpMax, hp: stats.hpMax, atkDps: stats.atkDps, defense: stats.defense || 0,
+        scale: speciesDef.key === "gorilla" ? 1.25 : (speciesDef.key === "secret" ? 1.1 : 1.0),
+        level, iv, hpMax: stats.hpMax, hp: stats.hpMax, atkDps: stats.atkDps,
         attackRange: config.boarAttackRange, aggroRange: config.boarAggroRange + (level - 1) * 0.8,
-        moveSpeed: stats.moveSpeed || (config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3)),
+        moveSpeed: config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3),
         collisionRadius: 0.7, uiOffset: 2.0, state: "move", stateTime: 0,
         wanderYaw: Math.random() * Math.PI * 2, wanderTimer: rand(0.8, 2.6), hostileUntil: 0,
         targetType: null, targetId: null, nextAttackAt: 0, dead: false, respawnToken: 0,
@@ -3265,7 +3013,7 @@
         attackPlaying
           ? "攻撃中"
           : physics.onGround
-            ? (moving ? "走行中" : "待機中")
+            ? (moving ? (dashMode || dashHeld ? "ダッシュ中" : "移動中") : "待機中")
             : (moving ? "移動中 / ジャンプ中" : "ジャンプ中")
       );
     }
@@ -3689,11 +3437,6 @@
       if (data.activeObject) despawnBoarForStream(data);
       if (activeSecretMonsterId === data.id) activeSecretMonsterId = null;
       data.dead = true;
-      if (data.isBoss) {
-        removeFromSpatialGrid("boar", data);
-        completeBossFight();
-        return;
-      }
       if (shouldRespawn) scheduleBoarRespawn(data);
     }
 
@@ -3711,7 +3454,7 @@
     function respawnBoar(data) {
       if (!data) return;
       const p = randomWorldPoint(20);
-      const speciesDef = getRandomMonsterDefinition(p.x, p.z);
+      const speciesDef = getRandomMonsterDefinition();
       const level = getBoarLevelForPosition(p.x, p.z);
       const iv = rollMonsterIv();
       const stats = getStatsByLevel(level, speciesDef.key, iv);
@@ -3723,16 +3466,15 @@
       data.z = p.z;
       data.rotY = Math.random() * Math.PI * 2;
       data.biomeKey = getBiomeAt(p.x, p.z).key;
-      data.scale = getSpeciesVisualScale(speciesDef.key) * (0.85 + Math.random() * 0.35);
+      data.scale = speciesDef.key === "gorilla" ? 1.15 + Math.random() * 0.35 : 0.85 + Math.random() * 0.45;
       data.level = level;
       data.iv = iv;
       data.hpMax = stats.hpMax;
       data.hp = stats.hpMax;
       data.atkDps = stats.atkDps;
-      data.defense = stats.defense || 0;
       data.attackRange = config.boarAttackRange;
       data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
-      data.moveSpeed = stats.moveSpeed || (config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3));
+      data.moveSpeed = config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3);
       data.state = "move";
       data.stateTime = 0;
       data.wanderYaw = Math.random() * Math.PI * 2;
@@ -4469,7 +4211,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         if (tmp.v4.lengthSq() > 1e-8) tmp.v4.normalize();
         if (forward.dot(tmp.v4) < config.attackConeDot) continue;
 
-        data.hp -= Math.max(1, damage - (data.defense || 0) * delta);
+        data.hp -= damage;
         setBoarHateTarget(data, "player", null, now);
         if (data.hp <= 0) {
           const root = data.activeObject?.root;
@@ -4567,7 +4309,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         return;
       }
 
-      const desired = "run";
+      const desired = (dashMode || dashHeld) ? "run" : "walk";
       if (force || currentActionName !== desired) {
         stopAllActions(0.08);
         playAction(desired, 0.08);
@@ -4946,7 +4688,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     function syncWorldEntities(now) {
-      if (!inBossFight) despawnStrictOutOfRange(now);
+      despawnStrictOutOfRange(now);
       syncGridStream("tree", spawnTree, despawnTree, now, () => activeTrees.size < MAX_ACTIVE_TREES);
       syncGridStream("herb", spawnHerb, despawnHerb, now, () => activeHerbs.size < MAX_ACTIVE_HERBS);
       syncGridStream("rock", spawnRock, despawnRock, now, () => activeRocks.size < MAX_ACTIVE_ROCKS);
@@ -5088,7 +4830,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function shouldIgnoreCameraDragTarget(target) {
       if (!(target instanceof Element)) return false;
-      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn, #attackBtn");
+      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
     }
 
     function bindCameraControls() {
@@ -5166,7 +4908,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     function bindUI() {
-      dashBtn?.addEventListener("click", () => setDashMode(true));
+      dashBtn.addEventListener("click", () => setDashMode(!dashMode));
       attackBtn.addEventListener("click", () => startAttack());
       upgradeHpBtn.addEventListener("click", () => spendXpForUpgrade("hp"));
       upgradeDefenseBtn.addEventListener("click", () => spendXpForUpgrade("defense"));
@@ -5179,13 +4921,10 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       
       inventoryBtn.addEventListener("click", openInventoryModal);
       cleanupSavesBtn.addEventListener("click", () => {
-        const removed = clearAllForestLocalData();
-        inventory.splice(0, inventory.length);
-        playerProgress.xp = 0; playerProgress.hpLevel = 0; playerProgress.defenseLevel = 0; playerProgress.attackLevel = 0;
-        config.playerHpMax = 200; config.playerAttackDps = 5; config.playerDefense = 0; playerHp = config.playerHpMax;
-        worldLevel = 1; gameOver = false;
-        updatePlayerHud(); updateUpgradeUI(); renderInventoryModal();
-        showToast(`ローカル保存データを${removed}件削除しました`);
+        const removed = cleanupAllInventoryHistory();
+        pruneInventoryForStorage();
+        renderInventoryModal();
+        showToast(`古いセーブ履歴を${removed}件削除しました`);
       });
       closeInventoryBtn.addEventListener("click", closeInventoryModal);
       inventoryModal.addEventListener("click", (e) => {
@@ -5397,29 +5136,15 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       }
     }
    
-      function updateBiomeAmbience(delta) {
-      const biome = inBossFight ? BIOMES.find((b) => b.key === "volcano") : getBiomeAt(playerRoot.position.x, playerRoot.position.z);
-      if (!biome) return;
-      const bg = biome.key === "volcano" ? 0x2a0505 : (biome.key === "snow" ? 0xdff7ff : (biome.key === "jungle" ? 0x16301f : (biome.key === "desert" ? 0xffd06d : 0x9fd3ff)));
-      scene.background = new THREE.Color(bg);
-      if (scene.fog) {
-        scene.fog.color.setHex(biome.key === "volcano" ? 0x300606 : (biome.key === "snow" ? 0xeefcff : (biome.key === "jungle" ? 0x102316 : bg)));
-        scene.fog.near = biome.key === "jungle" || biome.key === "snow" ? 45 : 80;
-        scene.fog.far = biome.key === "jungle" ? 260 : (biome.key === "volcano" ? 330 : 520);
-      }
-      sun.intensity = biome.key === "jungle" ? 1.6 : (biome.key === "volcano" ? 2.2 : 3.2);
-    }
-      
-    function updateMovementAndWorld(delta, now) {  
-      if (!inBossFight) updateInactiveBoarWander(delta);
-      if (!inBossFight) syncWorldEntities(now);
+    function updateMovementAndWorld(delta, now) {
+      updateInactiveBoarWander(delta);
+      syncWorldEntities(now);
       refreshCollisionCircles();
       updateMovement(delta);
-      if (!inBossFight) despawnStrictOutOfRange(now);
+      despawnStrictOutOfRange(now);
       updateAllActiveTerrainAlignment();
       updateCombat(delta, now);
       updateCamera(delta);
-      updateBiomeAmbience(delta);
       updateBoarTags();
       updateCompanionTags();
       updateSecretWarningUI();
@@ -5436,17 +5161,11 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     async function loadTemplates() {
-      const [treeGLTF, boarGLTF, gorillaGLTF, secretGLTF, wolfGLTF, horseGLTF, bearGLTF, foxGLTF, monkeyGLTF, omoroGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
+      const [treeGLTF, boarGLTF, gorillaGLTF, secretGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
         loadGLTFWithFallback(TREE_URLS, createFallbackTreeTemplate),
         loadGLTFWithFallback(BOAR_URLS, createFallbackBoarTemplate),
         loadGLTFWithFallback(GORILLA_URLS, createFallbackGorillaTemplate),
         loadGLTFWithFallback(SECRET_URLS, createFallbackSecretTemplate),
-        loadGLTFWithFallback(WOLF_URLS, createFallbackWolfTemplate),
-        loadGLTFWithFallback(HORSE_URLS, createFallbackHorseTemplate),
-        loadGLTFWithFallback(BEAR_URLS, createFallbackBearTemplate),
-        loadGLTFWithFallback(FOX_URLS, createFallbackFoxTemplate),
-        loadGLTFWithFallback(MONKEY_URLS, createFallbackMonkeyTemplate),
-        loadGLTFWithFallback(OMORO_URLS, createFallbackOmoroTemplate),
         loadGLTFWithFallback(HERB_URLS, createFallbackHerbTemplate),
         loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate),
         loadGLTFWithFallback(RIVER_URLS, createFallbackRiverTemplate)
@@ -5462,12 +5181,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       monsterTemplates.set("boar", boarTemplate);
       monsterTemplates.set("gorilla", gorillaTemplate);
       monsterTemplates.set("secret", secretTemplate);
-      monsterTemplates.set("wolf", wolfGLTF.scene);
-      monsterTemplates.set("horse", horseGLTF.scene);
-      monsterTemplates.set("bear", bearGLTF.scene);
-      monsterTemplates.set("fox", foxGLTF.scene);
-      monsterTemplates.set("monkey", monkeyGLTF.scene);
-      monsterTemplates.set("omoro", omoroGLTF.scene);
       
       treeUsesFallback = treeGLTF.fallback;
       boarUsesFallback = boarGLTF.fallback;
@@ -5476,22 +5189,10 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       monsterFallbackFlags.set("boar", boarUsesFallback);
       monsterFallbackFlags.set("gorilla", gorillaUsesFallback);
       monsterFallbackFlags.set("secret", secretUsesFallback);
-      monsterFallbackFlags.set("wolf", wolfGLTF.fallback);
-      monsterFallbackFlags.set("horse", horseGLTF.fallback);
-      monsterFallbackFlags.set("bear", bearGLTF.fallback);
-      monsterFallbackFlags.set("fox", foxGLTF.fallback);
-      monsterFallbackFlags.set("monkey", monkeyGLTF.fallback);
-      monsterFallbackFlags.set("omoro", omoroGLTF.fallback);
       herbUsesFallback = herbGLTF.fallback;
       rockUsesFallback = rockGLTF.fallback;
       riverUsesFallback = riverGLTF.fallback;
 
-      bossTemplate = await loadFBXWithFallback([BOSS_FBX_URL]);
-      if (bossTemplate) {
-        applyShadowsAndFixMaterials(bossTemplate);
-      } else {
-        bossTemplate = createFallbackOmoroTemplate();
-      }
       forceRegroundAllLoaded();
     }
 
@@ -5556,12 +5257,10 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     async function bootstrap() {
       try {
         safeLoadInventory();
-        safeLoadWorldLevel();
         safeLoadPlayerStats();
         updatePlayerHud();
         updateUpgradeUI();
         createAdminPole();
-        createBossPortal();
         setStatus("モデルを読み込み中…");
 
         generateTreeData();
