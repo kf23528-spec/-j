@@ -2345,6 +2345,53 @@
       return boar;
     }
 
+    function getSpeciesVisualScale(key) {
+      return { gorilla: 1.25, horse: 1.18, bear: 1.45, wolf: 0.92, fox: 0.72, monkey: 0.78, omoro: 1.35, secret: 1.2 }[key] || 1.0;
+    }
+
+    function createFallbackAnimalTemplate(color = 0x8b6a43, accent = 0xffffff, shape = "wolf") {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9, emissive: shape === "omoro" ? 0x661100 : 0x000000, emissiveIntensity: shape === "omoro" ? 0.45 : 0 });
+      const accentMat = new THREE.MeshStandardMaterial({ color: accent, roughness: 0.85, emissive: shape === "omoro" ? 0xff2200 : 0x000000, emissiveIntensity: shape === "omoro" ? 0.7 : 0 });
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.38, shape === "horse" ? 1.6 : 1.05, 5, 10), mat);
+      body.rotation.z = Math.PI / 2;
+      body.position.y = shape === "monkey" ? 0.95 : 0.8;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(shape === "bear" ? 0.42 : 0.3, 16, 12), mat);
+      head.position.set(0.85, body.position.y + 0.25, 0);
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.22, 0.22), accentMat);
+      snout.position.set(1.12, body.position.y + 0.18, 0);
+      const legGeo = new THREE.CylinderGeometry(0.08, 0.1, shape === "horse" ? 0.9 : 0.62, 6);
+      const legs = [];
+      for (const [x,z] of [[-0.48,0.25],[-0.48,-0.25],[0.42,0.25],[0.42,-0.25]]) {
+        const leg = new THREE.Mesh(legGeo, mat);
+        leg.position.set(x, 0.28, z);
+        g.add(leg);
+        legs.push(leg);
+      }
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.1, shape === "fox" ? 0.85 : 0.48, 8), accentMat);
+      tail.position.set(-0.85, body.position.y + 0.12, 0);
+      tail.rotation.z = -Math.PI / 2.5;
+      const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 5), mat);
+      ear1.position.set(0.72, body.position.y + 0.6, 0.15);
+      const ear2 = ear1.clone(); ear2.position.z = -0.15;
+      if (shape === "omoro") {
+        const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), accentMat);
+        core.position.set(0, body.position.y + 0.15, 0);
+        g.add(core);
+      }
+      g.add(body, head, snout, tail, ear1, ear2);
+      g.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+      g.userData.parts = { body, head, snout, ears: [ear1, ear2], legs };
+      return g;
+    }
+
+    function createFallbackWolfTemplate() { return createFallbackAnimalTemplate(0x5f6670, 0xd6dbe0, "wolf"); }
+    function createFallbackHorseTemplate() { return createFallbackAnimalTemplate(0x8b572a, 0x2b170c, "horse"); }
+    function createFallbackBearTemplate() { return createFallbackAnimalTemplate(0x4b2f1b, 0x9b714d, "bear"); }
+    function createFallbackFoxTemplate() { return createFallbackAnimalTemplate(0xe46f21, 0xffffff, "fox"); }
+    function createFallbackMonkeyTemplate() { return createFallbackAnimalTemplate(0x7b4a2b, 0xe0b18a, "monkey"); }
+    function createFallbackOmoroTemplate() { return createFallbackAnimalTemplate(0x220909, 0xff3300, "omoro"); }
+    
     function createFallbackGorillaTemplate() {
       const gorilla = new THREE.Group();
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d2b29, roughness: 1.0 });
@@ -2728,6 +2775,95 @@
       scene.add(group);
     }
 
+    
+    function createBossPortal() {
+      if (bossPortal) return;
+      const group = new THREE.Group();
+      const wood = new THREE.MeshStandardMaterial({ color: 0x5a3217, roughness: 0.85 });
+      const metal = new THREE.MeshStandardMaterial({ color: 0xd0a84c, metalness: 0.35, roughness: 0.35, emissive: 0x4a2600, emissiveIntensity: 0.15 });
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 1.2), wood);
+      base.position.y = 0.45;
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.28, 1.3), metal);
+      lid.position.y = 1.04;
+      const lock = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.32, 0.12), metal);
+      lock.position.set(0, 0.72, 0.66);
+      const aura = new THREE.PointLight(0xff4f2a, 2.2, 12);
+      aura.position.y = 1.8;
+      group.add(base, lid, lock, aura);
+      placeOnTerrain(group, -4.0, 2.4, 0);
+      group.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+      bossPortal = group;
+      scene.add(group);
+    }
+
+    function createBossArena() {
+      if (bossArena) return;
+      bossArena = new THREE.Group();
+      const floor = new THREE.Mesh(
+        new THREE.CircleGeometry(34, 64),
+        new THREE.MeshStandardMaterial({ color: 0x201014, roughness: 0.9, emissive: 0x280000, emissiveIntensity: 0.25 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(0, getTerrainHeight(0, -700) + 0.08, -700);
+      floor.receiveShadow = true;
+      bossArena.add(floor);
+      for (let i = 0; i < 18; i++) {
+        const a = (i / 18) * Math.PI * 2;
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.65, 4.0, 8), new THREE.MeshStandardMaterial({ color: 0x12090a, emissive: 0x5a0900, emissiveIntensity: 0.25, roughness: 0.8 }));
+        pillar.position.set(Math.sin(a) * 36, floor.position.y + 2, -700 + Math.cos(a) * 36);
+        pillar.castShadow = true; pillar.receiveShadow = true;
+        bossArena.add(pillar);
+      }
+      scene.add(bossArena);
+    }
+
+    function isNearBossPortal() {
+      if (!bossPortal) return false;
+      const dx = bossPortal.position.x - playerRoot.position.x;
+      const dz = bossPortal.position.z - playerRoot.position.z;
+      return dx * dx + dz * dz <= 12;
+    }
+
+    function startBossFight() {
+      if (inBossFight || gameOver) return;
+      createBossArena();
+      inBossFight = true;
+      for (const data of [...activeBoars.values()]) despawnBoarForStream(data);
+      playerRoot.position.set(0, getTerrainHeight(0, -690), -690);
+      physics.jumpOffset = 0; physics.vy = 0; physics.onGround = true;
+      const level = getWorldLevelRange().max + 5;
+      const iv = 60 + Math.floor(Math.random() * 41);
+      const bossDef = { ...MONSTER_SPECIES.omoro, key: "boss", name: `世界Lv.${worldLevel} ボス`, baseHp: 900 + worldLevel * 180, baseAttack: 38 + worldLevel * 5, baseDefense: 18 + worldLevel * 2, baseMoveSpeed: 1.18 };
+      const stats = applyIvToStats({ level, hpMax: bossDef.baseHp * (1 + worldLevel * 0.35), atkDps: bossDef.baseAttack * (1 + worldLevel * 0.12), defense: bossDef.baseDefense, moveSpeed: bossDef.baseMoveSpeed }, iv);
+      const data = { id: nextEntityId++, speciesKey: "omoro", speciesName: bossDef.name, x: 0, z: -710, rotY: Math.PI, biomeKey: "volcano", scale: 2.4, level, iv, hpMax: stats.hpMax, hp: stats.hpMax, atkDps: stats.atkDps, defense: stats.defense || 0, attackRange: 2.2, aggroRange: 999, moveSpeed: stats.moveSpeed || 1.2, collisionRadius: 1.3, uiOffset: 4.5, state: "chase", stateTime: 0, wanderYaw: 0, wanderTimer: 1, hostileUntil: Infinity, targetType: "player", targetId: null, nextAttackAt: 0, dead: false, respawnToken: 0, isSpawning: false, isDespawning: false, spawnCooldownUntil: 0, terrainLift: 0, activeObject: null, isBoss: true };
+      boarData.push(data);
+      addToSpatialGrid("boar", data);
+      const previousTemplate = monsterTemplates.get("omoro");
+      if (bossTemplate) monsterTemplates.set("omoro", bossTemplate);
+      spawnBoar(data);
+      if (previousTemplate) monsterTemplates.set("omoro", previousTemplate);
+      activeBoss = data;
+      showToast("謎の箱が開いた！専用ボス戦闘マップへ転送！", 2600);
+      setStatus("ボス戦開始");
+    }
+
+    function completeBossFight() {
+      if (!inBossFight) return;
+      inBossFight = false;
+      activeBoss = null;
+      const oldLevel = worldLevel;
+      worldLevel = clamp(worldLevel + 1, 1, WORLD_LEVEL_MAX);
+      saveWorldLevel();
+      savePlayerStats();
+      playerRoot.position.set(0, getTerrainHeight(0, 0), 0);
+      physics.jumpOffset = 0; physics.vy = 0; physics.onGround = true;
+      updateWorldLevelUI();
+      generateBoarData();
+      rebuildSpatialGrids();
+      showToast(oldLevel >= WORLD_LEVEL_MAX ? "世界レベルは最大です！" : `世界レベルが上昇した！ ${oldLevel} → ${worldLevel}`, 3600);
+      setStatus("初期スポーン地点へ帰還");
+    }
+    
     function isNearAdminPole() {
       if (!adminPole) return false;
       const dx = adminPole.position.x - playerRoot.position.x;
@@ -2736,7 +2872,15 @@
     }
 
     function updateAdminActionUI() {
-      adminInteractBtn.style.display = isNearAdminPole() ? "block" : "none";
+      if (isNearBossPortal()) {
+        adminInteractBtn.textContent = "ボス戦へ";
+        adminInteractBtn.style.display = "block";
+      } else if (isNearAdminPole()) {
+        adminInteractBtn.textContent = "コード入力";
+        adminInteractBtn.style.display = "block";
+      } else {
+        adminInteractBtn.style.display = "none";
+      }
     }
 
     function resetAdminCodeInput() {
@@ -2745,6 +2889,7 @@
     }
 
     function openAdminCodeModal() {
+      if (isNearBossPortal()) { startBossFight(); return; }
       if (!isNearAdminPole()) return;
       resetAdminCodeInput();
       adminCodeModal.classList.add("open");
