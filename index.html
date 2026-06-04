@@ -47,19 +47,21 @@
       max-width: min(92vw, 500px);
       padding: 12px 14px;
       border-radius: 16px;
-      background: linear-gradient(145deg, rgba(8,13,20,0.78), rgba(22,35,51,0.58));
-      backdrop-filter: blur(14px) saturate(145%);
-      -webkit-backdrop-filter: blur(14px) saturate(145%);
-      border: 1px solid rgba(255,255,255,0.18);
-      box-shadow: 0 14px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.14);
-      color: #eef7ff;
+      background: none;
+      background-color: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      border: 0;
+      box-shadow: none;
+      color: #ffffff;
+      text-shadow: 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 3px 9px rgba(0,0,0,0.95);
       line-height: 1.5;
       font-size: 14px;
       user-select: none;
     }
     #title { font-weight: 1000; font-size: 15px; margin-bottom: 4px; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.45); letter-spacing: 0.04em; }
     #status { margin-top: 8px; font-size: 13px; font-weight: 900; color: #a9d7ff; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
-    #buttons { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    #buttons { display: none; }
     .modeBtn {
       border: 0;
       border-radius: 12px;
@@ -75,8 +77,19 @@
       box-shadow: 0 8px 18px rgba(47,130,255,0.30), inset 0 1px 0 rgba(255,255,255,0.22);
     }
     .modeBtn.active { background: linear-gradient(180deg, #2f82ff, #0e3d9e); }
-    .modeBtn.attack { background: linear-gradient(180deg, #ff9a47, #e6421c); box-shadow: 0 8px 18px rgba(255,106,44,0.30); }
-    .modeBtn.attack.active { background: linear-gradient(180deg, #ff6a2c, #9c260e); }
+    .modeBtn.attack {
+      position: fixed;
+      right: 28px;
+      bottom: 150px;
+      z-index: 38;
+      width: 124px;
+      height: 86px;
+      border-radius: 28px;
+      font-size: 20px;
+      background: linear-gradient(180deg, #ff4f4f, #b91212);
+      box-shadow: 0 14px 32px rgba(255, 40, 40, 0.42), inset 0 2px 0 rgba(255,255,255,0.24);
+    }
+    .modeBtn.attack.active { background: linear-gradient(180deg, #ff2828, #780707); transform: scale(0.97); }
 
     #help {
       margin-top: 8px;
@@ -101,7 +114,7 @@
       font-size: 12px;
       font-weight: 800;
       margin-bottom: 6px;
-      color: dcecff;
+      color: #ffffff;
     }
     .barWrap {
       width: 100%;
@@ -498,11 +511,11 @@
     
     #upgradePanel {
       margin-top: 10px;
-      padding: 10px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.14);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
     }
     #xpText {
       font-size: 13px;
@@ -636,6 +649,7 @@
         max-width: calc(100vw - 24px);
       }
       #help { font-size: 11px; }
+        .modeBtn.attack { right: 18px; bottom: 132px; width: 108px; height: 72px; font-size: 17px; }
       #jumpBtn {
         width: 94px;
         height: 94px;
@@ -711,11 +725,10 @@
     
     <div id="status">待機中</div>
     <div id="buttons">
-      <button id="dashBtn" class="modeBtn">ダッシュ</button>
-      <button id="attackBtn" class="modeBtn attack">攻撃</button>
+      <button id="dashBtn" class="modeBtn">常時走る</button>
     </div>
     <div id="help">
-      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
+      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃（右下）<br>
       薬草は1m以内で「薬草回収」ボタンが表示されます。ミニマップをタップすると全体マップを開けます。
     </div>
   </div>
@@ -749,7 +762,7 @@
       <div id="inventoryTitle">インベントリ</div>
       <div id="inventoryInfo">0 / 10 体</div>
       <div id="inventoryList"></div>
-      <button id="cleanupSavesBtn">🧹 古いセーブデータを削除して容量を空ける</button>
+     <button id="cleanupSavesBtn">🧹 履歴とローカル保存データを全削除</button>
       <button id="closeInventoryBtn">閉じる</button>
     </div>
   </div>
