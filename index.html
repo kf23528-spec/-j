@@ -578,6 +578,58 @@
     }
     .adminKey.secondary { background: linear-gradient(180deg, #9aa8bd, #65758f); }
     
+    
+    
+    #adminPanelModal {
+      position: fixed;
+      inset: 0;
+      z-index: 78;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4, 8, 16, 0.58);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+    }
+    #adminPanelModal.open { display: flex; }
+    #adminPanel {
+      width: min(94vw, 720px);
+      max-height: min(88vh, 760px);
+      overflow: auto;
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(20,28,46,0.98), rgba(7,12,22,0.97));
+      color: #ecf5ff;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.16);
+      border: 1px solid rgba(126,190,255,0.28);
+      padding: 18px;
+    }
+    #adminPanelHeader { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    #adminPanelTitle { font-size: 20px; font-weight: 1000; letter-spacing: 0.04em; color: #fff; }
+    #closeAdminPanelBtn {
+      width: 42px; height: 42px; border: 0; border-radius: 50%;
+      background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; font-weight: 1000; cursor: pointer;
+    }
+    .adminSection {
+      margin-top: 12px; padding: 14px; border-radius: 18px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    }
+    .adminSection h3 { margin: 0 0 10px; font-size: 15px; color: #9fd3ff; }
+    .adminGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .adminField { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 900; color: #c8d9ef; }
+    .adminField input, .adminField select {
+      min-height: 38px; border-radius: 10px; border: 1px solid rgba(159,211,255,0.28);
+      background: rgba(5,10,20,0.72); color: #fff; padding: 0 10px; font-weight: 900;
+    }
+    .adminActionBtn {
+      min-height: 42px; border: 0; border-radius: 12px; cursor: pointer;
+      background: linear-gradient(180deg, #5bc4ff, #2470ff); color: #fff; font-weight: 1000;
+      box-shadow: 0 10px 24px rgba(36,112,255,0.24);
+    }
+    .adminActionBtn.danger { background: linear-gradient(180deg, #ff8766, #d73328); }
+    .adminToggle { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 1000; }
+    .adminToggle input { width: 22px; height: 22px; }
+    @media (max-width: 700px) { .adminGrid { grid-template-columns: 1fr; } }
+    
     @media (max-width: 700px) {
       #ui {
         min-width: 0;
@@ -710,6 +762,43 @@
     </div>
   </div>
   
+  
+  
+  <div id="adminPanelModal" aria-hidden="true">
+    <div id="adminPanel">
+      <div id="adminPanelHeader">
+        <div id="adminPanelTitle">管理者パネル / Debug UI</div>
+        <button id="closeAdminPanelBtn" type="button">×</button>
+      </div>
+      <div class="adminSection">
+        <h3>モンスター召喚</h3>
+        <div class="adminGrid">
+          <label class="adminField">種類<select id="adminMonsterSelect"></select></label>
+          <label class="adminField">個数<input id="adminMonsterCount" type="number" min="1" max="50" value="1"></label>
+          <label class="adminField">レベル<input id="adminMonsterLevel" type="number" min="1" max="999" value="1"></label>
+        </div>
+        <button id="adminSpawnMonsterBtn" class="adminActionBtn" type="button">その場に召喚</button>
+      </div>
+      <div class="adminSection">
+        <h3>ステータス自由変更</h3>
+        <div class="adminGrid">
+          <label class="adminField">現在HP<input id="adminHpInput" type="number" min="1" value="200"></label>
+          <label class="adminField">最大HP<input id="adminMaxHpInput" type="number" min="1" value="200"></label>
+          <label class="adminField">攻撃力<input id="adminAttackInput" type="number" min="0" value="5"></label>
+          <label class="adminField">防御力<input id="adminDefenseInput" type="number" min="0" value="0"></label>
+        </div>
+        <button id="adminApplyStatsBtn" class="adminActionBtn" type="button">ステータス適用</button>
+      </div>
+      <div class="adminSection">
+        <h3>XP / 捕獲デバッグ</h3>
+        <div class="adminGrid">
+          <button id="adminGrantXpBtn" class="adminActionBtn" type="button">XP大量付与</button>
+          <label class="adminToggle"><input id="adminForceCaptureToggle" type="checkbox"> 強制捕獲モード</label>
+          <button id="adminHealBtn" class="adminActionBtn" type="button">全回復</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="joystick" aria-label="joystick">
     <div id="joyKnob"></div>
   </div>
@@ -740,6 +829,7 @@
     const RIVER_URLS = ["./river.glb"];
 
     const STORAGE_KEY = "forest_tps_inventory_v3";
+    const PLAYER_STATS_STORAGE_KEY = "forest_tps_player_stats_v1";
     const INVENTORY_HISTORY_PREFIX = `${STORAGE_KEY}_history_`;
     const INVENTORY_HISTORY_LIMIT = 5;
     const LOCAL_STORAGE_SOFT_LIMIT_BYTES = 4.5 * 1024 * 1024;
