@@ -839,6 +839,11 @@
     const WORLD_HALF = WORLD_SIZE / 2;
     const ACTIVE_RADIUS = 100;
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
+    const FRUSTUM_CULL_MARGIN = 8;
+    const MAX_ACTIVE_TREES = 180;
+    const MAX_ACTIVE_HERBS = 220;
+    const MAX_ACTIVE_ROCKS = 120;
+    const MAX_XP_DROPS = 80;
     const GRID_CELL_SIZE = 100;
     
     const TREE_COUNT = 1000;
@@ -859,7 +864,7 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
@@ -873,7 +878,7 @@
     const sun = new THREE.DirectionalLight(0xffffff, 3.2);
     sun.position.set(25, 35, 18);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(4096, 4096);
+    sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.near = 1;
     sun.shadow.camera.far = 260;
     sun.shadow.camera.left = -130;
@@ -888,6 +893,44 @@
     fill.position.set(-20, 18, -12);
     scene.add(fill);
 
+    function createCloudSkyTexture() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, "#5faeff");
+      grad.addColorStop(0.48, "#a9d8ff");
+      grad.addColorStop(1, "#f4fbff");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < 115; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height * 0.58 + 25;
+        const w = 55 + Math.random() * 180;
+        const h = 14 + Math.random() * 48;
+        const cloud = ctx.createRadialGradient(x, y, 4, x, y, w);
+        cloud.addColorStop(0, `rgba(255,255,255,${0.34 + Math.random() * 0.28})`);
+        cloud.addColorStop(0.46, "rgba(255,255,255,0.22)");
+        cloud.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = cloud;
+        ctx.beginPath();
+        ctx.ellipse(x, y, w, h, Math.random() * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    const skyDome = new THREE.Mesh(
+      new THREE.SphereGeometry(680, 48, 24),
+      new THREE.MeshBasicMaterial({ map: createCloudSkyTexture(), side: THREE.BackSide, fog: false })
+    );
+    skyDome.renderOrder = -1000;
+    scene.add(skyDome);
+    
     function safeNum(v, fallback = 0) {
       return Number.isFinite(v) ? v : fallback;
     }
@@ -927,13 +970,44 @@
     }
 
     const BIOMES = [
-      { key: "forest", name: "森林", emoji: "🌲", minX: -WORLD_HALF, maxX: -250, ground: 0x4f9a45, dark: "#244b28", light: "#5db864", map: "#2f7d3d" },
-      { key: "desert", name: "砂漠", emoji: "🏜️", minX: -250, maxX: 250, ground: 0xc89a54, dark: "#9b6a31", light: "#dfbd72", map: "#c4954d" },
-      { key: "snow", name: "雪原", emoji: "❄️", minX: 250, maxX: WORLD_HALF, ground: 0xdfeff4, dark: "#9ab8c3", light: "#ffffff", map: "#d9eef7" }
+            { key: "forest", name: "森", emoji: "🌲", ground: 0x4f9a45, dark: "#244b28", light: "#5db864", map: "#2f7d3d", treeTint: 0x2f7d32, herbTint: 0x4ecb58, rockTint: 0x777f73 },
+      { key: "plains", name: "平原", emoji: "🌾", ground: 0x8cbc4f, dark: "#567d2d", light: "#b7d76b", map: "#93bf52", treeTint: 0x7aaa3b, herbTint: 0xa8d75d, rockTint: 0x8a8f79 },
+      { key: "desert", name: "砂漠", emoji: "🏜️", ground: 0xc89a54, dark: "#9b6a31", light: "#dfbd72", map: "#c4954d", treeTint: 0xd0a353, herbTint: 0xd6b05d, rockTint: 0xb27a3d },
+      { key: "snow", name: "雪山", emoji: "❄️", ground: 0xdfeff4, dark: "#9ab8c3", light: "#ffffff", map: "#d9eef7", treeTint: 0xbdd9df, herbTint: 0xe8f7ff, rockTint: 0xdceaf0 },
+      { key: "hills", name: "丘陵", emoji: "⛰️", ground: 0x789b42, dark: "#3f5e2c", light: "#9fbd63", map: "#75974b", treeTint: 0x5c8a38, herbTint: 0x95c665, rockTint: 0x777d68 },
+      { key: "canyon", name: "渓谷", emoji: "🧱", ground: 0xb55e38, dark: "#74341f", light: "#d17a4f", map: "#ad5937", treeTint: 0xa66a37, herbTint: 0xc28a42, rockTint: 0x9b4a32 },
+      { key: "jungle", name: "ジャングル", emoji: "🌴", ground: 0x247b3e, dark: "#123f26", light: "#34a75a", map: "#1f793b", treeTint: 0x1f7c33, herbTint: 0x28b85f, rockTint: 0x4e6f55 },
+      { key: "volcano", name: "溶岩山付近", emoji: "🌋", ground: 0x3b3030, dark: "#171212", light: "#7a3b2a", map: "#513535", treeTint: 0x4a3a2a, herbTint: 0x8a3c24, rockTint: 0x2f2b2b },
+      { key: "rocky", name: "岩石地帯", emoji: "🪨", ground: 0x77736b, dark: "#42403c", light: "#aaa49a", map: "#77736b", treeTint: 0x66704f, herbTint: 0x8c9a71, rockTint: 0x6f6f70 }
     ];
 
+    const BIOME_CENTERS = [
+      { key: "forest", x: -520, z: -280 }, { key: "forest", x: -620, z: 430 },
+      { key: "plains", x: -90, z: 40 }, { key: "plains", x: -260, z: 360 },
+      { key: "desert", x: 180, z: -420 }, { key: "desert", x: -260, z: -560 },
+      { key: "snow", x: 470, z: 430 }, { key: "snow", x: 610, z: 40 },
+      { key: "hills", x: -480, z: 80 }, { key: "hills", x: 80, z: 360 },
+      { key: "canyon", x: 360, z: -210 }, { key: "canyon", x: -40, z: -610 },
+      { key: "jungle", x: -560, z: -560 }, { key: "jungle", x: -130, z: -250 },
+      { key: "volcano", x: 520, z: -520 }, { key: "volcano", x: 260, z: 170 },
+      { key: "rocky", x: 20, z: 610 }, { key: "rocky", x: 630, z: 610 }
+    ];
+
+    function biomeNoise(x, z, salt = 0) {
+      return Math.sin(x * 0.013 + salt * 1.7) * 54 + Math.cos(z * 0.015 - salt * 2.3) * 46 + Math.sin((x + z) * 0.008 + salt) * 38;
+    }
+    
     function getBiomeAt(x, z) {
-      return BIOMES.find((b) => x >= b.minX && x < b.maxX) || BIOMES[BIOMES.length - 1];
+      let best = BIOME_CENTERS[0];
+      let bestScore = Infinity;
+      for (let i = 0; i < BIOME_CENTERS.length; i++) {
+        const c = BIOME_CENTERS[i];
+        const dx = x - c.x;
+        const dz = z - c.z;
+        const score = dx * dx + dz * dz + biomeNoise(x, z, i) * 16;
+        if (score < bestScore) { bestScore = score; best = c; }
+      }
+      return BIOMES.find((b) => b.key === best.key) || BIOMES[0];
     }
 
     function colorForBiomePosition(x, z) {
@@ -1045,6 +1119,20 @@
     const adminCodeModal = document.getElementById("adminCodeModal");
     const adminCodeDisplay = document.getElementById("adminCodeDisplay");
     const adminKeypad = document.getElementById("adminKeypad");
+    const adminPanelModal = document.getElementById("adminPanelModal");
+    const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
+    const adminMonsterSelect = document.getElementById("adminMonsterSelect");
+    const adminMonsterCount = document.getElementById("adminMonsterCount");
+    const adminMonsterLevel = document.getElementById("adminMonsterLevel");
+    const adminSpawnMonsterBtn = document.getElementById("adminSpawnMonsterBtn");
+    const adminHpInput = document.getElementById("adminHpInput");
+    const adminMaxHpInput = document.getElementById("adminMaxHpInput");
+    const adminAttackInput = document.getElementById("adminAttackInput");
+    const adminDefenseInput = document.getElementById("adminDefenseInput");
+    const adminApplyStatsBtn = document.getElementById("adminApplyStatsBtn");
+    const adminGrantXpBtn = document.getElementById("adminGrantXpBtn");
+    const adminForceCaptureToggle = document.getElementById("adminForceCaptureToggle");
+    const adminHealBtn = document.getElementById("adminHealBtn");
     
     const miniMapWrap = document.getElementById("miniMapWrap");
     const miniMapCanvas = document.getElementById("miniMapCanvas");
@@ -1170,6 +1258,7 @@
     let adminPole = null;
     let adminCodeInput = "";
     let ridingBoar = null;
+    let adminForceCaptureMode = false;
     
     const tmp = {
       v1: new THREE.Vector3(),
