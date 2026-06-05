@@ -46,15 +46,13 @@
       min-width: 280px;
       max-width: min(92vw, 500px);
       padding: 12px 14px;
-      border-radius: 0;
-      background: none;
-      background-color: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      border: 0;
-      box-shadow: none;
-      color: #ffffff;
-      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 6px rgba(0,0,0,0.9);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(8,13,20,0.78), rgba(22,35,51,0.58));
+      backdrop-filter: blur(14px) saturate(145%);
+      -webkit-backdrop-filter: blur(14px) saturate(145%);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.14);
+      color: #eef7ff;
       line-height: 1.5;
       font-size: 14px;
       user-select: none;
@@ -83,10 +81,8 @@
     #help {
       margin-top: 8px;
       font-size: 12px;
-      opacity: 1;
+      opacity: 0.82;
       line-height: 1.5;
-      color: #ffffff;
-      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 6px rgba(0,0,0,0.9);
     }
 
     #playerHud {
@@ -105,7 +101,7 @@
       font-size: 12px;
       font-weight: 800;
       margin-bottom: 6px;
-      color: #ffffff;
+      color: dcecff;
     }
     .barWrap {
       width: 100%;
@@ -376,10 +372,6 @@
       background: linear-gradient(180deg, #7d5cff, #5132c7);
       display: none;
     }
-    #bossPortalBtn {
-      background: linear-gradient(180deg, #5b2a91, #1f102f);
-      display: none;
-    }
     #rideBtn {
       background: linear-gradient(180deg, #9b6a3a, #65401f);
       display: none;
@@ -508,17 +500,15 @@
       margin-top: 10px;
       padding: 10px;
       border-radius: 14px;
-      background: none;
-      background-color: transparent;
-      border: 0;
-      box-shadow: none;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     }
     #xpText {
       font-size: 13px;
       font-weight: 900;
-      color: #ffe08a;
+      color: #ffd982;
       margin-bottom: 8px;
-      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 6px rgba(0,0,0,0.9);
     }
     .upgradeGrid {
       display: grid;
@@ -711,7 +701,7 @@
     </div>
 
     <div id="upgradePanel">
-      <div id="xpText">世界Lv.1 / 野生Lv.1〜10 / XP: 0 / 攻撃 5 / 防御 0</div>
+      <div id="xpText">XP: 0 / 攻撃 5 / 防御 0</div>
       <div class="upgradeGrid">
         <button id="upgradeHpBtn" class="upgradeBtn">最大HP +20<span id="hpCostText" class="upgradeCost">XP 50</span></button>
         <button id="upgradeDefenseBtn" class="upgradeBtn">防御 +2<span id="defenseCostText" class="upgradeCost">XP 50</span></button>
@@ -725,7 +715,7 @@
       <button id="attackBtn" class="modeBtn attack">攻撃</button>
     </div>
     <div id="help">
-      WASD / 矢印 / 画面スティック / Eで箱 / ジャンプ / 攻撃 / ダッシュ<br>
+      WASD / 矢印 / 画面スティック / ジャンプ / 攻撃 / ダッシュ<br>
       薬草は1m以内で「薬草回収」ボタンが表示されます。ミニマップをタップすると全体マップを開けます。
     </div>
   </div>
@@ -747,7 +737,6 @@
 
   <div id="sideButtons">
     <button id="adminInteractBtn" class="sideBtn">コード入力</button>
-    <button id="bossPortalBtn" class="sideBtn">ボスの箱</button>
     <button id="rideBtn" class="sideBtn">乗馬</button>
     <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
     <button id="recall-btn" class="sideBtn">モンスターを回収</button>
@@ -828,33 +817,19 @@
     const TREE_URLS = ["./tree.glb"];
     const BOAR_URLS = ["./boar.glb"];
     const GORILLA_URLS = ["./gorira.glb"];
-    const SECRET_URLS = ["./seacret.glb", "./omoro.glb"];
-    const WOLF_URLS = ["./wolf.glb"];
-    const HORSE_URLS = ["./uma.glb"];
-    const BEAR_URLS = ["./kuma.glb"];
-    const FOX_URLS = ["./kitune.glb"];
-    const MONKEY_URLS = ["./monkey.glb"];
-    const OMORO_URLS = ["./omoro.glb"];
-    const BOSS_FBX_URL = "./Boss.fbx";
+    const SECRET_URLS = ["./seacret.glb"];
     const MONSTER_SPECIES = {
-      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, baseDefense: 3, baseSpeed: 1.2, probability: 70, fallbackFactory: createFallbackBoarTemplate },
-      gorilla: { key: "gorilla", name: "ゴリラ", urls: GORILLA_URLS, baseHp: 200, baseAttack: 18, baseDefense: 10, baseSpeed: 0.95, probability: 15, fallbackFactory: createFallbackGorillaTemplate },
-      horse: { key: "horse", name: "馬", urls: HORSE_URLS, baseHp: 140, baseAttack: 10, baseDefense: 5, baseSpeed: 2.05, probability: 10, fallbackFactory: createFallbackHorseTemplate },
-      bear: { key: "bear", name: "熊", urls: BEAR_URLS, baseHp: 260, baseAttack: 28, baseDefense: 14, baseSpeed: 0.9, probability: 3.9999, fallbackFactory: createFallbackBearTemplate },
-      wolf: { key: "wolf", name: "狼", urls: WOLF_URLS, baseHp: 90, baseAttack: 22, baseDefense: 4, baseSpeed: 1.85, probability: 1, fallbackFactory: createFallbackWolfTemplate },
-      fox: { key: "fox", name: "キツネ", urls: FOX_URLS, baseHp: 72, baseAttack: 14, baseDefense: 3, baseSpeed: 2.15, probability: 0, fallbackFactory: createFallbackFoxTemplate },
-      monkey: { key: "monkey", name: "サル", urls: MONKEY_URLS, baseHp: 82, baseAttack: 13, baseDefense: 3, baseSpeed: 1.9, probability: 0, fallbackFactory: createFallbackMonkeyTemplate },
-      omoro: { key: "omoro", name: "オモロ", urls: OMORO_URLS, baseHp: 420, baseAttack: 46, baseDefense: 24, baseSpeed: 1.25, probability: 0, fallbackFactory: createFallbackSecretTemplate },
-      secret: { key: "secret", name: "シークレット", urls: SECRET_URLS, baseHp: 1000, baseAttack: 50, baseDefense: 35, baseSpeed: 1.35, probability: 0.0001, fallbackFactory: createFallbackSecretTemplate }
+      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, probability: 0.6, fallbackFactory: createFallbackBoarTemplate },
+      gorilla: { key: "gorilla", name: "ゴリラ", urls: GORILLA_URLS, baseHp: 200, baseAttack: 10, probability: 0.399999, fallbackFactory: createFallbackGorillaTemplate },
+      secret: { key: "secret", name: "シークレット", urls: SECRET_URLS, baseHp: 1000, baseAttack: 50, probability: 0.000001, fallbackFactory: createFallbackSecretTemplate }
     };
-    const MONSTER_SPECIES_LIST = Object.values(MONSTER_SPECIES);
+    const MONSTER_SPECIES_LIST = [MONSTER_SPECIES.boar, MONSTER_SPECIES.gorilla, MONSTER_SPECIES.secret];
     const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
     const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
     const RIVER_URLS = ["./river.glb"];
 
     const STORAGE_KEY = "forest_tps_inventory_v3";
     const PLAYER_STATS_STORAGE_KEY = "forest_tps_player_stats_v1";
-    const WORLD_LEVEL_STORAGE_KEY = "forest_tps_world_level_v1";
     const INVENTORY_HISTORY_PREFIX = `${STORAGE_KEY}_history_`;
     const INVENTORY_HISTORY_LIMIT = 5;
     const LOCAL_STORAGE_SOFT_LIMIT_BYTES = 4.5 * 1024 * 1024;
@@ -865,13 +840,13 @@
     const ACTIVE_RADIUS = 100;
     const ACTIVE_RADIUS_SQ = ACTIVE_RADIUS * ACTIVE_RADIUS;
     const FRUSTUM_CULL_MARGIN = 8;
-    const MAX_ACTIVE_TREES = 260;
+    const MAX_ACTIVE_TREES = 180;
     const MAX_ACTIVE_HERBS = 220;
     const MAX_ACTIVE_ROCKS = 120;
     const MAX_XP_DROPS = 80;
     const GRID_CELL_SIZE = 100;
     
-    const TREE_COUNT = 2700;
+    const TREE_COUNT = 1000;
     const HERB_COUNT = 1500;
     const ROCK_COUNT = 500;
     const RIVER_COUNT = 10;
