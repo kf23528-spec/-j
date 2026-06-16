@@ -634,6 +634,7 @@ function buildProceduralGun(){
   var scopeBody=new T.Mesh(new T.CylinderGeometry(0.018,0.018,0.08,12),bodyMat); scopeBody.rotation.x=Math.PI/2; scopeBody.position.set(0,0.052,-0.06); g.add(scopeBody);
   var glLine=new T.Mesh(new T.BoxGeometry(0.003,0.003,0.08),glowMat); glLine.position.set(-0.028,0.010,-0.06); g.add(glLine);
   g.scale.setScalar(1.0);
+  g.userData.forceScale = 5;
   return g;
 }
 
@@ -643,7 +644,8 @@ function attachGunToCamera(obj){
   camera.add(gunRoot);
   gunRoot.position.set(0.25,-0.22,-0.50);
   gunRoot.rotation.set(0,0,0);
-  gunRoot.scale.set(5,5,5);
+  var forceScale = (gunRoot.userData && Number.isFinite(gunRoot.userData.forceScale)) ? gunRoot.userData.forceScale : 1;
+  gunRoot.scale.set(forceScale, forceScale, forceScale);
   gunRoot.traverse(function(child){
     if(child.isMesh){
       child.castShadow = true;
@@ -669,36 +671,74 @@ function attachGunToCamera(obj){
 
 (function(){
   var loader = new T.GLTFLoader();
-  loader.load('ju.glb', function(gltf){
-    var model = gltf.scene;
-    model.traverse(function(obj){
-      if(obj.isMesh){
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-        obj.frustumCulled = false;
-        if(obj.material){
-          var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+  var loaded = false;
+  function finalizeGun(obj){
+    if(loaded) return;
+    loaded = true;
+    if(!obj){
+      attachGunToCamera(buildProceduralGun());
+      return;
+    }
+    obj.traverse(function(o){
+      if(o && o.isMesh){
+        o.frustumCulled = false;
+        o.castShadow = true;
+        o.receiveShadow = true;
+        if(o.material){
+          var mats = Array.isArray(o.material) ? o.material : [o.material];
           mats.forEach(function(m){
             if(!m) return;
             try{
-              if(m.isMeshStandardMaterial || m.isMeshPhongMaterial || m.isMeshLambertMaterial || m.isMeshBasicMaterial){
-                m.emissive = new T.Color(0x333333);
-                m.emissiveIntensity = 0.85;
-              }
+              if(m.map) m.map.needsUpdate = true;
+              if(m.emissive) m.emissive = new T.Color(0x333333);
               m.needsUpdate = true;
             }catch(e){}
           });
         }
       }
     });
-    model.scale.set(5,5,5);
-    model.position.set(0.25,-0.22,-0.50);
-    attachGunToCamera(model);
-  }, undefined, function(){
-    attachGunToCamera(buildProceduralGun());
-  });
-})();
+    try{
+      var box = new T.Box3().setFromObject(obj);
+      if(box && isFinite(box.min.x) && isFinite(box.max.x)){
+        var size = new T.Vector3();
+        var center = new T.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
+        obj.position.sub(center);
+        var maxDim = Math.max(size.x, size.y, size.z) || 1;
+        var fit = 1.2 / maxDim;
+        if(!isFinite(fit) || fit <= 0) fit = 1;
+        obj.scale.setScalar(fit * 5);
+      }else{
+        obj.scale.set(5,5,5);
+      }
+    }catch(err){
+      obj.scale.set(5,5,5);
+    }
+    attachGunToCamera(obj);
+  }
 
+  var candidates = ['ju.glb', './ju.glb', 'assets/ju.glb', './assets/ju.glb', 'models/ju.glb', './models/ju.glb'];
+  var i = 0;
+  function tryNext(){
+    if(loaded) return;
+    if(i >= candidates.length){
+      finalizeGun(buildProceduralGun());
+      return;
+    }
+    loader.load(
+      candidates[i++],
+      function(gltf){ finalizeGun(gltf && gltf.scene ? gltf.scene : null); },
+      undefined,
+      function(){ tryNext(); }
+    );
+  }
+
+  tryNext();
+  setTimeout(function(){
+    if(!loaded) finalizeGun(buildProceduralGun());
+  }, 5000);
+})();
 function createMuzzleFlash(){
   if(!gunRoot) return;
   var fg = new T.Group();
@@ -734,14 +774,17 @@ function updateMuzzleFlashes(dt){
 
 var gunSoundPool = [];
 var gunSoundReady = false;
+var gunSoundCursor = 0;
 function unlockAudio(){
   if(gunSoundReady) return;
   gunSoundReady = true;
   gunSoundPool = [];
-  for(var i=0;i<4;i++){
+  gunSoundCursor = 0;
+  for(var i=0;i<6;i++){
     var a = new Audio('ju.mp3');
     a.preload = 'auto';
     a.volume = 0.95;
+    a.load();
     gunSoundPool.push(a);
   }
   try{
@@ -757,25 +800,23 @@ function unlockAudio(){
     }
   }catch(e){}
 }
-(function(){
-  var a = new Audio('ju.mp3');
-  a.preload = 'auto';
-  a.load();
-})();
 
 function playGunSound(isBot){
   if(!gunSoundReady) return;
   try{
-    var audio = null;
-    for(var i=0;i<gunSoundPool.length;i++){
-      if(gunSoundPool[i].paused || gunSoundPool[i].ended){ audio = gunSoundPool[i]; break; }
+    if(!gunSoundPool.length){
+      var fallback = new Audio('ju.mp3');
+      fallback.preload = 'auto';
+      fallback.volume = isBot ? 0.7 : 0.95;
+      fallback.load();
+      var fp = fallback.play();
+      if(fp && typeof fp.catch === 'function') fp.catch(function(){});
+      return;
     }
-    if(!audio){
-      audio = new Audio('ju.mp3');
-      audio.preload = 'auto';
-      audio.volume = 0.95;
-      gunSoundPool.push(audio);
-    }
+    var audio = gunSoundPool[gunSoundCursor % gunSoundPool.length];
+    gunSoundCursor = (gunSoundCursor + 1) % gunSoundPool.length;
+    if(!audio) return;
+    audio.pause();
     audio.currentTime = 0;
     audio.volume = isBot ? 0.7 : 0.95;
     var p = audio.play();
@@ -944,7 +985,11 @@ function makeBullet(origin, dir, ownerId, ownerTeam, isRemote){
   m.position.copy(origin); scene.add(m);
   return {mesh:m,pos:origin.clone(),prev:origin.clone(),dir:dir.clone().normalize(),speed:BULLET_SPEED,life:BULLET_LIFE,ownerId:ownerId||'',ownerTeam:ownerTeam||TEAM_BLUE,isRemote:!!isRemote,dead:false};
 }
-function addBullet(origin, dir, ownerId, ownerTeam, isRemote){ bullets.push(makeBullet(origin, dir, ownerId, ownerTeam, isRemote)); }
+function addBullet(origin, dir, ownerId, ownerTeam, isRemote){
+  var b = makeBullet(origin, dir, ownerId, ownerTeam, isRemote);
+  bullets.push(b);
+  return b;
+}
 function hitPointInBox(point, box){ return Math.abs(point.x-box.x)<=box.w/2 && Math.abs(point.y-box.y)<=box.h/2 && Math.abs(point.z-box.z)<=box.d/2; }
 function raySegmentHitsBox(prev, next, box){
   var steps = 8;
@@ -1556,7 +1601,7 @@ function checkLocalShotHit(origin, dir){
     var hit = raySegmentHitsBox(origin, end, c);
     if(hit){
       var dist = hit.distanceTo(origin);
-      if(dist < nearestDist){ nearestDist = dist; nearest = {type:'obstacle', point:hit, collider:c}; }
+      if(dist < nearestDist){ nearestDist = dist; nearest = {type:'obstacle', kind:'obstacle', point:hit, collider:c}; }
     }
   }
   Object.keys(roomPlayers||{}).forEach(function(id){
@@ -1567,7 +1612,7 @@ function checkLocalShotHit(origin, dir){
     var hit = bulletHitsAvatar(origin, end, av.position.clone());
     if(hit){
       var dist = hit.distanceTo(origin);
-      if(dist < nearestDist){ nearestDist = dist; nearest = {type:'player', id:id, point:hit, team:p.team||TEAM_RED}; }
+      if(dist < nearestDist){ nearestDist = dist; nearest = {type:'player', kind:'player', id:id, point:hit, team:p.team||TEAM_RED}; }
     }
   });
   return nearest;
@@ -1585,15 +1630,41 @@ function fireOnce(){
   var origin = camera.position.clone().add(getForwardVectorFromCamera().clone().multiplyScalar(0.6));
   origin.y = camera.position.y - 0.05;
   var dir = getForwardVectorFromCamera();
-  addBullet(origin, dir, socket && socket.id ? socket.id : 'local', player.team || TEAM_BLUE, false);
+  var localBullet = addBullet(origin, dir, socket && socket.id ? socket.id : 'local', player.team || TEAM_BLUE, false);
   makeBulletFxLine(origin, dir, 0xffffff, 70);
 
   var hitInfo = checkLocalShotHit(origin, dir);
-  if(hitInfo && hitInfo.kind==='obstacle'){
+  var hitKind = hitInfo && (hitInfo.kind || hitInfo.type || '');
+  if(hitKind === 'obstacle'){
+    if(localBullet){
+      localBullet.dead = true;
+      if(localBullet.mesh && localBullet.mesh.parent) localBullet.mesh.parent.remove(localBullet.mesh);
+    }
     flashKillFx(hitInfo.point);
-    return; // 障害物に当たったら弾はここで消える
+    if(socket && socket.connected){
+      socket.emit('playerShot', {
+        room: currentRoom,
+        ox: origin.x, oy: origin.y, oz: origin.z,
+        dx: dir.x, dy: dir.y, dz: dir.z,
+        team: player.team || TEAM_BLUE
+      });
+    }
+    return;
   }
-  if(hitInfo && hitInfo.kind==='player'){
+  if(hitKind === 'player'){
+    if(localBullet){
+      localBullet.dead = true;
+      if(localBullet.mesh && localBullet.mesh.parent) localBullet.mesh.parent.remove(localBullet.mesh);
+    }
+    roomPlayers[hitInfo.id] = roomPlayers[hitInfo.id] || {team:hitInfo.team,alive:true,name:hitInfo.id,room:currentRoom};
+    roomPlayers[hitInfo.id].alive = false;
+    roomPlayers[hitInfo.id].hp = 0;
+    applyRemoteState(hitInfo.id, roomPlayers[hitInfo.id]);
+    updatePlayerStateToRoom({targetId:hitInfo.id,alive:false,hp:0});
+    flashKillFx(hitInfo.point);
+    addKillFeed('💥 KILL!');
+    showKillAnnouncement('HIT!');
+    clearRoundIfNeededFromStates();
     if(socket && socket.connected){
       socket.emit('playerShoot', {
         room: currentRoom,
@@ -1602,17 +1673,10 @@ function fireOnce(){
         targetId: hitInfo.id,
         team: player.team || TEAM_BLUE
       });
-      roomPlayers[hitInfo.id] = roomPlayers[hitInfo.id] || {team:hitInfo.team,alive:true,name:hitInfo.id,room:currentRoom};
-      roomPlayers[hitInfo.id].alive = false;
-      roomPlayers[hitInfo.id].hp = 0;
-      applyRemoteState(hitInfo.id, roomPlayers[hitInfo.id]);
-      updatePlayerStateToRoom({targetId:hitInfo.id,alive:false,hp:0});
-      flashKillFx(hitInfo.point);
-      addKillFeed('💥 KILL!');
-      showKillAnnouncement('HIT!');
-      clearRoundIfNeededFromStates();
     }
-  }else if(socket && socket.connected){
+    return;
+  }
+  if(socket && socket.connected){
     socket.emit('playerShot', {
       room: currentRoom,
       ox: origin.x, oy: origin.y, oz: origin.z,
@@ -1642,11 +1706,17 @@ function updateBullets(dt){
     if(b.mesh) b.mesh.position.copy(b.pos);
 
     var hitObstacle = false;
+    var obstacleHitPoint = null;
     for(var c=0;c<colliders.length;c++){
-      if(hitPointInBox(b.pos, colliders[c])){ hitObstacle = true; break; }
+      var hit = raySegmentHitsBox(b.prev, b.pos, colliders[c]);
+      if(hit){
+        hitObstacle = true;
+        obstacleHitPoint = hit;
+        break;
+      }
     }
     if(hitObstacle || Math.abs(b.pos.x)>MAP_BORDER+2 || Math.abs(b.pos.z)>MAP_BORDER+2){
-      flashKillFx(b.pos);
+      flashKillFx(obstacleHitPoint || b.pos);
       b.dead = true;
       if(b.mesh && b.mesh.parent)b.mesh.parent.remove(b.mesh);
       bullets.splice(i,1);
@@ -1661,6 +1731,40 @@ function updateBullets(dt){
         flashHitIndicator();
         showKillAnnouncement('HIT!');
         if(player.hp <= 0){ setLocalDeath(); }
+      }
+    }else{
+      var localHit = null;
+      Object.keys(roomPlayers||{}).forEach(function(id){
+        if(localHit || (socket && id===socket.id)) return;
+        var p = roomPlayers[id];
+        if(!p || p.alive===false) return;
+        var av = remoteAvatars.get(id); if(!av) return;
+        var h = bulletHitsAvatar(b.prev, b.pos, av.position.clone());
+        if(h) localHit = {id:id, point:h, team:p.team||TEAM_RED};
+      });
+      if(localHit && gameMode===GAME_MODE.BATTLE){
+        if(socket && socket.connected){
+          socket.emit('playerShoot', {
+            room: currentRoom,
+            ox: b.prev.x, oy: b.prev.y, oz: b.prev.z,
+            dx: b.dir.x, dy: b.dir.y, dz: b.dir.z,
+            targetId: localHit.id,
+            team: player.team || TEAM_BLUE
+          });
+        }
+        b.dead = true;
+        if(b.mesh && b.mesh.parent)b.mesh.parent.remove(b.mesh);
+        bullets.splice(i,1);
+        roomPlayers[localHit.id] = roomPlayers[localHit.id] || {team:localHit.team,alive:true,name:localHit.id,room:currentRoom};
+        roomPlayers[localHit.id].alive = false;
+        roomPlayers[localHit.id].hp = 0;
+        applyRemoteState(localHit.id, roomPlayers[localHit.id]);
+        updatePlayerStateToRoom({targetId:localHit.id,alive:false,hp:0});
+        flashHitIndicator();
+        flashKillFx(localHit.point);
+        addKillFeed('💥 KILL!');
+        showKillAnnouncement('HIT!');
+        clearRoundIfNeededFromStates();
       }
     }
   }
