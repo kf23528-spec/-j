@@ -2814,12 +2814,12 @@
       for (const data of activeTrees.values()) {
         if (!data.activeObject?.root) continue;
         const p = data.activeObject.root.position;
-        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || 1.5 });
+        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || 1.5, kind: "tree" });
       }
       for (const data of activeRocks.values()) {
         if (!data.activeObject?.root) continue;
         const p = data.activeObject.root.position;
-        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || ROCK_COLLISION_RADIUS });
+        collisionCircles.push({ x: p.x, z: p.z, r: data.collisionRadius || ROCK_COLLISION_RADIUS, kind: "rock" });
       }
       for (const data of activeRivers.values()) {
         collisionRects.push(getRiverCollisionRect(data));
@@ -2896,15 +2896,18 @@
       const sz = pos.z;
       const ex = sx + dx;
       const ez = sz + dz;
+      const isPlayerMove = obj3D === playerRoot || obj3D === playerRoot.position || pos === playerRoot.position;
 
       let bestT = 1;
       let hit = false;
+      let hitCircle = null;
 
       for (const circle of collisionCircles) {
         const t = segmentCircleHitT(sx, sz, ex, ez, circle.x, circle.z, radius + circle.r);
         if (t !== null && t < bestT) {
           bestT = t;
           hit = true;
+          hitCircle = circle;
         }
       }
 
@@ -2916,6 +2919,29 @@
         const safeT = Math.max(0, bestT - 0.02);
         const safeX = sx + dx * safeT;
         const safeZ = sz + dz * safeT;
+
+        if (isPlayerMove && hitCircle?.kind === "rock") {
+          let pushX = safeX - hitCircle.x;
+          let pushZ = safeZ - hitCircle.z;
+          const pushLen = Math.hypot(pushX, pushZ) || Math.hypot(dx, dz) || 1;
+          pushX /= pushLen;
+          pushZ /= pushLen;
+
+          let knockback = Math.max(10, Math.hypot(dx, dz) * 6.5);
+          let bx = safeX + pushX * knockback;
+          let bz = safeZ + pushZ * knockback;
+
+          for (let i = 0; i < 4 && collidesAtXZ(bx, bz, radius); i++) {
+            knockback *= 1.45;
+            bx = safeX + pushX * knockback;
+            bz = safeZ + pushZ * knockback;
+          }
+
+          pos.x = clamp(bx, -WORLD_HALF + 2, WORLD_HALF - 2);
+          pos.z = clamp(bz, -WORLD_HALF + 2, WORLD_HALF - 2);
+          return true;
+        }
+
         if (!collidesWithRiverRects(safeX, safeZ, radius)) {
           pos.x = safeX;
           pos.z = safeZ;
@@ -4212,6 +4238,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         if (forward.dot(tmp.v4) < config.attackConeDot) continue;
 
         data.hp -= damage;
+        if (root?.scale) {
+          const growFactor = 1.18;
+          root.scale.multiplyScalar(growFactor);
+          data.scale = (data.scale || 1) * growFactor;
+          data.collisionRadius = Math.min(6, (data.collisionRadius || 0.7) * 1.08);
+        }
         setBoarHateTarget(data, "player", null, now);
         if (data.hp <= 0) {
           const root = data.activeObject?.root;
