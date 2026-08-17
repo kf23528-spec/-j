@@ -1051,8 +1051,8 @@
     };
 
     const config = {
-      walkSpeed: 2.5,
-      dashMultiplier: 2.4,
+      walkSpeed: 4.2,
+      dashMultiplier: 2.55,
       gravity: -22.0,
       jumpVelocity: 8.8,
       cameraHeight: 2.55,
@@ -1803,7 +1803,7 @@
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
           biomeKey: getBiomeAt(p.x, p.z).key,
-          scale: 0.75 + Math.random() * 1.55,
+          scale: 0.55 + Math.random() * 2.05,
           activeObject: null,
           removed: false,
           isSpawning: false,
@@ -1821,14 +1821,14 @@
         const p = randomWorldPoint(8);
         if (Math.hypot(p.x, p.z) < PLAYER_SAFE_RADIUS) continue;
         const biome = getBiomeAt(p.x, p.z);
-        const scaleBase = biome.key === "snow" ? 0.75 : (biome.key === "desert" ? 0.62 : 0.85);
+        const scaleBase = biome.key === "snow" ? 0.88 : (biome.key === "desert" ? 0.74 : 1.0);
         grassData.push({
           id: nextEntityId++,
           x: p.x,
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
           biomeKey: biome.key,
-          scale: scaleBase * (0.65 + Math.random() * 0.85),
+          scale: scaleBase * (0.72 + Math.random() * 0.58),
           variant: Math.random() < 0.48 ? 0 : 1,
           activeObject: null,
           removed: false,
@@ -2380,6 +2380,21 @@
       const angle = Math.random() * Math.PI * 2;
       const dist = rand(minR, maxR);
       return { x: Math.cos(angle) * dist, z: Math.sin(angle) * dist };
+    }
+
+    function getTerrainNormalAt(x, z) {
+      const eps = 0.45;
+      const dx = (getTerrainHeight(x + eps, z) - getTerrainHeight(x - eps, z)) / (eps * 2);
+      const dz = (getTerrainHeight(x, z + eps) - getTerrainHeight(x, z - eps)) / (eps * 2);
+      return new THREE.Vector3(-dx, 1, -dz).normalize();
+    }
+
+    function orientRootToTerrain(root, x, z, yaw = 0) {
+      const up = new THREE.Vector3(0, 1, 0);
+      const normal = getTerrainNormalAt(x, z);
+      const tilt = new THREE.Quaternion().setFromUnitVectors(up, normal);
+      const yawQ = new THREE.Quaternion().setFromAxisAngle(up, yaw);
+      root.quaternion.copy(tilt).multiply(yawQ);
     }
 
     function placeOnTerrain(root, x, z, terrainLift = 0) {
@@ -3017,12 +3032,15 @@
       try {
         const template = grassTemplates[data.variant % grassTemplates.length];
         const root = deepCloneUnique(template);
-        fitAndGround(root, 1.15 * data.scale, 0.0);
+        // 草は「少し縦長・かなり横広」にする。斜面では地形法線に合わせて立てる。
+        fitAndGround(root, 1.32 * data.scale, 0.0);
+        root.scale.x *= 2.75;
+        root.scale.z *= 2.75;
         applyBiomeObjectVisual(root, data.biomeKey, "herb");
         root.position.x = data.x;
         root.position.z = data.z;
         root.position.y = getTerrainHeight(data.x, data.z);
-        root.rotation.y = data.rotY;
+        orientRootToTerrain(root, data.x, data.z, data.rotY);
         root.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = false;
