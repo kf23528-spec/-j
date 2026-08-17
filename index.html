@@ -168,6 +168,211 @@
       transition: width 0.08s linear;
     }
 
+    
+    #secretWarning.show { display: block; }
+    
+    #secretMarker.show { display: block; }
+    
+    #miniMapWrap {
+      position: fixed;
+      right: 14px;
+      top: 14px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, rgba(20,40,50,0.8), rgba(4,10,18,0.92));
+      border: 4px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.32), inset 0 0 0 2px rgba(80,220,255,0.36), inset 0 0 24px rgba(42,185,255,0.22), 0 0 0 2px rgba(206,216,226,0.72);
+      z-index: 45;
+      pointer-events: auto;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #miniMapCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #fullMapModal {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10,18,30,0.60);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+    }
+    #fullMapModal.open { display: flex; }
+    #fullMapPanel {
+      position: relative;
+      width: min(92vw, 720px);
+      max-height: min(92vh, 760px);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.30);
+      padding: 16px;
+      color: #1a2740;
+    }
+    #fullMapTitle { font-size: 18px; font-weight: 900; margin-bottom: 8px; }
+    #fullMapInfo { font-size: 13px; font-weight: 800; color: #4a5c80; margin-bottom: 12px; }
+    #fullMapCanvas {
+      width: min(88vw, 660px);
+      height: min(88vw, 660px);
+      max-width: 660px;
+      max-height: 660px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 18px;
+      background: #17212c;
+    }
+    #fullMapClose {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 46px;
+      height: 46px;
+      border: 0;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ff6c6c, #d92c2c);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+    }
+
+    #joystick {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.45);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.08);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      z-index: 35;
+    }
+    #joystick::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(255,255,255,0.35);
+    }
+    #joyKnob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 54px;
+      height: 54px;
+      margin-left: -27px;
+      margin-top: -27px;
+      border-radius: 50%;
+      background: rgba(47,130,255,0.9);
+      box-shadow: 0 8px 18px rgba(47,130,255,0.25);
+      transform: translate(0,0);
+    }
+
+    #jumpBtn {
+      position: fixed;
+      right: 18px;
+      bottom: 28px;
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      border: 0;
+      background: linear-gradient(180deg, #ff8f4d, #ff6a2c);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      box-shadow: 0 10px 24px rgba(255,106,44,0.28);
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      z-index: 35;
+    }
+    #jumpBtn:active { transform: scale(0.97); }
+
+    #sideButtons {
+      position: fixed;
+      right: 18px;
+      bottom: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 35;
+      pointer-events: auto;
+    }
+    .sideBtn {
+      width: 120px;
+      height: 60px;
+      border: 0;
+      border-radius: 18px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 1000;
+      letter-spacing: 0.03em;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.24);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.22);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    #adminInteractBtn {
+      background: linear-gradient(180deg, #7d5cff, #5132c7);
+      display: none;
+    }
+    
+    #herbCollectBtn {
+      background: linear-gradient(180deg, #69d66f, #239b3a);
+      display: none;
+    }
+    
+    
+    
+    .sideBtn:active { transform: scale(0.97); }
+
+    
+    #inventoryModal.open { display: flex; }
+    
+    
+    
+    
+    
+    
+    
+    
+    #cleanupSavesBtn {
+      width: 100%;
+      height: 42px;
+      margin-bottom: 8px;
+      border: 0;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #343d4d, #1b2330);
+      color: #dcecff;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    
+
     #toast {
       position: fixed;
       left: 50%;
@@ -432,10 +637,9 @@
 
   <div id="sideButtons">
     <button id="adminInteractBtn" class="sideBtn">コード入力</button>
-
     <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
-
   </div>
+
   <div id="adminCodeModal" aria-hidden="true">
     <div id="adminCodePanel">
       <div id="adminCodeTitle">管理者コード</div>
@@ -472,10 +676,9 @@
         <button id="adminApplyStatsBtn" class="adminActionBtn" type="button">ステータス適用</button>
       </div>
       <div class="adminSection">
-        <h3>XP / プレイヤーデバッグ</h3>
+        <h3>XP デバッグ</h3>
         <div class="adminGrid">
           <button id="adminGrantXpBtn" class="adminActionBtn" type="button">XP大量付与</button>
-
           <button id="adminHealBtn" class="adminActionBtn" type="button">全回復</button>
         </div>
       </div>
@@ -499,14 +702,19 @@
     const TREE_URLS = ["./tree.glb"];
     const BOAR_URLS = ["./boar.glb"];
     const MONSTER_SPECIES = {
-      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, probability: 1, fallbackFactory: createFallbackBoarTemplate }
+      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, probability: 1.0, fallbackFactory: createFallbackBoarTemplate }
     };
     const MONSTER_SPECIES_LIST = [MONSTER_SPECIES.boar];
     const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
     const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
     const RIVER_URLS = ["./river.glb"];
 
+    const STORAGE_KEY = "forest_tps_inventory_v3";
     const PLAYER_STATS_STORAGE_KEY = "forest_tps_player_stats_v1";
+    const INVENTORY_HISTORY_PREFIX = `${STORAGE_KEY}_history_`;
+    const INVENTORY_HISTORY_LIMIT = 5;
+    const LOCAL_STORAGE_SOFT_LIMIT_BYTES = 4.5 * 1024 * 1024;
+    const INVENTORY_LIMIT = 10;
 
     const WORLD_SIZE = 1500;
     const WORLD_HALF = WORLD_SIZE / 2;
@@ -775,7 +983,6 @@
     const attackCostText = document.getElementById("attackCostText");
     const worldUI = document.getElementById("worldUI");
     const toastEl = document.getElementById("toast");
-    
     const herbCollectBtn = document.getElementById("herbCollectBtn");
     const adminInteractBtn = document.getElementById("adminInteractBtn");
     const adminCodeModal = document.getElementById("adminCodeModal");
@@ -809,14 +1016,14 @@
     let mixer = null;
     let treeTemplate = null;
     let boarTemplate = null;
-    const monsterTemplates = new Map();
+            const monsterTemplates = new Map();
     const monsterFallbackFlags = new Map();
     let herbTemplate = null;
     let rockTemplate = null;
     let riverTemplate = null;
     let treeUsesFallback = false;
     let boarUsesFallback = false;
-    let herbUsesFallback = false;
+            let herbUsesFallback = false;
     let rockUsesFallback = false;
     let riverUsesFallback = false;
 
@@ -861,6 +1068,8 @@
       playerDefense: 0,
       xpCollectRange: 2.1,
       adminPoleInteractRange: 3.0,
+      rideInteractRange: 4.0,
+      mountedSpeed: 8.0,
       playerAttackDuration: 5.0,
       attackRange: 5.6,
       attackConeDot: -0.15,
@@ -876,6 +1085,8 @@
       boarAttackRange: 1.15,
       combatStopDistance: 0.3,
       combatInterval: 1.5,
+      companionHpMultiplier: 0.9,
+      companionAttackMultiplier: 0.9,
       
       herbHealAmount: 30,
       herbCollectRange: 1.0,
@@ -910,6 +1121,7 @@
     const xpDrops = [];
     let adminPole = null;
     let adminCodeInput = "";
+    let ridingBoar = null;
     
     const tmp = {
       v1: new THREE.Vector3(),
@@ -949,9 +1161,16 @@
       boar: { cursor: 0 },
       inactiveBoar: { cursor: 0 }
     };
+    const companions = [];
+    const inventory = [];
     let collisionCircles = [];
     let collisionRects = [];
 
+    const companionSpawnTmp = {
+      facing: new THREE.Vector3(),
+      right: new THREE.Vector3(),
+      offset: new THREE.Vector3()
+    };
     
     const map2D = {
       mini: { ctx: miniMapCanvas.getContext("2d") },
@@ -1085,6 +1304,40 @@
         console.warn("player stats load failed", e);
       }
     }
+    
+    function safeLoadInventory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return;
+        inventory.splice(0, inventory.length);
+        for (const item of parsed) {
+          if (!item || typeof item !== "object") continue;
+          if (typeof item.species !== "string") continue;
+          const level = Number(item.level);
+          if (!Number.isFinite(level)) continue;
+          inventory.push({
+            id: typeof item.id === "string" ? item.id : makeId(),
+            species: getMonsterDefinition(item.speciesKey || item.species).name,
+            speciesKey: getMonsterDefinition(item.speciesKey || item.species).key,
+            level: Math.max(1, Math.floor(level)),
+            capturedAt: typeof item.capturedAt === "number" ? item.capturedAt : Date.now()
+          });
+        }
+      } catch (e) {
+        console.warn("inventory load failed", e);
+      }
+    }
+
+    function getInventoryHistoryKeys() {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(INVENTORY_HISTORY_PREFIX)) keys.push(key);
+      }
+      return keys.sort();
+    }
 
     function estimateLocalStorageBytes() {
       let total = 0;
@@ -1094,6 +1347,97 @@
         total += (key.length + value.length) * 2;
       }
       return total;
+    }
+
+    function cleanupInventoryHistory(keepLatest = INVENTORY_HISTORY_LIMIT) {
+      const keys = getInventoryHistoryKeys();
+      const removeCount = Math.max(0, keys.length - keepLatest);
+      for (const key of keys.slice(0, removeCount)) localStorage.removeItem(key);
+      return removeCount;
+    }
+
+    function cleanupAllInventoryHistory() {
+      const keys = getInventoryHistoryKeys();
+      for (const key of keys) localStorage.removeItem(key);
+      return keys.length;
+    }
+
+    function pruneInventoryForStorage() {
+      cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
+      if (estimateLocalStorageBytes() > LOCAL_STORAGE_SOFT_LIMIT_BYTES) cleanupInventoryHistory(1);
+    }
+
+    function archiveCurrentInventorySnapshot() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const key = `${INVENTORY_HISTORY_PREFIX}${String(Date.now()).padStart(13, "0")}`;
+      try {
+        localStorage.setItem(key, raw);
+      } catch (e) {
+        cleanupInventoryHistory(0);
+      }
+    }
+    
+    function saveInventory() {
+      try {
+        pruneInventoryForStorage();
+        archiveCurrentInventorySnapshot();
+        cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+      } catch (e) {
+        if (e?.name === "QuotaExceededError" || e?.code === 22) {
+          try {
+            cleanupInventoryHistory(0);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+            showToast("古いセーブ履歴を削除して保存しました");
+            return;
+          } catch (retryError) {
+            console.warn("inventory save retry failed", retryError);
+          }
+        }
+        console.warn("inventory save failed", e);
+      }
+    }
+
+    function renderInventoryModal() {
+      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体 / 履歴 ${getInventoryHistoryKeys().length} 件`;
+      inventoryList.innerHTML = "";
+      if (!inventory.length) {
+        const empty = document.createElement("div");
+        empty.className = "inventoryEmpty";
+        empty.textContent = "まだ捕まえたキャラクターはいません。";
+        inventoryList.appendChild(empty);
+        return;
+      }
+
+      inventory.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "inventoryItem";
+
+        const label = document.createElement("div");
+        label.className = "inventoryItemText";
+        label.textContent = `${item.species} Lv.${item.level}`;
+
+        const btn = document.createElement("button");
+        btn.className = "deployBtn";
+        btn.textContent = "出撃";
+        btn.dataset.deployId = item.id;
+
+        row.appendChild(label);
+        row.appendChild(btn);
+        inventoryList.appendChild(row);
+      });
+    }
+
+    function openInventoryModal() {
+      renderInventoryModal();
+      inventoryModal.classList.add("open");
+      inventoryModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeInventoryModal() {
+      inventoryModal.classList.remove("open");
+      inventoryModal.setAttribute("aria-hidden", "true");
     }
 
     function applyShadowsAndFixMaterials(object3D) {
@@ -1367,7 +1711,9 @@
     }
 
     function normalizeMonsterSpeciesKey(speciesOrKey) {
-      return "boar";
+      if (typeof speciesOrKey !== "string") return "boar";
+      const found = MONSTER_SPECIES_LIST.find((def) => def.key === speciesOrKey || def.name === speciesOrKey);
+      return found ? found.key : "boar";
     }
     
     function getMonsterDefinition(speciesOrKey = "boar") {
@@ -1377,8 +1723,8 @@
     function getRandomMonsterDefinition() {
       return MONSTER_SPECIES.boar;
     }
-    
 
+    
     function rollMonsterIv() {
       // 指数分布で低い個体値を多くし、平均が10付近、100が極めて稀になるようにする。
       const u = Math.max(1e-8, Math.random());
@@ -1595,7 +1941,8 @@
       while (boarData.length < BOAR_SPAWN_CANDIDATE_COUNT) {
         const p = randomWorldPoint(20);
         const d = Math.hypot(p.x, p.z);
-        if (d < 22) continue;        const speciesDef = MONSTER_SPECIES.boar;
+        if (d < 22) continue;
+        const speciesDef = getRandomMonsterDefinition();
         const level = getBoarLevelForPosition(p.x, p.z);
         const iv = rollMonsterIv();
         const stats = getStatsByLevel(level, speciesDef.key, iv);
@@ -1750,6 +2097,70 @@
       boar.add(body, head, snout, ear1, ear2);
       boar.userData.parts = { body, head, snout, ears: [ear1, ear2], legs };
       return boar;
+    }
+
+    function createFallbackGorillaTemplate() {
+      const gorilla = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d2b29, roughness: 1.0 });
+      const chestMat = new THREE.MeshStandardMaterial({ color: 0x5a524b, roughness: 1.0 });
+
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.7, 1.25, 5, 10), bodyMat);
+      body.position.y = 1.15;
+      body.scale.set(1.15, 1.0, 0.82);
+      const chest = new THREE.Mesh(new THREE.SphereGeometry(0.54, 14, 12), chestMat);
+      chest.position.set(0, 1.35, 0.38);
+      chest.scale.set(1.15, 0.72, 0.28);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), bodyMat);
+      head.position.set(0, 2.15, 0.05);
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.34), chestMat);
+      snout.position.set(0, 2.03, 0.36);
+
+      const armGeo = new THREE.CapsuleGeometry(0.17, 1.15, 4, 8);
+      const armL = new THREE.Mesh(armGeo, bodyMat);
+      armL.position.set(-0.78, 1.05, 0.12);
+      armL.rotation.z = -0.28;
+      const armR = armL.clone();
+      armR.position.x = 0.78;
+      armR.rotation.z = 0.28;
+
+      const legGeo = new THREE.CapsuleGeometry(0.16, 0.74, 4, 8);
+      const legL = new THREE.Mesh(legGeo, bodyMat);
+      legL.position.set(-0.32, 0.38, 0);
+      const legR = legL.clone();
+      legR.position.x = 0.32;
+      gorilla.add(body, chest, head, snout, armL, armR, legL, legR);
+      gorilla.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      gorilla.userData.parts = { body, head, snout, ears: [], legs: [legL, legR, armL, armR] };
+      return gorilla;
+    }
+
+    function createFallbackSecretTemplate() {
+      const secret = new THREE.Group();
+      const coreMat = new THREE.MeshStandardMaterial({ color: 0x1d65ff, roughness: 0.32, metalness: 0.1, emissive: 0x082f88, emissiveIntensity: 0.6 });
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0x9fe8ff, roughness: 0.25, transparent: true, opacity: 0.72, emissive: 0x228cff, emissiveIntensity: 0.85 });
+      const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72, 1), coreMat);
+      core.position.y = 1.35;
+      const ring1 = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.045, 8, 36), ringMat);
+      ring1.position.y = 1.35;
+      ring1.rotation.x = Math.PI / 2;
+      const ring2 = ring1.clone();
+      ring2.rotation.set(0.9, 0.0, 0.4);
+      const base = new THREE.Mesh(new THREE.ConeGeometry(0.44, 0.9, 5), coreMat);
+      base.position.y = 0.48;
+      secret.add(core, ring1, ring2, base);
+      secret.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      secret.userData.parts = { body: core, head: core, snout: base, ears: [], legs: [] };
+      return secret;
     }
     
     function createFallbackHerbTemplate() {
@@ -1961,6 +2372,34 @@
     function updateBoarTags() {
       for (const data of activeBoars.values()) updateBoarTag(data);
     }
+
+    function updateCompanionTag(companion) {
+      if (!companion?.tag?.el || companion.dead || !companion.root) {
+        if (companion?.tag?.el) companion.tag.el.style.opacity = "0";
+        return;
+      }
+      const pos = tmp.v1.set(
+        companion.root.position.x,
+        companion.root.position.y + (companion.uiOffset || 2.0),
+        companion.root.position.z
+      ).project(camera);
+      const inFront = pos.z > -1 && pos.z < 1;
+      const onScreen = pos.x >= -1.2 && pos.x <= 1.2 && pos.y >= -1.2 && pos.y <= 1.2;
+      if (!inFront || !onScreen) {
+        companion.tag.el.style.opacity = "0";
+        return;
+      }
+      const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+      companion.tag.el.style.opacity = "1";
+      companion.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+      companion.tag.fill.style.width = `${clamp((companion.hp / companion.hpMax) * 100, 0, 100)}%`;
+      companion.tag.text.textContent = `HP ${Math.ceil(companion.hp)} / ${Math.ceil(companion.hpMax)}`;
+    }
+
+    function updateCompanionTags() {
+      for (const companion of companions) updateCompanionTag(companion);
+    }
       
       function randomWorldPosition(minR = 18, maxR = 95) {
       const angle = Math.random() * Math.PI * 2;
@@ -2088,6 +2527,8 @@
       }
       return best;
     }
+
+
 
     function submitAdminDigit(digit) {
       if (digit === "clear") {
@@ -2340,6 +2781,11 @@
         return;
       }
 
+      if (ridingBoar) {
+        updateMountedMovement(delta);
+        return;
+      }
+      
       const input = getMoveInput();
 
       if (input.jump) requestJump();
@@ -2415,11 +2861,113 @@
       for (const data of activeRivers.values()) syncDataObjectToTerrain(data);
       for (const data of activeBoars.values()) syncDataObjectToTerrain(data);
 
-          }
+      for (const c of companions) {
+        if (!c?.root) continue;
+        c.baseTerrain = getTerrainHeight(c.root.position.x, c.root.position.z);
+      }
+    }
 
     function updateHerbActionUI() {
       const found = findNearestHerb(1.0);
       herbCollectBtn.style.display = found ? "block" : "none";
+    }
+
+    function updateRecallActionUI() {
+      const found = findNearestRecallableCompanion(3.0);
+      recallBtn.style.display = found ? "block" : "none";
+    }
+
+
+    function findNearestRideableBoar(maxDist = config.rideInteractRange) {
+      let best = null;
+      let bestDist = Infinity;
+      for (const data of activeBoars.values()) {
+        if (data.dead || data.speciesKey !== "boar" || !data.activeObject?.root) continue;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerRoot.position.x, pos.z - playerRoot.position.z);
+        if (d <= maxDist && d < bestDist) {
+          best = data;
+          bestDist = d;
+        }
+      }
+      return best ? { boar: best, dist: bestDist } : null;
+    }
+
+    function updateRideActionUI() {
+      if (ridingBoar) {
+        rideBtn.style.display = "block";
+        rideBtn.textContent = "降りる";
+        return;
+      }
+      const found = findNearestRideableBoar();
+      rideBtn.style.display = found ? "block" : "none";
+      rideBtn.textContent = "乗馬";
+    }
+
+    function dismountBoar() {
+      if (!ridingBoar) return;
+      const boar = ridingBoar;
+      const root = boar?.activeObject?.root;
+      ridingBoar = null;
+      if (visualRoot) visualRoot.visible = true;
+      const forward = getCharacterForwardVector();
+      if (root) {
+        playerRoot.position.x = clamp(root.position.x - forward.x * 1.4, -WORLD_HALF + 2, WORLD_HALF - 2);
+        playerRoot.position.z = clamp(root.position.z - forward.z * 1.4, -WORLD_HALF + 2, WORLD_HALF - 2);
+      }
+      updatePlayerTerrainAndJump(0);
+      showToast("猪から降りました");
+    }
+
+    function mountNearestBoar() {
+      if (gameOver) return;
+      if (ridingBoar) {
+        dismountBoar();
+        return;
+      }
+      const found = findNearestRideableBoar();
+      if (!found) {
+        showToast("近くに乗れる猪がいません");
+        return;
+      }
+      ridingBoar = found.boar;
+      clearBoarHateTarget(ridingBoar);
+      ridingBoar.hostileUntil = 0;
+      if (visualRoot) visualRoot.visible = false;
+      playerRoot.position.copy(ridingBoar.activeObject.root.position);
+      playerRoot.position.y = getTerrainHeight(playerRoot.position.x, playerRoot.position.z);
+      showToast("乗馬開始：移動速度 8m/s");
+    }
+
+    function updateMountedMovement(delta) {
+      if (!ridingBoar?.activeObject?.root || ridingBoar.dead) {
+        dismountBoar();
+        return;
+      }
+      const input = getMoveInput();
+      if (input.attack) startAttack();
+      const root = ridingBoar.activeObject.root;
+      const moving = input.magnitude > 0.001;
+      if (moving) {
+        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
+        if (moveDir.lengthSq() > 1e-8) {
+          const yaw = Math.atan2(moveDir.x, moveDir.z);
+          root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, yaw, 1 - Math.exp(-10 * delta));
+          const step = config.mountedSpeed * input.magnitude * delta;
+          moveWithStrictCollision(root.position, moveDir.x * step, moveDir.z * step, ridingBoar.collisionRadius || 0.7);
+          root.position.x = clamp(root.position.x, -WORLD_HALF + 4, WORLD_HALF - 4);
+          root.position.z = clamp(root.position.z, -WORLD_HALF + 4, WORLD_HALF - 4);
+        }
+      }
+      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (ridingBoar.terrainLift || 0);
+      updateWildBoarAnimation(ridingBoar, delta);
+      ridingBoar.x = root.position.x;
+      ridingBoar.z = root.position.z;
+      ridingBoar.rotY = root.rotation.y;
+      updateSpatialGridItem("boar", ridingBoar);
+      playerRoot.position.set(root.position.x, getTerrainHeight(root.position.x, root.position.z), root.position.z);
+      playerRoot.rotation.y = root.rotation.y;
+      setStatus(moving ? "乗馬中（8m/s）" : "乗馬中");
     }
     
       function applyEntityGrounding(data) {
@@ -2718,7 +3266,8 @@
 
     function respawnBoar(data) {
       if (!data) return;
-      const p = randomWorldPoint(20);        const speciesDef = MONSTER_SPECIES.boar;
+      const p = randomWorldPoint(20);
+      const speciesDef = getRandomMonsterDefinition();
       const level = getBoarLevelForPosition(p.x, p.z);
       const iv = rollMonsterIv();
       const stats = getStatsByLevel(level, speciesDef.key, iv);
@@ -2752,12 +3301,105 @@
       addToSpatialGrid("boar", data);
     }
 
+    function spawnCompanionFromInventoryItem(item) {
+      const speciesDef = getMonsterDefinition(item.speciesKey || item.species);
+      const stats = getStatsByLevel(item.level, speciesDef.key);
+      const scaleBoost = clamp(0.95 + Math.log2(Math.max(1, item.level)) * 0.16, 0.95, 2.6);
+      let root;
+      let parts = null;
+      const template = monsterTemplates.get(speciesDef.key) || boarTemplate;
+      
+      if (template && !monsterFallbackFlags.get(speciesDef.key)) {
+        root = deepCloneUnique(template);
+        fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
+        parts = root.userData.parts || null;
+      } else {
+        root = speciesDef.fallbackFactory();
+        fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
+        parts = root.userData.parts || null;
+      }
+
+      const facing = companionSpawnTmp.facing.copy(getCharacterForwardVector());
+      const right = companionSpawnTmp.right.set(facing.z, 0, -facing.x).normalize();
+      const offset = companionSpawnTmp.offset.copy(facing).multiplyScalar(-2.2).add(right.multiplyScalar(rand(-1.4, 1.4)));
+
+      root.position.set(
+        playerRoot.position.x + offset.x,
+        getTerrainHeight(playerRoot.position.x + offset.x, playerRoot.position.z + offset.z) + root.position.y,
+        playerRoot.position.z + offset.z
+      );
+      root.rotation.y = Math.atan2(facing.x, facing.z);
+
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      const companion = {
+        id: makeId(),
+        root,
+        parts,
+        species: speciesDef.name,
+        speciesKey: speciesDef.key,
+        level: item.level,
+        hpMax: stats.hpMax * config.companionHpMultiplier,
+        hp: stats.hpMax * config.companionHpMultiplier,
+        atkDps: stats.atkDps * config.companionAttackMultiplier,
+        followSpeed: config.boarMoveSpeed * clamp(1.35 + (item.level - 1) * 0.004, 1.35, 4.0),
+        attackRange: config.boarAttackRange,
+        attackCooldown: 0,
+        nextAttackAt: 0,
+        attackDuration: 0.62,
+        attackTimer: 0,
+        attackHitDone: false,
+        attackHitTime: 0.24,
+        attackLunge: 0.0,
+        state: "follow",
+        stateTime: 0,
+        animT: Math.random() * 10,
+        terrainLift: root.position.y - getTerrainHeight(root.position.x, root.position.z),
+        attackStartPos: new THREE.Vector3(),
+        attackDir: new THREE.Vector3(),
+        attackTargetId: null,
+        targetBoarId: null,
+        uiOffset: 2.0,
+        collisionRadius: 0.25,
+        tag: null,
+        dead: false
+      };
+
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+      companion.uiOffset = Math.max(1.6, size.y * 1.15);
+      companion.tag = createBoarTag(item.level, companion.hp, companion.hpMax, { ally: true, label: `味方 Lv.${item.level}` });
+      companions.push(companion);
+      scene.add(root);
+    }
+
+    function addInventoryCreature(species, level, speciesKey = null) {
+      if (inventory.length >= INVENTORY_LIMIT) return false;
+      const def = getMonsterDefinition(speciesKey || species);
+      inventory.push({
+        id: makeId(),
+        species: def.name,
+        speciesKey: def.key,
+        level: Math.max(1, Math.floor(level)),
+        capturedAt: Date.now()
+      });
+      saveInventory();
+      renderInventoryModal();
+      return true;
+    }
+
     function findNearestBoar(maxDist = 4.5) {
       const playerPos = playerRoot.position;
       let best = null;
       let bestDist = Infinity;
 
       for (const data of activeBoars.values()) {
+        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const pos = data.activeObject.root.position;
         const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
@@ -2768,6 +3410,41 @@
       }
 
       return best ? { boar: best, dist: bestDist } : null;
+    }
+
+    function collectNearestBoar() {
+      if (gameOver) return;
+
+      if (inventory.length >= INVENTORY_LIMIT) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      const found = findNearestBoar(4.5);
+      if (!found) {
+        showToast("近くにモンスターがいない！");
+        setStatus("近くにモンスターがいない");
+        return;
+      }
+
+      const boar = found.boar;
+      if (!adminForceCaptureMode && boar.hp > boar.hpMax * 0.1) {
+        showToast("体力が多すぎて捕まえられない！");
+        setStatus("体力が多すぎて捕まえられない");
+        return;
+      }
+
+      const ok = addInventoryCreature(boar.speciesName || "猪", boar.level, boar.speciesKey);
+      if (!ok) {
+        showToast("かばんがいっぱい！");
+        setStatus("かばんがいっぱい");
+        return;
+      }
+
+      showToast(`${boar.speciesName || "モンスター"} Lv.${boar.level} を捕獲！`);
+      setStatus(`${boar.speciesName || "モンスター"} Lv.${boar.level} を捕獲`);
+      removeBoarAfterDeath(boar, true);
     }
 
     function findNearestHerb(maxDist = config.herbCollectRange) {
@@ -2900,11 +3577,15 @@
 
     function setBoarHateTarget(data, type, id = null, now = performance.now()) {
       if (!data || data.dead) return;
-      data.targetType = type === "player" ? "player" : null;
-      data.targetId = null;
-      data.hostileUntil = type === "player" ? Infinity : 0;
-      data.state = type === "player" ? "chase" : "move";
+      data.targetType = type;
+      data.targetId = id;
+      data.hostileUntil = Infinity;
+      data.state = "chase";
       if (!Number.isFinite(data.nextAttackAt)) data.nextAttackAt = 0;
+      if (type === "companion") {
+        const c = companions.find((item) => item && item.id === id && !item.dead && item.root);
+        if (c) c.targetBoarId = data.id;
+      }
     }
 
     function clearBoarHateTarget(data) {
@@ -2915,13 +3596,309 @@
     }
 
     function getBoarTarget(data) {
-      if (!data || data.targetType !== "player") return null;
-      if (gameOver || playerHp <= 0) return null;
-      return { type: "player", position: playerRoot.position, entity: null };
+      if (!data || !data.targetType) return null;
+      if (data.targetType === "player") {
+        if (gameOver || playerHp <= 0) return null;
+        return { type: "player", position: playerRoot.position, entity: null };
+      }
+      if (data.targetType === "companion") {
+        const c = companions.find((item) => item.id === data.targetId && !item.dead && item.root);
+        if (!c) return null;
+        return { type: "companion", position: c.root.position, entity: c };
+      }
+      return null;
+    }
+
+    function damageCompanion(companion, amount) {
+      if (!companion || companion.dead || !companion.root) return;
+      companion.hp = Math.max(0, companion.hp - amount);
+      if (companion.hp <= 0) {
+        killCompanion(companion);
+      }
+    }
+
+    function removeCompanionTag(companion) {
+      if (companion?.tag?.el?.parentNode) companion.tag.el.parentNode.removeChild(companion.tag.el);
+      if (companion) companion.tag = null;
+    }
+    
+    function killCompanion(companion) {
+      if (!companion || companion.dead) return;
+      companion.dead = true;
+      removeCompanionTag(companion);
+      const root = companion.root;
+      if (root?.parent) root.parent.remove(root);
+      disposeObject3D(root);
+      companion.root = null;
+      for (const data of activeBoars.values()) {
+        if (data.targetType === "companion" && data.targetId === companion.id) clearBoarHateTarget(data);
+      }
+      showToast(`${companion.species} Lv.${companion.level} は倒れました`);
+    }
+    
+function findNearestRecallableCompanion(maxDist = 3.0) {
+      let best = null;
+      let bestDist = Infinity;
+      const playerPos = playerRoot.position;
+      for (const c of companions) {
+        if (!c || c.dead || !c.root) continue;
+        const d = Math.hypot(c.root.position.x - playerPos.x, c.root.position.z - playerPos.z);
+        if (d <= maxDist && d < bestDist) {
+          best = c;
+          bestDist = d;
+        }
+      }
+      return best ? { companion: best, dist: bestDist } : null;
+    }
+
+    function recallNearestCompanion() {
+      const found = findNearestRecallableCompanion(3.0);
+      if (!found) {
+        showToast("回収できる味方が近くにいません");
+        return;
+      }
+      const c = found.companion;
+      let ok = addInventoryCreature(c.species || "猪", c.level || 1, c.speciesKey);
+      if (!ok) {
+        inventory.push({
+          id: makeId(),
+          species: getMonsterDefinition(c.speciesKey || c.species).name,
+          speciesKey: getMonsterDefinition(c.speciesKey || c.species).key,
+          level: Math.max(1, Math.floor(c.level || 1)),
+          capturedAt: Date.now()
+        });
+        saveInventory();
+        renderInventoryModal();
+        ok = true;
+      }
+      c.dead = true;
+      removeCompanionTag(c);
+      if (c.root?.parent) c.root.parent.remove(c.root);
+      disposeObject3D(c.root);
+      c.root = null;
+      for (const data of activeBoars.values()) {
+        if (data.targetType === "companion" && data.targetId === c.id) clearBoarHateTarget(data);
+      }
+      const index = companions.findIndex((item) => item.id === c.id);
+      if (index >= 0) companions.splice(index, 1);
+      showToast(`${c.species} Lv.${c.level} を回収しました`);
+      setStatus(`${c.species} Lv.${c.level} を回収`);
+    }
+
+    function findHostileBoarTarget(now, companion = null) {
+      if (companion?.targetBoarId) {
+        const locked = findBoarById(companion.targetBoarId);
+        if (locked && !locked.dead && locked.activeObject?.root) return locked;
+        companion.targetBoarId = null;
+      }
+
+      const playerPos = companion?.root?.position || playerRoot.position;
+      let best = null;
+      let bestDist = Infinity;
+
+      for (const data of activeBoars.values()) {
+        if (!data || data.dead || !data.activeObject?.root) continue;
+        const lockedOnCompanion = companion && data.targetType === "companion" && data.targetId === companion.id;
+        const hostileToPlayer = data.targetType === "player";
+        const generallyHostile = !companion && data.targetType === "companion";
+        if (!lockedOnCompanion && !hostileToPlayer && !generallyHostile) continue;
+        const pos = data.activeObject.root.position;
+        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
+        if (d < bestDist) {
+          bestDist = d;
+          best = data;
+        }
+      }
+      if (companion && best) companion.targetBoarId = best.id;
+      return best;
     }
 
     function findBoarById(id) {
       return activeBoars.get(id) || null;
+    }
+
+    function updateCompanionAnimation(companion, delta) {
+      const t = companion.animT;
+
+      if (companion.state === "attack") {
+        const progress = 1 - (companion.attackTimer / companion.attackDuration);
+        const kick = Math.sin(progress * Math.PI);
+        companion.root.rotation.z = Math.sin(progress * Math.PI) * 0.08;
+
+        if (companion.parts) {
+          companion.parts.body.rotation.z = 0.14 * kick;
+          companion.parts.head.rotation.x = 0.42 + 0.14 * kick;
+          companion.parts.head.rotation.z = -0.08 * kick;
+          companion.parts.snout.rotation.z = -0.2 * kick;
+          companion.parts.ears[0].rotation.z = Math.PI / 2 + 0.45 * kick;
+          companion.parts.ears[1].rotation.z = Math.PI / 2 - 0.45 * kick;
+
+          const legSwing = Math.sin(progress * Math.PI * 2) * 0.95;
+          companion.parts.legs[0].rotation.x = legSwing;
+          companion.parts.legs[3].rotation.x = legSwing;
+          companion.parts.legs[1].rotation.x = -legSwing;
+          companion.parts.legs[2].rotation.x = -legSwing;
+        }
+      } else {
+        companion.root.rotation.z = Math.sin(t * 10.0) * 0.02;
+        if (companion.parts) {
+          const sway = Math.sin(t * 10.0) * 0.02;
+          companion.parts.body.rotation.z = sway;
+          companion.parts.head.rotation.x = 0.04;
+          companion.parts.head.rotation.z = -sway * 0.7;
+          companion.parts.snout.rotation.z = -sway * 0.4;
+          companion.parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.35;
+          companion.parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.35;
+          const legSwing = Math.sin(t * 8.0) * 0.5;
+          companion.parts.legs[0].rotation.x = legSwing;
+          companion.parts.legs[3].rotation.x = legSwing;
+          companion.parts.legs[1].rotation.x = -legSwing;
+          companion.parts.legs[2].rotation.x = -legSwing;
+        }
+      }
+    }
+
+    function startCompanionAttack(companion, target, now) {
+      companion.state = "attack";
+      companion.attackTimer = companion.attackDuration;
+      companion.attackHitDone = false;
+      companion.attackTargetId = target.id;
+      companion.attackStartPos.copy(companion.root.position);
+
+      const targetPos = target.activeObject.root.position;
+      const dir = new THREE.Vector3(targetPos.x - companion.root.position.x, 0, targetPos.z - companion.root.position.z);
+      if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
+      else dir.normalize();
+
+      companion.attackDir.copy(dir);
+      companion.root.rotation.y = Math.atan2(dir.x, dir.z);
+      companion.attackCooldown = config.combatInterval;
+      companion.nextAttackAt = now + config.combatInterval * 1000;
+      companion.animT = now * 0.001;
+    }
+
+    function applyCompanionHit(companion, target) {
+      if (!target || target.dead) return;
+      setBoarHateTarget(target, "companion", companion.id, performance.now());
+      target.hp -= companion.atkDps;
+      if (target.hp <= 0) {
+        const root = target.activeObject?.root;
+        if (root) spawnXpDrop(root.position.x, root.position.z, target.level);
+        target.hp = 0;
+        removeBoarAfterDeath(target, true);
+      }
+    }
+
+    function updateCompanions(delta, now) {
+      if (!companions.length) return;
+
+      const playerPos = playerRoot.position;
+      const forward = getCharacterForwardVector();
+      const right = tmp.v5.set(forward.z, 0, -forward.x).normalize();
+
+
+      for (let i = companions.length - 1; i >= 0; i--) {
+        const c = companions[i];
+        if (c.dead || !c.root) {
+          companions.splice(i, 1);
+          continue;
+        }
+
+        c.stateTime += delta;
+        c.animT += delta;
+        c.attackCooldown = Math.max(0, c.attackCooldown - delta);
+
+        if (c.state === "attack") {
+          c.attackTimer -= delta;
+          const progress = 1 - (c.attackTimer / c.attackDuration);
+          const lunge = Math.sin(progress * Math.PI);
+
+          const target = findBoarById(c.attackTargetId);
+                    let dir = c.attackDir;
+
+          if (target && !target.dead && target.activeObject?.root) {
+            const targetPos = target.activeObject.root.position;
+            const nowDir = tmp.v1.set(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z);
+            if (nowDir.lengthSq() > 1e-8) {
+              nowDir.normalize();
+              dir = nowDir;
+            }
+          }
+
+          c.root.position.copy(c.attackStartPos).add(tmp.v2.copy(dir).multiplyScalar(lunge * c.attackLunge));
+          c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift + Math.sin(progress * Math.PI) * 0.15;
+          c.root.rotation.y = Math.atan2(dir.x, dir.z);
+
+          if (!c.attackHitDone && progress >= c.attackHitTime) {
+            c.attackHitDone = true;
+            applyCompanionHit(c, target);
+          }
+
+          if (c.attackTimer <= 0) {
+            c.state = "follow";
+            c.attackTargetId = null;
+            c.attackHitDone = false;
+          }
+
+          updateCompanionAnimation(c, delta);
+          continue;
+        }
+
+        let target = findHostileBoarTarget(now, c);
+        if (target && (target.dead || !target.activeObject?.root)) target = null;
+
+        if (target) {
+          const targetPos = target.activeObject.root.position;
+          const toTarget = tmp.v1.set(targetPos.x - c.root.position.x, 0, targetPos.z - c.root.position.z);
+          const dist = toTarget.length();
+
+          if (dist > 0.001) {
+            const dir = tmp.v2.copy(toTarget).normalize();
+            const yaw = Math.atan2(dir.x, dir.z);
+            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.5 * delta));
+
+            const desiredStop = config.combatStopDistance;
+            if (dist < desiredStop * 0.95) {
+              const push = Math.min(c.followSpeed * delta, desiredStop - dist);
+              moveWithStrictCollision(c.root.position, -dir.x * push, -dir.z * push, 0.62);
+              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+            } else if (dist <= c.attackRange && c.attackCooldown <= 0) {
+              startCompanionAttack(c, target, now);
+                        } else if (dist > desiredStop) {
+              const step = Math.min(c.followSpeed * 1.65 * delta, Math.max(0, dist - desiredStop));
+              moveWithStrictCollision(c.root.position, dir.x * step, dir.z * step, 0.62);
+              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+            } else {
+              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+            }
+          }
+        } else {
+          const slotIndex = i;
+          const lane = Math.floor(slotIndex / 2);
+          const side = slotIndex % 2 === 0 ? -1 : 1;
+
+          const desired = tmp.v1.copy(playerPos)
+            .add(tmp.v2.copy(forward).multiplyScalar(-(2.5 + lane * 0.45)))
+            .add(tmp.v3.copy(right).multiplyScalar(side * (1.25 + lane * 0.72)));
+
+          const toSlot = tmp.v4.copy(desired).sub(c.root.position);
+          toSlot.y = 0;
+          const dist = toSlot.length();
+
+          if (dist > 0.12) {
+            const dir = tmp.v2.copy(toSlot).normalize();
+            const yaw = Math.atan2(dir.x, dir.z);
+            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.0 * delta));
+
+            const speed = c.followSpeed * clamp(dist / 2.0, 0.4, 1.8);
+            moveWithStrictCollision(c.root.position, dir.x * speed * delta, dir.z * speed * delta, 0.62);
+          }
+
+          c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+        }
+
+        updateCompanionAnimation(c, delta);
+      }
     }
 
     function updateInactiveBoarWander(delta) {
@@ -2949,6 +3926,7 @@
 
     function updateWildBoars(delta, now) {
       for (const data of activeBoars.values()) {
+        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const o = data.activeObject;
         if (!o.root) continue;
@@ -2990,6 +3968,8 @@
             data.hostileUntil = Infinity;
             if (targetInfo.type === "player") {
               takePlayerDamage(data.atkDps);
+            } else if (targetInfo.type === "companion") {
+              damageCompanion(targetInfo.entity, data.atkDps);
             }
           }
         } else {
@@ -3027,6 +4007,7 @@
       const now = performance.now();
 
       for (const data of activeBoars.values()) {
+        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const root = data.activeObject.root;
         if (!root) continue;
@@ -3194,6 +4175,10 @@
     function updateFullMap() {
       drawWorldMap(fullMapCanvas, "full");
     }
+
+
+
+
     
     function drawWorldMap(canvas, mode) {
       const ctx = canvas.getContext("2d");
@@ -3453,7 +4438,18 @@
       despawnActiveOutsideRadius(activeRocks, despawnRock, now);
       despawnActiveOutsideRadius(activeRivers, despawnRiver, now);
       despawnActiveOutsideRadius(activeBoars, despawnBoarForStream, now);
-          }
+      for (let i = companions.length - 1; i >= 0; i--) {
+        const c = companions[i];
+        if (!c?.root) {
+          companions.splice(i, 1);
+          continue;
+        }
+        if (!isWithinActiveRadiusXZ(c.root.position.x, c.root.position.z)) {
+          killCompanion(c);
+          companions.splice(i, 1);
+        }
+      }
+    }
 
     function syncGridStream(type, spawnFn, despawnFn, now, canSpawnFn = null) {
       const nearby = getNearbyGridItems(type);
@@ -3612,7 +4608,7 @@
 
     function shouldIgnoreCameraDragTarget(target) {
       if (!(target instanceof Element)) return false;
-      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #joystick, #jumpBtn");
+      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
     }
 
     function bindCameraControls() {
@@ -3729,13 +4725,7 @@
         if (e.target === adminCodeModal) closeAdminCodeModal();
       });
       
-      adminMonsterSelect.innerHTML = "";
-      for (const def of MONSTER_SPECIES_LIST) {
-        const option = document.createElement("option");
-        option.value = def.key;
-        option.textContent = def.name;
-        adminMonsterSelect.appendChild(option);
-      }
+      adminMonsterSelect.innerHTML = "<option value=\"boar\">猪</option>";
       closeAdminPanelBtn.addEventListener("click", closeAdminPanel);
       adminPanelModal.addEventListener("click", (e) => { if (e.target === adminPanelModal) closeAdminPanel(); });
       adminSpawnMonsterBtn.addEventListener("click", adminSpawnMonsters);
@@ -3838,7 +4828,11 @@
       for (const d of activeRocks.values()) updateRockStreamingPosition(d);
       for (const d of activeRivers.values()) syncDataObjectToTerrain(d);
       for (const d of activeBoars.values()) updateBoarStreamingPosition(d);
-          }
+      for (const c of companions) {
+        if (!c?.root) continue;
+        c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
+      }
+    }
 
     function spawnTreeWrapper(data) { spawnTree(data); }
     function despawnTreeWrapper(data, now) { despawnTree(data, now); }
@@ -3870,7 +4864,12 @@
       setActiveMapVisibility(activeRocks);
       setActiveMapVisibility(activeRivers);
       setActiveMapVisibility(activeBoars);
-            for (const drop of xpDrops) {
+      for (const c of companions) {
+        if (!c?.root) continue;
+        const sphere = new THREE.Sphere(c.root.position, Math.max(c.collisionRadius || 1, FRUSTUM_CULL_MARGIN));
+        c.root.visible = cullFrustum.intersectsSphere(sphere);
+      }
+      for (const drop of xpDrops) {
         if (!drop?.group) continue;
         drop.group.visible = cullFrustum.intersectsSphere(new THREE.Sphere(drop.group.position, 2));
       }
@@ -3886,6 +4885,7 @@
       updateCombat(delta, now);
       updateCamera(delta);
       updateBoarTags();
+      updateCompanionTags();
       updateMiniMap();
       if (fullMapModal.classList.contains("open")) updateFullMap();
       updateFrustumCulling();
