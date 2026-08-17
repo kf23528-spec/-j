@@ -168,44 +168,7 @@
       transition: width 0.08s linear;
     }
 
-    #secretWarning {
-      position: fixed;
-      left: 50%;
-      bottom: 24px;
-      z-index: 65;
-      transform: translateX(-50%);
-      display: none;
-      max-width: min(92vw, 760px);
-      padding: 12px 18px;
-      border-radius: 999px;
-      background: rgba(20, 0, 0, 0.82);
-      color: #ff3030;
-      font-size: 16px;
-      font-weight: 1000;
-      text-align: center;
-      text-shadow: 0 0 10px rgba(255,0,0,0.55);
-      box-shadow: 0 14px 34px rgba(0,0,0,0.30);
-      pointer-events: none;
-    }
-    #secretWarning.show { display: block; }
-    #secretMarker {
-      position: fixed;
-      left: 0;
-      top: 0;
-      z-index: 66;
-      display: none;
-      width: 22px;
-      height: 22px;
-      margin-left: -11px;
-      margin-top: -11px;
-      border-radius: 50%;
-      background: #208cff;
-      border: 3px solid rgba(255,255,255,0.96);
-      box-shadow: 0 0 18px rgba(32,140,255,0.95), 0 0 36px rgba(32,140,255,0.45);
-      pointer-events: none;
-    }
-    #secretMarker.show { display: block; }
-    
+            
     #miniMapWrap {
       position: fixed;
       right: 14px;
@@ -372,81 +335,13 @@
       background: linear-gradient(180deg, #7d5cff, #5132c7);
       display: none;
     }
-    #rideBtn {
-      background: linear-gradient(180deg, #9b6a3a, #65401f);
-      display: none;
-    }
-    #herbCollectBtn {
+        #herbCollectBtn {
       background: linear-gradient(180deg, #69d66f, #239b3a);
       display: none;
     }
-    #recall-btn {
-      background: linear-gradient(180deg, #34d27b, #15964c);
-      display: none;
-    }
-    #captureBtn { background: linear-gradient(180deg, #ffb14d, #ff7b1f); }
-    #inventoryBtn { background: linear-gradient(180deg, #4e92ff, #2f67d6); }
-    .sideBtn:active { transform: scale(0.97); }
+                .sideBtn:active { transform: scale(0.97); }
 
-    #inventoryModal {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(10,18,30,0.48);
-      backdrop-filter: blur(6px);
-      pointer-events: auto;
-    }
-    #inventoryModal.open { display: flex; }
-    #inventoryPanel {
-      width: min(92vw, 420px);
-      max-height: min(72vh, 560px);
-      overflow: auto;
-      border-radius: 22px;
-      background: rgba(255,255,255,0.96);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.28);
-      padding: 18px;
-      color: #1a2740;
-    }
-    #inventoryTitle { font-size: 18px; font-weight: 900; margin-bottom: 10px; }
-    #inventoryInfo { font-size: 13px; font-weight: 800; margin-bottom: 14px; color: #3a4c73; }
-    #inventoryList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-    .inventoryItem {
-      padding: 11px 12px;
-      border-radius: 14px;
-      background: #f3f7ff;
-      border: 1px solid rgba(47,103,214,0.12);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-weight: 800;
-      font-size: 14px;
-    }
-    .inventoryItemText { min-width: 0; word-break: break-word; }
-    .deployBtn {
-      border: 0;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #ff8f4d, #ff6a2c);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 900;
-      padding: 8px 10px;
-      cursor: pointer;
-      flex: 0 0 auto;
-    }
-    .inventoryEmpty {
-      padding: 14px;
-      border-radius: 14px;
-      background: #f3f7ff;
-      border: 1px dashed rgba(47,103,214,0.22);
-      font-weight: 800;
-      font-size: 14px;
-      color: #516383;
-    }
-    #cleanupSavesBtn {
+                                            #cleanupSavesBtn {
       width: 100%;
       height: 42px;
       margin-bottom: 8px;
@@ -659,8 +554,7 @@
       }
       .boarTag { min-width: 96px; }
       .boarBarWrap { width: 96px; }
-      .inventoryItem { font-size: 13px; }
-      #miniMapWrap {
+            #miniMapWrap {
         width: 132px;
         height: 132px;
       }
@@ -684,8 +578,6 @@
 <body>
   <div id="loading">読み込み中…</div>
   <div id="toast"></div>
-  <div id="secretWarning">【警告】伝説のシークレットモンスターが近くに出現しました！</div>
-  <div id="secretMarker" aria-hidden="true"></div>
   
   <div id="ui">
     <div id="title">Forest TPS Open World</div>
@@ -737,21 +629,7 @@
 
   <div id="sideButtons">
     <button id="adminInteractBtn" class="sideBtn">コード入力</button>
-    <button id="rideBtn" class="sideBtn">乗馬</button>
     <button id="herbCollectBtn" class="sideBtn">薬草回収</button>
-    <button id="recall-btn" class="sideBtn">モンスターを回収</button>
-    <button id="captureBtn" class="sideBtn">捕獲（ゲット）</button>
-    <button id="inventoryBtn" class="sideBtn">インベントリ</button>
-  </div>
-
-  <div id="inventoryModal" aria-hidden="true">
-    <div id="inventoryPanel">
-      <div id="inventoryTitle">インベントリ</div>
-      <div id="inventoryInfo">0 / 10 体</div>
-      <div id="inventoryList"></div>
-      <button id="cleanupSavesBtn">🧹 古いセーブデータを削除して容量を空ける</button>
-      <button id="closeInventoryBtn">閉じる</button>
-    </div>
   </div>
 
   <div id="adminCodeModal" aria-hidden="true">
@@ -773,7 +651,7 @@
       <div class="adminSection">
         <h3>モンスター召喚</h3>
         <div class="adminGrid">
-          <label class="adminField">種類<select id="adminMonsterSelect"></select></label>
+          <label class="adminField">種類<input value="猪" disabled></label>
           <label class="adminField">個数<input id="adminMonsterCount" type="number" min="1" max="50" value="1"></label>
           <label class="adminField">レベル<input id="adminMonsterLevel" type="number" min="1" max="999" value="1"></label>
         </div>
@@ -790,10 +668,9 @@
         <button id="adminApplyStatsBtn" class="adminActionBtn" type="button">ステータス適用</button>
       </div>
       <div class="adminSection">
-        <h3>XP / 捕獲デバッグ</h3>
+        <h3>XP</h3>
         <div class="adminGrid">
           <button id="adminGrantXpBtn" class="adminActionBtn" type="button">XP大量付与</button>
-          <label class="adminToggle"><input id="adminForceCaptureToggle" type="checkbox"> 強制捕獲モード</label>
           <button id="adminHealBtn" class="adminActionBtn" type="button">全回復</button>
         </div>
       </div>
@@ -816,24 +693,15 @@
 
     const TREE_URLS = ["./tree.glb"];
     const BOAR_URLS = ["./boar.glb"];
-    const GORILLA_URLS = ["./gorira.glb"];
-    const SECRET_URLS = ["./seacret.glb"];
     const MONSTER_SPECIES = {
-      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, probability: 0.6, fallbackFactory: createFallbackBoarTemplate },
-      gorilla: { key: "gorilla", name: "ゴリラ", urls: GORILLA_URLS, baseHp: 200, baseAttack: 10, probability: 0.399999, fallbackFactory: createFallbackGorillaTemplate },
-      secret: { key: "secret", name: "シークレット", urls: SECRET_URLS, baseHp: 1000, baseAttack: 50, probability: 0.000001, fallbackFactory: createFallbackSecretTemplate }
+      boar: { key: "boar", name: "猪", urls: BOAR_URLS, baseHp: 100, baseAttack: 15, probability: 1.0, fallbackFactory: createFallbackBoarTemplate }
     };
-    const MONSTER_SPECIES_LIST = [MONSTER_SPECIES.boar, MONSTER_SPECIES.gorilla, MONSTER_SPECIES.secret];
+    const MONSTER_SPECIES_LIST = [MONSTER_SPECIES.boar];
     const HERB_URLS = ["./herb.glb", "./yakusou.glb"];
     const ROCK_URLS = ["./isi.glb", "./iwa.glb"];
     const RIVER_URLS = ["./river.glb"];
 
-    const STORAGE_KEY = "forest_tps_inventory_v3";
     const PLAYER_STATS_STORAGE_KEY = "forest_tps_player_stats_v1";
-    const INVENTORY_HISTORY_PREFIX = `${STORAGE_KEY}_history_`;
-    const INVENTORY_HISTORY_LIMIT = 5;
-    const LOCAL_STORAGE_SOFT_LIMIT_BYTES = 4.5 * 1024 * 1024;
-    const INVENTORY_LIMIT = 10;
 
     const WORLD_SIZE = 1500;
     const WORLD_HALF = WORLD_SIZE / 2;
@@ -1102,26 +970,14 @@
     const attackCostText = document.getElementById("attackCostText");
     const worldUI = document.getElementById("worldUI");
     const toastEl = document.getElementById("toast");
-    const secretWarningEl = document.getElementById("secretWarning");
-    const secretMarkerEl = document.getElementById("secretMarker");
     
-    const inventoryModal = document.getElementById("inventoryModal");
-    const inventoryList = document.getElementById("inventoryList");
-    const inventoryInfo = document.getElementById("inventoryInfo");
-    const closeInventoryBtn = document.getElementById("closeInventoryBtn");
-    const cleanupSavesBtn = document.getElementById("cleanupSavesBtn");
-    const inventoryBtn = document.getElementById("inventoryBtn");
-    const captureBtn = document.getElementById("captureBtn");
     const herbCollectBtn = document.getElementById("herbCollectBtn");
-    const recallBtn = document.getElementById("recall-btn");
     const adminInteractBtn = document.getElementById("adminInteractBtn");
-    const rideBtn = document.getElementById("rideBtn");
     const adminCodeModal = document.getElementById("adminCodeModal");
     const adminCodeDisplay = document.getElementById("adminCodeDisplay");
     const adminKeypad = document.getElementById("adminKeypad");
     const adminPanelModal = document.getElementById("adminPanelModal");
     const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
-    const adminMonsterSelect = document.getElementById("adminMonsterSelect");
     const adminMonsterCount = document.getElementById("adminMonsterCount");
     const adminMonsterLevel = document.getElementById("adminMonsterLevel");
     const adminSpawnMonsterBtn = document.getElementById("adminSpawnMonsterBtn");
@@ -1131,7 +987,6 @@
     const adminDefenseInput = document.getElementById("adminDefenseInput");
     const adminApplyStatsBtn = document.getElementById("adminApplyStatsBtn");
     const adminGrantXpBtn = document.getElementById("adminGrantXpBtn");
-    const adminForceCaptureToggle = document.getElementById("adminForceCaptureToggle");
     const adminHealBtn = document.getElementById("adminHealBtn");
     
     const miniMapWrap = document.getElementById("miniMapWrap");
@@ -1148,17 +1003,11 @@
     let mixer = null;
     let treeTemplate = null;
     let boarTemplate = null;
-    let gorillaTemplate = null;
-    let secretTemplate = null;
-    const monsterTemplates = new Map();
-    const monsterFallbackFlags = new Map();
     let herbTemplate = null;
     let rockTemplate = null;
     let riverTemplate = null;
     let treeUsesFallback = false;
     let boarUsesFallback = false;
-    let gorillaUsesFallback = false;
-    let secretUsesFallback = false;
     let herbUsesFallback = false;
     let rockUsesFallback = false;
     let riverUsesFallback = false;
@@ -1204,8 +1053,6 @@
       playerDefense: 0,
       xpCollectRange: 2.1,
       adminPoleInteractRange: 3.0,
-      rideInteractRange: 4.0,
-      mountedSpeed: 8.0,
       playerAttackDuration: 5.0,
       attackRange: 5.6,
       attackConeDot: -0.15,
@@ -1221,8 +1068,6 @@
       boarAttackRange: 1.15,
       combatStopDistance: 0.3,
       combatInterval: 1.5,
-      companionHpMultiplier: 0.9,
-      companionAttackMultiplier: 0.9,
       
       herbHealAmount: 30,
       herbCollectRange: 1.0,
@@ -1257,8 +1102,6 @@
     const xpDrops = [];
     let adminPole = null;
     let adminCodeInput = "";
-    let ridingBoar = null;
-    let adminForceCaptureMode = false;
     
     const tmp = {
       v1: new THREE.Vector3(),
@@ -1290,7 +1133,6 @@
       river: new Map(),
       boar: new Map()
     };
-    let activeSecretMonsterId = null;
     const streamState = {
       tree: { cursor: 0 },
       herb: { cursor: 0 },
@@ -1299,16 +1141,8 @@
       boar: { cursor: 0 },
       inactiveBoar: { cursor: 0 }
     };
-    const companions = [];
-    const inventory = [];
     let collisionCircles = [];
     let collisionRects = [];
-
-    const companionSpawnTmp = {
-      facing: new THREE.Vector3(),
-      right: new THREE.Vector3(),
-      offset: new THREE.Vector3()
-    };
     
     const map2D = {
       mini: { ctx: miniMapCanvas.getContext("2d") },
@@ -1443,39 +1277,7 @@
       }
     }
     
-    function safeLoadInventory() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return;
-        inventory.splice(0, inventory.length);
-        for (const item of parsed) {
-          if (!item || typeof item !== "object") continue;
-          if (typeof item.species !== "string") continue;
-          const level = Number(item.level);
-          if (!Number.isFinite(level)) continue;
-          inventory.push({
-            id: typeof item.id === "string" ? item.id : makeId(),
-            species: getMonsterDefinition(item.speciesKey || item.species).name,
-            speciesKey: getMonsterDefinition(item.speciesKey || item.species).key,
-            level: Math.max(1, Math.floor(level)),
-            capturedAt: typeof item.capturedAt === "number" ? item.capturedAt : Date.now()
-          });
-        }
-      } catch (e) {
-        console.warn("inventory load failed", e);
-      }
-    }
 
-    function getInventoryHistoryKeys() {
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(INVENTORY_HISTORY_PREFIX)) keys.push(key);
-      }
-      return keys.sort();
-    }
 
     function estimateLocalStorageBytes() {
       let total = 0;
@@ -1487,96 +1289,13 @@
       return total;
     }
 
-    function cleanupInventoryHistory(keepLatest = INVENTORY_HISTORY_LIMIT) {
-      const keys = getInventoryHistoryKeys();
-      const removeCount = Math.max(0, keys.length - keepLatest);
-      for (const key of keys.slice(0, removeCount)) localStorage.removeItem(key);
-      return removeCount;
-    }
 
-    function cleanupAllInventoryHistory() {
-      const keys = getInventoryHistoryKeys();
-      for (const key of keys) localStorage.removeItem(key);
-      return keys.length;
-    }
 
-    function pruneInventoryForStorage() {
-      cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
-      if (estimateLocalStorageBytes() > LOCAL_STORAGE_SOFT_LIMIT_BYTES) cleanupInventoryHistory(1);
-    }
 
-    function archiveCurrentInventorySnapshot() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const key = `${INVENTORY_HISTORY_PREFIX}${String(Date.now()).padStart(13, "0")}`;
-      try {
-        localStorage.setItem(key, raw);
-      } catch (e) {
-        cleanupInventoryHistory(0);
-      }
-    }
     
-    function saveInventory() {
-      try {
-        pruneInventoryForStorage();
-        archiveCurrentInventorySnapshot();
-        cleanupInventoryHistory(INVENTORY_HISTORY_LIMIT);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
-      } catch (e) {
-        if (e?.name === "QuotaExceededError" || e?.code === 22) {
-          try {
-            cleanupInventoryHistory(0);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
-            showToast("古いセーブ履歴を削除して保存しました");
-            return;
-          } catch (retryError) {
-            console.warn("inventory save retry failed", retryError);
-          }
-        }
-        console.warn("inventory save failed", e);
-      }
-    }
 
-    function renderInventoryModal() {
-      inventoryInfo.textContent = `${inventory.length} / ${INVENTORY_LIMIT} 体 / 履歴 ${getInventoryHistoryKeys().length} 件`;
-      inventoryList.innerHTML = "";
-      if (!inventory.length) {
-        const empty = document.createElement("div");
-        empty.className = "inventoryEmpty";
-        empty.textContent = "まだ捕まえたキャラクターはいません。";
-        inventoryList.appendChild(empty);
-        return;
-      }
 
-      inventory.forEach((item) => {
-        const row = document.createElement("div");
-        row.className = "inventoryItem";
 
-        const label = document.createElement("div");
-        label.className = "inventoryItemText";
-        label.textContent = `${item.species} Lv.${item.level}`;
-
-        const btn = document.createElement("button");
-        btn.className = "deployBtn";
-        btn.textContent = "出撃";
-        btn.dataset.deployId = item.id;
-
-        row.appendChild(label);
-        row.appendChild(btn);
-        inventoryList.appendChild(row);
-      });
-    }
-
-    function openInventoryModal() {
-      renderInventoryModal();
-      inventoryModal.classList.add("open");
-      inventoryModal.setAttribute("aria-hidden", "false");
-    }
-
-    function closeInventoryModal() {
-      inventoryModal.classList.remove("open");
-      inventoryModal.setAttribute("aria-hidden", "true");
-    }
 
     function applyShadowsAndFixMaterials(object3D) {
       object3D.traverse((child) => {
@@ -1849,20 +1568,15 @@
     }
 
     function normalizeMonsterSpeciesKey(speciesOrKey) {
-      if (typeof speciesOrKey !== "string") return "boar";
-      const found = MONSTER_SPECIES_LIST.find((def) => def.key === speciesOrKey || def.name === speciesOrKey);
-      return found ? found.key : "boar";
+      return "boar";
     }
-    
+
     function getMonsterDefinition(speciesOrKey = "boar") {
-      return MONSTER_SPECIES[normalizeMonsterSpeciesKey(speciesOrKey)] || MONSTER_SPECIES.boar;
+      return MONSTER_SPECIES.boar;
     }
-    
+
     function getRandomMonsterDefinition() {
-      const roll = Math.random();
-      if (roll < MONSTER_SPECIES.boar.probability) return MONSTER_SPECIES.boar;
-      if (roll < MONSTER_SPECIES.boar.probability + MONSTER_SPECIES.gorilla.probability) return MONSTER_SPECIES.gorilla;
-      return MONSTER_SPECIES.secret;
+      return MONSTER_SPECIES.boar;
     }
     
     function rollMonsterIv() {
@@ -2094,7 +1808,7 @@
           z: p.z,
           rotY: Math.random() * Math.PI * 2,
           biomeKey: getBiomeAt(p.x, p.z).key,
-          scale: speciesDef.key === "gorilla" ? 1.15 + Math.random() * 0.35 : 0.85 + Math.random() * 0.45,
+          scale: 0.85 + Math.random() * 0.45,
           level,
           iv,
           hpMax: stats.hpMax,
@@ -2239,69 +1953,7 @@
       return boar;
     }
 
-    function createFallbackGorillaTemplate() {
-      const gorilla = new THREE.Group();
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2d2b29, roughness: 1.0 });
-      const chestMat = new THREE.MeshStandardMaterial({ color: 0x5a524b, roughness: 1.0 });
 
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.7, 1.25, 5, 10), bodyMat);
-      body.position.y = 1.15;
-      body.scale.set(1.15, 1.0, 0.82);
-      const chest = new THREE.Mesh(new THREE.SphereGeometry(0.54, 14, 12), chestMat);
-      chest.position.set(0, 1.35, 0.38);
-      chest.scale.set(1.15, 0.72, 0.28);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), bodyMat);
-      head.position.set(0, 2.15, 0.05);
-      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.34), chestMat);
-      snout.position.set(0, 2.03, 0.36);
-
-      const armGeo = new THREE.CapsuleGeometry(0.17, 1.15, 4, 8);
-      const armL = new THREE.Mesh(armGeo, bodyMat);
-      armL.position.set(-0.78, 1.05, 0.12);
-      armL.rotation.z = -0.28;
-      const armR = armL.clone();
-      armR.position.x = 0.78;
-      armR.rotation.z = 0.28;
-
-      const legGeo = new THREE.CapsuleGeometry(0.16, 0.74, 4, 8);
-      const legL = new THREE.Mesh(legGeo, bodyMat);
-      legL.position.set(-0.32, 0.38, 0);
-      const legR = legL.clone();
-      legR.position.x = 0.32;
-      gorilla.add(body, chest, head, snout, armL, armR, legL, legR);
-      gorilla.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      gorilla.userData.parts = { body, head, snout, ears: [], legs: [legL, legR, armL, armR] };
-      return gorilla;
-    }
-
-    function createFallbackSecretTemplate() {
-      const secret = new THREE.Group();
-      const coreMat = new THREE.MeshStandardMaterial({ color: 0x1d65ff, roughness: 0.32, metalness: 0.1, emissive: 0x082f88, emissiveIntensity: 0.6 });
-      const ringMat = new THREE.MeshStandardMaterial({ color: 0x9fe8ff, roughness: 0.25, transparent: true, opacity: 0.72, emissive: 0x228cff, emissiveIntensity: 0.85 });
-      const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72, 1), coreMat);
-      core.position.y = 1.35;
-      const ring1 = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.045, 8, 36), ringMat);
-      ring1.position.y = 1.35;
-      ring1.rotation.x = Math.PI / 2;
-      const ring2 = ring1.clone();
-      ring2.rotation.set(0.9, 0.0, 0.4);
-      const base = new THREE.Mesh(new THREE.ConeGeometry(0.44, 0.9, 5), coreMat);
-      base.position.y = 0.48;
-      secret.add(core, ring1, ring2, base);
-      secret.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      secret.userData.parts = { body: core, head: core, snout: base, ears: [], legs: [] };
-      return secret;
-    }
     
     function createFallbackHerbTemplate() {
       const herb = new THREE.Group();
@@ -2513,33 +2165,7 @@
       for (const data of activeBoars.values()) updateBoarTag(data);
     }
 
-    function updateCompanionTag(companion) {
-      if (!companion?.tag?.el || companion.dead || !companion.root) {
-        if (companion?.tag?.el) companion.tag.el.style.opacity = "0";
-        return;
-      }
-      const pos = tmp.v1.set(
-        companion.root.position.x,
-        companion.root.position.y + (companion.uiOffset || 2.0),
-        companion.root.position.z
-      ).project(camera);
-      const inFront = pos.z > -1 && pos.z < 1;
-      const onScreen = pos.x >= -1.2 && pos.x <= 1.2 && pos.y >= -1.2 && pos.y <= 1.2;
-      if (!inFront || !onScreen) {
-        companion.tag.el.style.opacity = "0";
-        return;
-      }
-      const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
-      const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
-      companion.tag.el.style.opacity = "1";
-      companion.tag.el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
-      companion.tag.fill.style.width = `${clamp((companion.hp / companion.hpMax) * 100, 0, 100)}%`;
-      companion.tag.text.textContent = `HP ${Math.ceil(companion.hp)} / ${Math.ceil(companion.hpMax)}`;
-    }
 
-    function updateCompanionTags() {
-      for (const companion of companions) updateCompanionTag(companion);
-    }
       
       function randomWorldPosition(minR = 18, maxR = 95) {
       const angle = Math.random() * Math.PI * 2;
@@ -2668,48 +2294,6 @@
       return best;
     }
 
-    function forceSpawnSecretAtNearestSpawn() {
-      const data = findNearestMonsterSpawnData();
-      if (!data) return;
-      const spawnX = data.activeObject?.root?.position?.x ?? data.x;
-      const spawnZ = data.activeObject?.root?.position?.z ?? data.z;
-      if (data.activeObject) despawnBoarForStream(data);
-      removeFromSpatialGrid("boar", data);
-      const level = Math.max(1, Math.floor(safeNum(data.level, getBoarLevelForPosition(spawnX, spawnZ))));
-      const iv = rollMonsterIv();
-      const stats = getStatsByLevel(level, "secret", iv);
-      data.dead = false;
-      data.speciesKey = "secret";
-      data.speciesName = MONSTER_SPECIES.secret.name;
-      data.x = clamp(spawnX, -WORLD_HALF + 4, WORLD_HALF - 4);
-      data.z = clamp(spawnZ, -WORLD_HALF + 4, WORLD_HALF - 4);
-      data.rotY = Math.random() * Math.PI * 2;
-      data.scale = 1.0;
-      data.level = level;
-      data.iv = iv;
-      data.hpMax = stats.hpMax;
-      data.hp = stats.hpMax;
-      data.atkDps = stats.atkDps;
-      data.attackRange = config.boarAttackRange;
-      data.aggroRange = config.boarAggroRange + (level - 1) * 0.8;
-      data.moveSpeed = config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3);
-      data.state = "move";
-      data.stateTime = 0;
-      data.wanderYaw = Math.random() * Math.PI * 2;
-      data.wanderTimer = rand(0.8, 2.6);
-      data.hostileUntil = 0;
-      data.targetType = null;
-      data.targetId = null;
-      data.nextAttackAt = 0;
-      data.spawnCooldownUntil = 0;
-      addToSpatialGrid("boar", data);
-      spawnBoar(data);
-      activeSecretMonsterId = data.id;
-      showToast("管理者モード成功：シークレットを強制スポーン！", 2600);
-      setStatus("シークレット強制スポーン");
-      updateSecretWarningUI();
-      updateMiniMap();
-    }
 
     function submitAdminDigit(digit) {
       if (digit === "clear") {
@@ -2739,7 +2323,6 @@
       adminMaxHpInput.value = config.playerHpMax;
       adminAttackInput.value = config.playerAttackDps;
       adminDefenseInput.value = config.playerDefense;
-      adminForceCaptureToggle.checked = adminForceCaptureMode;
     }
 
     function openAdminPanel() {
@@ -2777,7 +2360,7 @@
         id: nextEntityId++, speciesKey: speciesDef.key, speciesName: speciesDef.name,
         x: clamp(x, -WORLD_HALF + 4, WORLD_HALF - 4), z: clamp(z, -WORLD_HALF + 4, WORLD_HALF - 4),
         rotY: angleOffset + Math.PI, biomeKey: getBiomeAt(x, z).key,
-        scale: speciesDef.key === "gorilla" ? 1.25 : (speciesDef.key === "secret" ? 1.1 : 1.0),
+        scale: 1.0,
         level, iv, hpMax: stats.hpMax, hp: stats.hpMax, atkDps: stats.atkDps,
         attackRange: config.boarAttackRange, aggroRange: config.boarAggroRange + (level - 1) * 0.8,
         moveSpeed: config.boarMoveSpeed * clamp(1 + (level - 1) * 0.002, 1, 3),
@@ -2790,7 +2373,7 @@
     }
 
     function adminSpawnMonsters() {
-      const speciesKey = adminMonsterSelect.value || "boar";
+      const speciesKey = "boar";
       const count = clamp(Math.floor(safeNum(Number(adminMonsterCount.value), 1)), 1, 50);
       const level = clamp(Math.floor(safeNum(Number(adminMonsterLevel.value), 1)), config.boarLevelMin, config.boarLevelMax);
       const forward = getCharacterForwardVector();
@@ -2988,11 +2571,6 @@
         setStatus("ゲームオーバー");
         return;
       }
-
-      if (ridingBoar) {
-        updateMountedMovement(delta);
-        return;
-      }
       
       const input = getMoveInput();
 
@@ -3069,10 +2647,6 @@
       for (const data of activeRivers.values()) syncDataObjectToTerrain(data);
       for (const data of activeBoars.values()) syncDataObjectToTerrain(data);
 
-      for (const c of companions) {
-        if (!c?.root) continue;
-        c.baseTerrain = getTerrainHeight(c.root.position.x, c.root.position.z);
-      }
     }
 
     function updateHerbActionUI() {
@@ -3080,105 +2654,12 @@
       herbCollectBtn.style.display = found ? "block" : "none";
     }
 
-    function updateRecallActionUI() {
-      const found = findNearestRecallableCompanion(3.0);
-      recallBtn.style.display = found ? "block" : "none";
-    }
 
 
-    function findNearestRideableBoar(maxDist = config.rideInteractRange) {
-      let best = null;
-      let bestDist = Infinity;
-      for (const data of activeBoars.values()) {
-        if (data.dead || data.speciesKey !== "boar" || !data.activeObject?.root) continue;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerRoot.position.x, pos.z - playerRoot.position.z);
-        if (d <= maxDist && d < bestDist) {
-          best = data;
-          bestDist = d;
-        }
-      }
-      return best ? { boar: best, dist: bestDist } : null;
-    }
 
-    function updateRideActionUI() {
-      if (ridingBoar) {
-        rideBtn.style.display = "block";
-        rideBtn.textContent = "降りる";
-        return;
-      }
-      const found = findNearestRideableBoar();
-      rideBtn.style.display = found ? "block" : "none";
-      rideBtn.textContent = "乗馬";
-    }
 
-    function dismountBoar() {
-      if (!ridingBoar) return;
-      const boar = ridingBoar;
-      const root = boar?.activeObject?.root;
-      ridingBoar = null;
-      if (visualRoot) visualRoot.visible = true;
-      const forward = getCharacterForwardVector();
-      if (root) {
-        playerRoot.position.x = clamp(root.position.x - forward.x * 1.4, -WORLD_HALF + 2, WORLD_HALF - 2);
-        playerRoot.position.z = clamp(root.position.z - forward.z * 1.4, -WORLD_HALF + 2, WORLD_HALF - 2);
-      }
-      updatePlayerTerrainAndJump(0);
-      showToast("猪から降りました");
-      updateRideActionUI();
-    }
 
-    function mountNearestBoar() {
-      if (gameOver) return;
-      if (ridingBoar) {
-        dismountBoar();
-        return;
-      }
-      const found = findNearestRideableBoar();
-      if (!found) {
-        showToast("近くに乗れる猪がいません");
-        return;
-      }
-      ridingBoar = found.boar;
-      clearBoarHateTarget(ridingBoar);
-      ridingBoar.hostileUntil = 0;
-      if (visualRoot) visualRoot.visible = false;
-      playerRoot.position.copy(ridingBoar.activeObject.root.position);
-      playerRoot.position.y = getTerrainHeight(playerRoot.position.x, playerRoot.position.z);
-      showToast("乗馬開始：移動速度 8m/s");
-      updateRideActionUI();
-    }
 
-    function updateMountedMovement(delta) {
-      if (!ridingBoar?.activeObject?.root || ridingBoar.dead) {
-        dismountBoar();
-        return;
-      }
-      const input = getMoveInput();
-      if (input.attack) startAttack();
-      const root = ridingBoar.activeObject.root;
-      const moving = input.magnitude > 0.001;
-      if (moving) {
-        const moveDir = getCameraRelativeMoveDirection(input.x, input.z);
-        if (moveDir.lengthSq() > 1e-8) {
-          const yaw = Math.atan2(moveDir.x, moveDir.z);
-          root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, yaw, 1 - Math.exp(-10 * delta));
-          const step = config.mountedSpeed * input.magnitude * delta;
-          moveWithStrictCollision(root.position, moveDir.x * step, moveDir.z * step, ridingBoar.collisionRadius || 0.7);
-          root.position.x = clamp(root.position.x, -WORLD_HALF + 4, WORLD_HALF - 4);
-          root.position.z = clamp(root.position.z, -WORLD_HALF + 4, WORLD_HALF - 4);
-        }
-      }
-      root.position.y = getTerrainHeight(root.position.x, root.position.z) + (ridingBoar.terrainLift || 0);
-      updateWildBoarAnimation(ridingBoar, delta);
-      ridingBoar.x = root.position.x;
-      ridingBoar.z = root.position.z;
-      ridingBoar.rotY = root.rotation.y;
-      updateSpatialGridItem("boar", ridingBoar);
-      playerRoot.position.set(root.position.x, getTerrainHeight(root.position.x, root.position.z), root.position.z);
-      playerRoot.rotation.y = root.rotation.y;
-      setStatus(moving ? "乗馬中（8m/s）" : "乗馬中");
-    }
     
       function applyEntityGrounding(data) {
       if (!data?.activeObject?.root) return;
@@ -3406,13 +2887,12 @@
 
     function spawnBoar(data) {
       const speciesDef = getMonsterDefinition(data?.speciesKey);
-      const template = monsterTemplates.get(speciesDef.key) || boarTemplate;
+      const template = boarTemplate;
       if (!template) return;
       if (data.activeObject || data.isSpawning || data.dead) return;
       data.isSpawning = true;
       try {
-       const speciesPresenceScale = speciesDef.key === "gorilla" ? 1.28 : 1.0;
-        const levelVisualScale = clamp(0.95 + Math.log2(Math.max(1, data.level)) * 0.16, 0.95, speciesDef.key === "secret" ? 3.0 : 2.6) * speciesPresenceScale;
+         const levelVisualScale = clamp(0.95 + Math.log2(Math.max(1, data.level)) * 0.16, 0.95, 2.6);
         const root = deepCloneUnique(template);
         fitAndGround(root, BOAR_TARGET_HEIGHT * data.scale * levelVisualScale, BOAR_GROUND_LIFT);
         data.terrainLift = root.position.y;
@@ -3435,7 +2915,6 @@
         data.activeObject = { root, tag, parts };
         scene.add(root);
         activeBoars.set(data.id, data);
-        if (speciesDef.key === "secret") activeSecretMonsterId = data.id;
      } finally {
         data.isSpawning = false;
       }
@@ -3451,7 +2930,6 @@
         disposeObject3D(o.root);
         data.activeObject = null;
         activeBoars.delete(data.id);
-        if (activeSecretMonsterId === data.id) activeSecretMonsterId = null;
         data.spawnCooldownUntil = now + 300;
       } finally {
         data.isDespawning = false;
@@ -3461,7 +2939,6 @@
     function removeBoarAfterDeath(data, shouldRespawn = true) {
       if (!data || data.dead) return;
       if (data.activeObject) despawnBoarForStream(data);
-      if (activeSecretMonsterId === data.id) activeSecretMonsterId = null;
       data.dead = true;
       if (shouldRespawn) scheduleBoarRespawn(data);
     }
@@ -3492,7 +2969,7 @@
       data.z = p.z;
       data.rotY = Math.random() * Math.PI * 2;
       data.biomeKey = getBiomeAt(p.x, p.z).key;
-      data.scale = speciesDef.key === "gorilla" ? 1.15 + Math.random() * 0.35 : 0.85 + Math.random() * 0.45;
+      data.scale = 0.85 + Math.random() * 0.45;
       data.level = level;
       data.iv = iv;
       data.hpMax = stats.hpMax;
@@ -3514,151 +2991,9 @@
       addToSpatialGrid("boar", data);
     }
 
-    function spawnCompanionFromInventoryItem(item) {
-      const speciesDef = getMonsterDefinition(item.speciesKey || item.species);
-      const stats = getStatsByLevel(item.level, speciesDef.key);
-      const scaleBoost = clamp(0.95 + Math.log2(Math.max(1, item.level)) * 0.16, 0.95, speciesDef.key === "secret" ? 3.0 : 2.6);
-      let root;
-      let parts = null;
-      const template = monsterTemplates.get(speciesDef.key) || boarTemplate;
-      
-      if (template && !monsterFallbackFlags.get(speciesDef.key)) {
-        root = deepCloneUnique(template);
-        fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
-        parts = root.userData.parts || null;
-      } else {
-        root = speciesDef.fallbackFactory();
-        fitAndGround(root, BOAR_TARGET_HEIGHT * scaleBoost, BOAR_GROUND_LIFT);
-        parts = root.userData.parts || null;
-      }
 
-      const facing = companionSpawnTmp.facing.copy(getCharacterForwardVector());
-      const right = companionSpawnTmp.right.set(facing.z, 0, -facing.x).normalize();
-      const offset = companionSpawnTmp.offset.copy(facing).multiplyScalar(-2.2).add(right.multiplyScalar(rand(-1.4, 1.4)));
 
-      root.position.set(
-        playerRoot.position.x + offset.x,
-        getTerrainHeight(playerRoot.position.x + offset.x, playerRoot.position.z + offset.z) + root.position.y,
-        playerRoot.position.z + offset.z
-      );
-      root.rotation.y = Math.atan2(facing.x, facing.z);
 
-      root.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      const companion = {
-        id: makeId(),
-        root,
-        parts,
-        species: speciesDef.name,
-        speciesKey: speciesDef.key,
-        level: item.level,
-        hpMax: stats.hpMax * config.companionHpMultiplier,
-        hp: stats.hpMax * config.companionHpMultiplier,
-        atkDps: stats.atkDps * config.companionAttackMultiplier,
-        followSpeed: config.boarMoveSpeed * clamp(1.35 + (item.level - 1) * 0.004, 1.35, 4.0),
-        attackRange: config.boarAttackRange,
-        attackCooldown: 0,
-        nextAttackAt: 0,
-        attackDuration: 0.62,
-        attackTimer: 0,
-        attackHitDone: false,
-        attackHitTime: 0.24,
-        attackLunge: 0.0,
-        state: "follow",
-        stateTime: 0,
-        animT: Math.random() * 10,
-        terrainLift: root.position.y - getTerrainHeight(root.position.x, root.position.z),
-        attackStartPos: new THREE.Vector3(),
-        attackDir: new THREE.Vector3(),
-        attackTargetId: null,
-        targetBoarId: null,
-        uiOffset: 2.0,
-        collisionRadius: 0.25,
-        tag: null,
-        dead: false
-      };
-
-      const box = new THREE.Box3().setFromObject(root);
-      const size = box.getSize(new THREE.Vector3());
-      companion.uiOffset = Math.max(1.6, size.y * 1.15);
-      companion.tag = createBoarTag(item.level, companion.hp, companion.hpMax, { ally: true, label: `味方 Lv.${item.level}` });
-      companions.push(companion);
-      scene.add(root);
-    }
-
-    function addInventoryCreature(species, level, speciesKey = null) {
-      if (inventory.length >= INVENTORY_LIMIT) return false;
-      const def = getMonsterDefinition(speciesKey || species);
-      inventory.push({
-        id: makeId(),
-        species: def.name,
-        speciesKey: def.key,
-        level: Math.max(1, Math.floor(level)),
-        capturedAt: Date.now()
-      });
-      saveInventory();
-      renderInventoryModal();
-      return true;
-    }
-
-    function findNearestBoar(maxDist = 4.5) {
-      const playerPos = playerRoot.position;
-      let best = null;
-      let bestDist = Infinity;
-
-      for (const data of activeBoars.values()) {
-        if (data === ridingBoar) continue;
-        if (data.dead || !data.activeObject) continue;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
-        if (d < maxDist && d < bestDist) {
-          best = data;
-          bestDist = d;
-        }
-      }
-
-      return best ? { boar: best, dist: bestDist } : null;
-    }
-
-    function collectNearestBoar() {
-      if (gameOver) return;
-
-      if (inventory.length >= INVENTORY_LIMIT) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      const found = findNearestBoar(4.5);
-      if (!found) {
-        showToast("近くにモンスターがいない！");
-        setStatus("近くにモンスターがいない");
-        return;
-      }
-
-      const boar = found.boar;
-      if (!adminForceCaptureMode && boar.hp > boar.hpMax * 0.1) {
-        showToast("体力が多すぎて捕まえられない！");
-        setStatus("体力が多すぎて捕まえられない");
-        return;
-      }
-
-      const ok = addInventoryCreature(boar.speciesName || "猪", boar.level, boar.speciesKey);
-      if (!ok) {
-        showToast("かばんがいっぱい！");
-        setStatus("かばんがいっぱい");
-        return;
-      }
-
-      showToast(`${boar.speciesName || "モンスター"} Lv.${boar.level} を捕獲！`);
-      setStatus(`${boar.speciesName || "モンスター"} Lv.${boar.level} を捕獲`);
-      removeBoarAfterDeath(boar, true);
-    }
 
     function findNearestHerb(maxDist = config.herbCollectRange) {
       const playerPos = playerRoot.position;
@@ -3790,15 +3125,12 @@
 
     function setBoarHateTarget(data, type, id = null, now = performance.now()) {
       if (!data || data.dead) return;
-      data.targetType = type;
-      data.targetId = id;
+      if (type !== "player") return;
+      data.targetType = "player";
+      data.targetId = null;
       data.hostileUntil = Infinity;
       data.state = "chase";
       if (!Number.isFinite(data.nextAttackAt)) data.nextAttackAt = 0;
-      if (type === "companion") {
-        const c = companions.find((item) => item && item.id === id && !item.dead && item.root);
-        if (c) c.targetBoarId = data.id;
-      }
     }
 
     function clearBoarHateTarget(data) {
@@ -3809,310 +3141,9 @@
     }
 
     function getBoarTarget(data) {
-      if (!data || !data.targetType) return null;
-      if (data.targetType === "player") {
-        if (gameOver || playerHp <= 0) return null;
-        return { type: "player", position: playerRoot.position, entity: null };
-      }
-      if (data.targetType === "companion") {
-        const c = companions.find((item) => item.id === data.targetId && !item.dead && item.root);
-        if (!c) return null;
-        return { type: "companion", position: c.root.position, entity: c };
-      }
-      return null;
-    }
-
-    function damageCompanion(companion, amount) {
-      if (!companion || companion.dead || !companion.root) return;
-      companion.hp = Math.max(0, companion.hp - amount);
-      if (companion.hp <= 0) {
-        killCompanion(companion);
-      }
-    }
-
-    function removeCompanionTag(companion) {
-      if (companion?.tag?.el?.parentNode) companion.tag.el.parentNode.removeChild(companion.tag.el);
-      if (companion) companion.tag = null;
-    }
-    
-    function killCompanion(companion) {
-      if (!companion || companion.dead) return;
-      companion.dead = true;
-      removeCompanionTag(companion);
-      const root = companion.root;
-      if (root?.parent) root.parent.remove(root);
-      disposeObject3D(root);
-      companion.root = null;
-      for (const data of activeBoars.values()) {
-        if (data.targetType === "companion" && data.targetId === companion.id) clearBoarHateTarget(data);
-      }
-      showToast(`${companion.species} Lv.${companion.level} は倒れました`);
-    }
-    
-function findNearestRecallableCompanion(maxDist = 3.0) {
-      let best = null;
-      let bestDist = Infinity;
-      const playerPos = playerRoot.position;
-      for (const c of companions) {
-        if (!c || c.dead || !c.root) continue;
-        const d = Math.hypot(c.root.position.x - playerPos.x, c.root.position.z - playerPos.z);
-        if (d <= maxDist && d < bestDist) {
-          best = c;
-          bestDist = d;
-        }
-      }
-      return best ? { companion: best, dist: bestDist } : null;
-    }
-
-    function recallNearestCompanion() {
-      const found = findNearestRecallableCompanion(3.0);
-      if (!found) {
-        showToast("回収できる味方が近くにいません");
-        return;
-      }
-      const c = found.companion;
-      let ok = addInventoryCreature(c.species || "猪", c.level || 1, c.speciesKey);
-      if (!ok) {
-        inventory.push({
-          id: makeId(),
-          species: getMonsterDefinition(c.speciesKey || c.species).name,
-          speciesKey: getMonsterDefinition(c.speciesKey || c.species).key,
-          level: Math.max(1, Math.floor(c.level || 1)),
-          capturedAt: Date.now()
-        });
-        saveInventory();
-        renderInventoryModal();
-        ok = true;
-      }
-      c.dead = true;
-      removeCompanionTag(c);
-      if (c.root?.parent) c.root.parent.remove(c.root);
-      disposeObject3D(c.root);
-      c.root = null;
-      for (const data of activeBoars.values()) {
-        if (data.targetType === "companion" && data.targetId === c.id) clearBoarHateTarget(data);
-      }
-      const index = companions.findIndex((item) => item.id === c.id);
-      if (index >= 0) companions.splice(index, 1);
-      showToast(`${c.species} Lv.${c.level} を回収しました`);
-      setStatus(`${c.species} Lv.${c.level} を回収`);
-      updateRecallActionUI();
-    }
-
-    function findHostileBoarTarget(now, companion = null) {
-      if (companion?.targetBoarId) {
-        const locked = findBoarById(companion.targetBoarId);
-        if (locked && !locked.dead && locked.activeObject?.root) return locked;
-        companion.targetBoarId = null;
-      }
-
-      const playerPos = companion?.root?.position || playerRoot.position;
-      let best = null;
-      let bestDist = Infinity;
-
-      for (const data of activeBoars.values()) {
-        if (!data || data.dead || !data.activeObject?.root) continue;
-        const lockedOnCompanion = companion && data.targetType === "companion" && data.targetId === companion.id;
-        const hostileToPlayer = data.targetType === "player";
-        const generallyHostile = !companion && data.targetType === "companion";
-        if (!lockedOnCompanion && !hostileToPlayer && !generallyHostile) continue;
-        const pos = data.activeObject.root.position;
-        const d = Math.hypot(pos.x - playerPos.x, pos.z - playerPos.z);
-        if (d < bestDist) {
-          bestDist = d;
-          best = data;
-        }
-      }
-      if (companion && best) companion.targetBoarId = best.id;
-      return best;
-    }
-
-    function findBoarById(id) {
-      return activeBoars.get(id) || null;
-    }
-
-    function updateCompanionAnimation(companion, delta) {
-      const t = companion.animT;
-
-      if (companion.state === "attack") {
-        const progress = 1 - (companion.attackTimer / companion.attackDuration);
-        const kick = Math.sin(progress * Math.PI);
-        companion.root.rotation.z = Math.sin(progress * Math.PI) * 0.08;
-
-        if (companion.parts) {
-          companion.parts.body.rotation.z = 0.14 * kick;
-          companion.parts.head.rotation.x = 0.42 + 0.14 * kick;
-          companion.parts.head.rotation.z = -0.08 * kick;
-          companion.parts.snout.rotation.z = -0.2 * kick;
-          companion.parts.ears[0].rotation.z = Math.PI / 2 + 0.45 * kick;
-          companion.parts.ears[1].rotation.z = Math.PI / 2 - 0.45 * kick;
-
-          const legSwing = Math.sin(progress * Math.PI * 2) * 0.95;
-          companion.parts.legs[0].rotation.x = legSwing;
-          companion.parts.legs[3].rotation.x = legSwing;
-          companion.parts.legs[1].rotation.x = -legSwing;
-          companion.parts.legs[2].rotation.x = -legSwing;
-        }
-      } else {
-        companion.root.rotation.z = Math.sin(t * 10.0) * 0.02;
-        if (companion.parts) {
-          const sway = Math.sin(t * 10.0) * 0.02;
-          companion.parts.body.rotation.z = sway;
-          companion.parts.head.rotation.x = 0.04;
-          companion.parts.head.rotation.z = -sway * 0.7;
-          companion.parts.snout.rotation.z = -sway * 0.4;
-          companion.parts.ears[0].rotation.z = Math.PI / 2 + sway * 0.35;
-          companion.parts.ears[1].rotation.z = Math.PI / 2 - sway * 0.35;
-          const legSwing = Math.sin(t * 8.0) * 0.5;
-          companion.parts.legs[0].rotation.x = legSwing;
-          companion.parts.legs[3].rotation.x = legSwing;
-          companion.parts.legs[1].rotation.x = -legSwing;
-          companion.parts.legs[2].rotation.x = -legSwing;
-        }
-      }
-    }
-
-    function startCompanionAttack(companion, target, now) {
-      companion.state = "attack";
-      companion.attackTimer = companion.attackDuration;
-      companion.attackHitDone = false;
-      companion.attackTargetId = target.id;
-      companion.attackStartPos.copy(companion.root.position);
-
-      const targetPos = target.activeObject.root.position;
-      const dir = new THREE.Vector3(targetPos.x - companion.root.position.x, 0, targetPos.z - companion.root.position.z);
-      if (dir.lengthSq() < 1e-8) dir.set(0, 0, 1);
-      else dir.normalize();
-
-      companion.attackDir.copy(dir);
-      companion.root.rotation.y = Math.atan2(dir.x, dir.z);
-      companion.attackCooldown = config.combatInterval;
-      companion.nextAttackAt = now + config.combatInterval * 1000;
-      companion.animT = now * 0.001;
-    }
-
-    function applyCompanionHit(companion, target) {
-      if (!target || target.dead) return;
-      setBoarHateTarget(target, "companion", companion.id, performance.now());
-      target.hp -= companion.atkDps;
-      if (target.hp <= 0) {
-        const root = target.activeObject?.root;
-        if (root) spawnXpDrop(root.position.x, root.position.z, target.level);
-        target.hp = 0;
-        removeBoarAfterDeath(target, true);
-      }
-    }
-
-    function updateCompanions(delta, now) {
-      if (!companions.length) return;
-
-      const playerPos = playerRoot.position;
-      const forward = getCharacterForwardVector();
-      const right = tmp.v5.set(forward.z, 0, -forward.x).normalize();
-
-
-      for (let i = companions.length - 1; i >= 0; i--) {
-        const c = companions[i];
-        if (c.dead || !c.root) {
-          companions.splice(i, 1);
-          continue;
-        }
-
-        c.stateTime += delta;
-        c.animT += delta;
-        c.attackCooldown = Math.max(0, c.attackCooldown - delta);
-
-        if (c.state === "attack") {
-          c.attackTimer -= delta;
-          const progress = 1 - (c.attackTimer / c.attackDuration);
-          const lunge = Math.sin(progress * Math.PI);
-
-          const target = findBoarById(c.attackTargetId);
-                    let dir = c.attackDir;
-
-          if (target && !target.dead && target.activeObject?.root) {
-            const targetPos = target.activeObject.root.position;
-            const nowDir = tmp.v1.set(targetPos.x - c.attackStartPos.x, 0, targetPos.z - c.attackStartPos.z);
-            if (nowDir.lengthSq() > 1e-8) {
-              nowDir.normalize();
-              dir = nowDir;
-            }
-          }
-
-          c.root.position.copy(c.attackStartPos).add(tmp.v2.copy(dir).multiplyScalar(lunge * c.attackLunge));
-          c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift + Math.sin(progress * Math.PI) * 0.15;
-          c.root.rotation.y = Math.atan2(dir.x, dir.z);
-
-          if (!c.attackHitDone && progress >= c.attackHitTime) {
-            c.attackHitDone = true;
-            applyCompanionHit(c, target);
-          }
-
-          if (c.attackTimer <= 0) {
-            c.state = "follow";
-            c.attackTargetId = null;
-            c.attackHitDone = false;
-          }
-
-          updateCompanionAnimation(c, delta);
-          continue;
-        }
-
-        let target = findHostileBoarTarget(now, c);
-        if (target && (target.dead || !target.activeObject?.root)) target = null;
-
-        if (target) {
-          const targetPos = target.activeObject.root.position;
-          const toTarget = tmp.v1.set(targetPos.x - c.root.position.x, 0, targetPos.z - c.root.position.z);
-          const dist = toTarget.length();
-
-          if (dist > 0.001) {
-            const dir = tmp.v2.copy(toTarget).normalize();
-            const yaw = Math.atan2(dir.x, dir.z);
-            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.5 * delta));
-
-            const desiredStop = config.combatStopDistance;
-            if (dist < desiredStop * 0.95) {
-              const push = Math.min(c.followSpeed * delta, desiredStop - dist);
-              moveWithStrictCollision(c.root.position, -dir.x * push, -dir.z * push, 0.62);
-              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
-            } else if (dist <= c.attackRange && c.attackCooldown <= 0) {
-              startCompanionAttack(c, target, now);
-                        } else if (dist > desiredStop) {
-              const step = Math.min(c.followSpeed * 1.65 * delta, Math.max(0, dist - desiredStop));
-              moveWithStrictCollision(c.root.position, dir.x * step, dir.z * step, 0.62);
-              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
-            } else {
-              c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
-            }
-          }
-        } else {
-          const slotIndex = i;
-          const lane = Math.floor(slotIndex / 2);
-          const side = slotIndex % 2 === 0 ? -1 : 1;
-
-          const desired = tmp.v1.copy(playerPos)
-            .add(tmp.v2.copy(forward).multiplyScalar(-(2.5 + lane * 0.45)))
-            .add(tmp.v3.copy(right).multiplyScalar(side * (1.25 + lane * 0.72)));
-
-          const toSlot = tmp.v4.copy(desired).sub(c.root.position);
-          toSlot.y = 0;
-          const dist = toSlot.length();
-
-          if (dist > 0.12) {
-            const dir = tmp.v2.copy(toSlot).normalize();
-            const yaw = Math.atan2(dir.x, dir.z);
-            c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, yaw, 1 - Math.exp(-7.0 * delta));
-
-            const speed = c.followSpeed * clamp(dist / 2.0, 0.4, 1.8);
-            moveWithStrictCollision(c.root.position, dir.x * speed * delta, dir.z * speed * delta, 0.62);
-          }
-
-          c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
-        }
-
-        updateCompanionAnimation(c, delta);
-      }
+      if (!data || data.targetType !== "player") return null;
+      if (gameOver || playerHp <= 0) return null;
+      return { type: "player", position: playerRoot.position, entity: null };
     }
 
     function updateInactiveBoarWander(delta) {
@@ -4140,7 +3171,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function updateWildBoars(delta, now) {
       for (const data of activeBoars.values()) {
-        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const o = data.activeObject;
         if (!o.root) continue;
@@ -4182,9 +3212,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
             data.hostileUntil = Infinity;
             if (targetInfo.type === "player") {
               takePlayerDamage(data.atkDps);
-            } else if (targetInfo.type === "companion") {
-              damageCompanion(targetInfo.entity, data.atkDps);
-            }
           }
         } else {
           data.wanderTimer -= delta;
@@ -4221,7 +3248,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       const now = performance.now();
 
       for (const data of activeBoars.values()) {
-        if (data === ridingBoar) continue;
         if (data.dead || !data.activeObject) continue;
         const root = data.activeObject.root;
         if (!root) continue;
@@ -4396,40 +3422,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       drawWorldMap(fullMapCanvas, "full");
     }
 
-    function getActiveSecretMonster() {
-      if (activeSecretMonsterId !== null) {
-        const secret = activeBoars.get(activeSecretMonsterId);
-        if (secret && !secret.dead && secret.activeObject?.root && secret.speciesKey === "secret") return secret;
-      }
-      for (const data of activeBoars.values()) {
-        if (data?.speciesKey === "secret" && !data.dead && data.activeObject?.root) {
-          activeSecretMonsterId = data.id;
-          return data;
-        }
-      }
-      activeSecretMonsterId = null;
-      return null;
-    }
 
-    function updateSecretWarningUI() {
-      const secret = getActiveSecretMonster();
-      if (!secret) {
-        secretWarningEl.classList.remove("show");
-        secretMarkerEl.classList.remove("show");
-        return;
-      }
-      secretWarningEl.classList.add("show");
-      const root = secret.activeObject.root;
-      const pos = tmp.v1.set(root.position.x, root.position.y + (secret.uiOffset || 2.0), root.position.z).project(camera);
-      if (pos.z <= -1 || pos.z >= 1) {
-        secretMarkerEl.classList.remove("show");
-        return;
-      }
-      const x = clamp((pos.x * 0.5 + 0.5) * window.innerWidth, 16, window.innerWidth - 16);
-      const y = clamp((-pos.y * 0.5 + 0.5) * window.innerHeight, 16, window.innerHeight - 16);
-      secretMarkerEl.style.transform = `translate(${x}px, ${y}px)`;
-      secretMarkerEl.classList.add("show");
-    }
     
     function drawWorldMap(canvas, mode) {
       const ctx = canvas.getContext("2d");
@@ -4528,14 +3521,14 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
           const x = cx + dx * scale;
           const y = cy + dz * scale;
-          ctx.fillStyle = data.speciesKey === "secret" ? "#208cff" : "#ff5b5b";
+          ctx.fillStyle = "#ff5b5b";
           ctx.beginPath();
-          ctx.arc(x, y, data.speciesKey === "secret" ? 7 : 4.5, 0, Math.PI * 2);
+          ctx.arc(x, y, 4.5, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = "#fff";
           ctx.font = "10px system-ui, sans-serif";
-          ctx.fillText(data.speciesKey === "secret" ? "S" : "M", x - 3, y - 7);
+          ctx.fillText("猪", x - 4, y - 7);
         }
 
         const forward = getCharacterForwardVector();
@@ -4689,17 +3682,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       despawnActiveOutsideRadius(activeRocks, despawnRock, now);
       despawnActiveOutsideRadius(activeRivers, despawnRiver, now);
       despawnActiveOutsideRadius(activeBoars, despawnBoarForStream, now);
-      for (let i = companions.length - 1; i >= 0; i--) {
-        const c = companions[i];
-        if (!c?.root) {
-          companions.splice(i, 1);
-          continue;
-        }
-        if (!isWithinActiveRadiusXZ(c.root.position.x, c.root.position.z)) {
-          killCompanion(c);
-          companions.splice(i, 1);
-        }
-      }
     }
 
     function syncGridStream(type, spawnFn, despawnFn, now, canSpawnFn = null) {
@@ -4758,13 +3740,10 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
       updatePlayerHud();
       updateWildBoars(delta, now);
-      updateCompanions(delta, now);
       updateXpDrops(delta);
       updateHerbs(delta);
       updateRocks(delta);
       updateHerbActionUI();
-      updateRecallActionUI();
-      updateRideActionUI();
       updateAdminActionUI();
     }
 
@@ -4862,7 +3841,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     function shouldIgnoreCameraDragTarget(target) {
       if (!(target instanceof Element)) return false;
-      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #inventoryModal, #joystick, #jumpBtn");
+      return !!target.closest("#ui, #miniMapWrap, #fullMapModal, #adminCodeModal, #sideButtons, #joystick, #jumpBtn");
     }
 
     function bindCameraControls() {
@@ -4946,37 +3925,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       upgradeDefenseBtn.addEventListener("click", () => spendXpForUpgrade("defense"));
       upgradeAttackBtn.addEventListener("click", () => spendXpForUpgrade("attack"));
       adminInteractBtn.addEventListener("click", openAdminCodeModal);
-      rideBtn.addEventListener("click", mountNearestBoar);
-      captureBtn.addEventListener("click", collectNearestBoar);
-      herbCollectBtn.addEventListener("click", collectNearestHerb);
-　　　　recallBtn.addEventListener("click", recallNearestCompanion);
-      
-      inventoryBtn.addEventListener("click", openInventoryModal);
-      cleanupSavesBtn.addEventListener("click", () => {
-        const removed = cleanupAllInventoryHistory();
-        pruneInventoryForStorage();
-        renderInventoryModal();
-        showToast(`古いセーブ履歴を${removed}件削除しました`);
-      });
-      closeInventoryBtn.addEventListener("click", closeInventoryModal);
-      inventoryModal.addEventListener("click", (e) => {
-        if (e.target === inventoryModal) closeInventoryModal();
-      });
-      inventoryList.addEventListener("click", (e) => {
-        const target = e.target;
-        if (!(target instanceof HTMLElement)) return;
-        const id = target.dataset.deployId;
-        if (!id) return;
-        const index = inventory.findIndex((item) => item.id === id);
-        if (index < 0) return;
-        const item = inventory[index];
-        inventory.splice(index, 1);
-        saveInventory();
-        renderInventoryModal();
-        spawnCompanionFromInventoryItem(item);
-        showToast(`${item.species} Lv.${item.level} が出撃！`);
-      });
-
       miniMapWrap.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         fullMapModal.classList.add("open");
@@ -5008,23 +3956,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         if (e.target === adminCodeModal) closeAdminCodeModal();
       });
       
-      adminMonsterSelect.innerHTML = "";
-      for (const def of MONSTER_SPECIES_LIST) {
-        const option = document.createElement("option");
-        option.value = def.key;
-        option.textContent = def.name;
-        adminMonsterSelect.appendChild(option);
-      }
       closeAdminPanelBtn.addEventListener("click", closeAdminPanel);
       adminPanelModal.addEventListener("click", (e) => { if (e.target === adminPanelModal) closeAdminPanel(); });
       adminSpawnMonsterBtn.addEventListener("click", adminSpawnMonsters);
       adminApplyStatsBtn.addEventListener("click", applyAdminStats);
       adminGrantXpBtn.addEventListener("click", () => addPlayerXp(1000000000));
       adminHealBtn.addEventListener("click", () => { playerHp = config.playerHpMax; gameOver = false; updatePlayerHud(); savePlayerStats(); refreshAdminPanelValues(); });
-      adminForceCaptureToggle.addEventListener("change", () => {
-        adminForceCaptureMode = adminForceCaptureToggle.checked;
-        showToast(adminForceCaptureMode ? "強制捕獲モードON" : "強制捕獲モードOFF");
-      });
       
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -5121,10 +4058,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       for (const d of activeRocks.values()) updateRockStreamingPosition(d);
       for (const d of activeRivers.values()) syncDataObjectToTerrain(d);
       for (const d of activeBoars.values()) updateBoarStreamingPosition(d);
-      for (const c of companions) {
-        if (!c?.root) continue;
-        c.root.position.y = getTerrainHeight(c.root.position.x, c.root.position.z) + c.terrainLift;
-      }
     }
 
     function spawnTreeWrapper(data) { spawnTree(data); }
@@ -5157,11 +4090,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       setActiveMapVisibility(activeRocks);
       setActiveMapVisibility(activeRivers);
       setActiveMapVisibility(activeBoars);
-      for (const c of companions) {
-        if (!c?.root) continue;
-        const sphere = new THREE.Sphere(c.root.position, Math.max(c.collisionRadius || 1, FRUSTUM_CULL_MARGIN));
-        c.root.visible = cullFrustum.intersectsSphere(sphere);
-      }
       for (const drop of xpDrops) {
         if (!drop?.group) continue;
         drop.group.visible = cullFrustum.intersectsSphere(new THREE.Sphere(drop.group.position, 2));
@@ -5179,7 +4107,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       updateCamera(delta);
       updateBoarTags();
       updateCompanionTags();
-      updateSecretWarningUI();
       updateMiniMap();
       if (fullMapModal.classList.contains("open")) updateFullMap();
       updateFrustumCulling();
@@ -5193,11 +4120,9 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     async function loadTemplates() {
-      const [treeGLTF, boarGLTF, gorillaGLTF, secretGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
+      const [treeGLTF, boarGLTF, herbGLTF, rockGLTF, riverGLTF] = await Promise.all([
         loadGLTFWithFallback(TREE_URLS, createFallbackTreeTemplate),
         loadGLTFWithFallback(BOAR_URLS, createFallbackBoarTemplate),
-        loadGLTFWithFallback(GORILLA_URLS, createFallbackGorillaTemplate),
-        loadGLTFWithFallback(SECRET_URLS, createFallbackSecretTemplate),
         loadGLTFWithFallback(HERB_URLS, createFallbackHerbTemplate),
         loadGLTFWithFallback(ROCK_URLS, createFallbackRockTemplate),
         loadGLTFWithFallback(RIVER_URLS, createFallbackRiverTemplate)
@@ -5205,22 +4130,12 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
       treeTemplate = treeGLTF.scene;
       boarTemplate = boarGLTF.scene;
-      gorillaTemplate = gorillaGLTF.scene;
-      secretTemplate = secretGLTF.scene;
       herbTemplate = herbGLTF.scene;
       rockTemplate = rockGLTF.scene;
       riverTemplate = riverGLTF.scene;
-      monsterTemplates.set("boar", boarTemplate);
-      monsterTemplates.set("gorilla", gorillaTemplate);
-      monsterTemplates.set("secret", secretTemplate);
-      
+
       treeUsesFallback = treeGLTF.fallback;
       boarUsesFallback = boarGLTF.fallback;
-      gorillaUsesFallback = gorillaGLTF.fallback;
-      secretUsesFallback = secretGLTF.fallback;
-      monsterFallbackFlags.set("boar", boarUsesFallback);
-      monsterFallbackFlags.set("gorilla", gorillaUsesFallback);
-      monsterFallbackFlags.set("secret", secretUsesFallback);
       herbUsesFallback = herbGLTF.fallback;
       rockUsesFallback = rockGLTF.fallback;
       riverUsesFallback = riverGLTF.fallback;
@@ -5288,7 +4203,6 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
     async function bootstrap() {
       try {
-        safeLoadInventory();
         safeLoadPlayerStats();
         updatePlayerHud();
         updateUpgradeUI();
@@ -5330,8 +4244,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
 
       if (!gameOver) {
         updateHerbActionUI();
-        updateRecallActionUI();
-      }
+        }
     }
 
     bindUI();
