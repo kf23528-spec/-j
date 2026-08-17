@@ -536,6 +536,27 @@
         height: min(84vw, 560px);
       }
     }
+
+
+    /* ===== Primitive survival / building UI ===== */
+    #survivalUI{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:95;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;width:min(96vw,980px)}
+    #actionHint{padding:7px 12px;border-radius:999px;background:rgba(8,13,20,.74);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:900;box-shadow:0 10px 24px rgba(0,0,0,.22);text-shadow:0 2px 6px rgba(0,0,0,.5);text-align:center}
+    #hotbar{display:flex;gap:6px;align-items:stretch;justify-content:center;pointer-events:auto;flex-wrap:wrap}
+    .slot{min-width:92px;height:58px;padding:6px 9px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(18,27,38,.88);color:#fff;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.2);display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start}
+    .slot.active{outline:2px solid rgba(255,209,91,.95);transform:translateY(-2px);background:rgba(38,49,63,.95)}
+    .slotName{font-weight:1000;font-size:12px}.slotCount{font-size:11px;opacity:.8}.slotKey{font-size:10px;opacity:.55}
+    #buildActions{display:flex;gap:6px;pointer-events:auto;flex-wrap:wrap;justify-content:center}
+    .buildBtn{border:0;border-radius:10px;padding:8px 11px;background:linear-gradient(180deg,#5d8dff,#355bc3);color:#fff;font-weight:1000;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.2)}
+    .buildBtn.active{background:linear-gradient(180deg,#ffc75d,#d07a13);color:#251400}
+    #craftModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(7,11,18,.56);backdrop-filter:blur(7px);z-index:120;pointer-events:auto}
+    #craftModal.open{display:flex}
+    #craftPanel{width:min(92vw,540px);max-height:min(84vh,680px);overflow:auto;padding:18px;border-radius:22px;background:rgba(247,250,253,.97);color:#17233a;box-shadow:0 28px 90px rgba(0,0,0,.35)}
+    #craftPanel h2{margin:0 0 6px;font-size:20px}.craftSub{font-size:12px;color:#5b6882;margin-bottom:12px}
+    .recipeGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .recipe{padding:12px;border-radius:14px;border:1px solid rgba(28,54,86,.12);background:#eef4fb;text-align:left;cursor:pointer}.recipe:disabled{opacity:.45;cursor:not-allowed}.recipe strong{display:block;font-size:13px}.recipe span{display:block;font-size:11px;color:#5a6984;margin-top:3px}
+    #closeCraft{width:100%;margin-top:10px;height:44px;border:0;border-radius:13px;background:#2f67d6;color:#fff;font-weight:1000;cursor:pointer}
+    #buildCrosshair{position:fixed;left:50%;top:50%;width:10px;height:10px;margin:-5px;z-index:40;pointer-events:none}.crossLine{position:absolute;background:rgba(255,255,255,.92);box-shadow:0 0 6px rgba(0,0,0,.75)}.crossLine.h{left:0;top:4px;width:10px;height:2px}.crossLine.v{left:4px;top:0;width:2px;height:10px}
+    @media(max-width:700px){.slot{min-width:72px;height:54px}.recipeGrid{grid-template-columns:1fr 1fr}.buildBtn{font-size:11px;padding:8px 9px}}
   </style>
 
   <script type="importmap">
@@ -644,6 +665,28 @@
     <div id="joyKnob"></div>
   </div>
   <button id="jumpBtn">JUMP</button>
+
+
+
+  <div id="survivalUI">
+    <div id="actionHint">左クリック: 掘る / 木を切る / 石を拾う　｜　右クリック: 選択ブロックを設置　｜　B: 作業切替　｜　C: クラフト</div>
+    <div id="buildActions">
+      <button id="modeDigBtn" class="buildBtn active">⛏ 掘る / 採取</button>
+      <button id="modePlaceBtn" class="buildBtn">🧱 建築</button>
+      <button id="craftBtn" class="buildBtn">🛠 クラフト</button>
+    </div>
+    <div id="hotbar"></div>
+  </div>
+  <div id="buildCrosshair" aria-hidden="true"><i class="crossLine h"></i><i class="crossLine v"></i></div>
+  <div id="craftModal" aria-hidden="true">
+    <div id="craftPanel">
+      <h2>原始時代クラフト</h2>
+      <div class="craftSub">木・石・土から道具と作業台を作り、自由に拠点を組み立てる。</div>
+      <div id="craftInventorySummary" class="craftSub"></div>
+      <div id="recipeGrid" class="recipeGrid"></div>
+      <button id="closeCraft">閉じる</button>
+    </div>
+  </div>
 
   <script type="module">
     import * as THREE from "three";
@@ -2559,6 +2602,15 @@
         const rr = radius + circle.r;
         if ((x - circle.x) ** 2 + (z - circle.z) ** 2 <= rr * rr) return true;
       }
+      for (const d of buildBlocks.values()) {
+        const bx = d.b.x * survivalState.blockSize;
+        const bz = d.b.z * survivalState.blockSize;
+        const half = survivalState.blockSize * 0.5;
+        const qx = Math.max(bx - half, Math.min(x, bx + half));
+        const qz = Math.max(bz - half, Math.min(z, bz + half));
+        const dx = x - qx, dz = z - qz;
+        if (dx * dx + dz * dz <= radius * radius) return true;
+      }
       return false;
     }
 
@@ -2602,6 +2654,21 @@
         if (t !== null && t < bestT) {
           bestT = t;
           hit = true;
+        }
+      }
+
+      for (const d of buildBlocks.values()) {
+        const bx = d.b.x * survivalState.blockSize;
+        const bz = d.b.z * survivalState.blockSize;
+        const half = survivalState.blockSize * 0.5 + radius;
+        const minX = bx - half, maxX = bx + half, minZ = bz - half, maxZ = bz + half;
+        const insideEnd = ex >= minX && ex <= maxX && ez >= minZ && ez <= maxZ;
+        if (insideEnd) { bestT = Math.min(bestT, 0.01); hit = true; continue; }
+        const steps = 8;
+        for (let i = 1; i <= steps; i++) {
+          const tt = i / steps;
+          const px = sx + dx * tt, pz = sz + dz * tt;
+          if (px >= minX && px <= maxX && pz >= minZ && pz <= maxZ) { bestT = Math.min(bestT, Math.max(0, tt - 0.03)); hit = true; break; }
         }
       }
 
@@ -4082,7 +4149,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
     }
 
     function updateCamera(delta) {
-      const eyeY = getTerrainHeight(playerRoot.position.x, playerRoot.position.z) + physics.jumpOffset + 1.82;
+      const eyeY = getTerrainHeight(playerRoot.position.x, playerRoot.position.z) + physics.jumpOffset + 2.02;
       camera.position.set(playerRoot.position.x, eyeY, playerRoot.position.z);
 
       const cosPitch = Math.cos(cameraPitch);
@@ -4806,6 +4873,7 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
       updateInactiveBoarWander(delta);
       syncWorldEntities(now);
       refreshCollisionCircles();
+      updateResourceDrops();
       updateMovement(delta);
       despawnStrictOutOfRange(now);
       updateAllActiveTerrainAlignment();
@@ -4897,7 +4965,231 @@ function findNearestRecallableCompanion(maxDist = 3.0) {
         }
     }
 
+
+
+    // =============================
+    // Primitive-era free building system
+    // =============================
+    const survivalState = {
+      mode: 'dig',
+      selected: 'dirt',
+      inv: { dirt: 24, wood: 0, stone: 0, log: 0, workbench: 0, axe: 0, shovel: 0, pickaxe: 0 },
+      tools: { axeDur: 0, shovelDur: 0, pickaxeDur: 0 },
+      blocks: new Map(),
+      editHistory: new Map(),
+      lastInteract: 0,
+      blockSize: 1.25,
+      maxReach: 7.2
+    };
+
+    const SURVIVAL_SAVE_KEY = 'forest_tps_survival_primitive_v1';
+    const buildBlocks = new Map();
+    const terrainOriginalHeights = new Float32Array(terrainGeometry.attributes.position.array.length / 3);
+    const terrainModifiedIndices = new Set();
+    {
+      const p = terrainGeometry.attributes.position;
+      for (let i = 0; i < p.count; i++) terrainOriginalHeights[i] = p.getY(i);
+    }
+
+    const matDirt = new THREE.MeshStandardMaterial({ color: 0x8f6845, roughness: 1.0 });
+    const matWood = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: .95 });
+    const matStone = new THREE.MeshStandardMaterial({ color: 0x747b82, roughness: 1.0 });
+    const matWorkbench = new THREE.MeshStandardMaterial({ color: 0x9a6935, roughness: .92 });
+
+    function survivalSlotDefs(){
+      return [
+        ['dirt','土ブロック','🟫'],['wood','木材','🪵'],['stone','石','🪨'],['log','丸太','🌲'],['workbench','作業台','🛠'],['axe','木の斧','🪓'],['shovel','木のシャベル','🥄'],['pickaxe','木のツルハシ','⛏']
+      ];
+    }
+    function ensureSurvivalUI(){
+      const hot = document.getElementById('hotbar'); if(!hot) return;
+      hot.innerHTML='';
+      survivalSlotDefs().forEach(([key,name,icon],i)=>{
+        const b=document.createElement('button'); b.className='slot'; b.dataset.key=key;
+        b.innerHTML=`<span class="slotName">${icon} ${name}</span><span class="slotCount" data-count="${key}">0</span><span class="slotKey">${i+1}</span>`;
+        b.addEventListener('click',()=>selectSurvivalSlot(key)); hot.appendChild(b);
+      });
+      updateSurvivalUI();
+    }
+    function selectSurvivalSlot(key){
+      survivalState.selected=key; updateSurvivalUI();
+    }
+    function updateSurvivalUI(){
+      document.querySelectorAll('#hotbar .slot').forEach(el=>{
+        const k=el.dataset.key; el.classList.toggle('active',k===survivalState.selected);
+        const c=el.querySelector(`[data-count="${k}"]`); if(c) c.textContent=String(survivalState.inv[k]||0);
+      });
+      const hint=document.getElementById('actionHint');
+      if(hint){ hint.textContent = survivalState.mode==='dig' ? '左クリック: 掘る / 木を切る / 石を拾う ｜ 右クリック: 選択ブロックを設置 ｜ B: 建築切替 ｜ C: クラフト' : '左クリック: ブロックを設置 ｜ 右クリック: 近いブロックを削除 ｜ B: 採取切替 ｜ C: クラフト'; }
+      document.getElementById('modeDigBtn')?.classList.toggle('active',survivalState.mode==='dig');
+      document.getElementById('modePlaceBtn')?.classList.toggle('active',survivalState.mode==='place');
+    }
+    function addInv(key,n=1){ survivalState.inv[key]=(survivalState.inv[key]||0)+n; updateSurvivalUI(); saveSurvivalState(); }
+    function takeInv(key,n=1){ if((survivalState.inv[key]||0)<n) return false; survivalState.inv[key]-=n; updateSurvivalUI(); saveSurvivalState(); return true; }
+    function hasInv(req){ return Object.entries(req).every(([k,v])=>(survivalState.inv[k]||0)>=v); }
+    function craftItem(key, req, amount=1){ if(!hasInv(req)) { showToast('材料が足りない'); return false; } for(const [k,v] of Object.entries(req)) takeInv(k,v); addInv(key,amount); showToast(`${key}を作成`); return true; }
+
+    function makeBuildBlockMesh(type){
+      const g = new THREE.BoxGeometry(survivalState.blockSize,survivalState.blockSize,survivalState.blockSize);
+      let m=matDirt; if(type==='wood'||type==='log') m=matWood; else if(type==='stone') m=matStone;
+      const mesh=new THREE.Mesh(g,m); mesh.castShadow=true; mesh.receiveShadow=true;
+      mesh.userData.buildBlock=true; mesh.userData.blockType=type;
+      if(type==='workbench'){
+        const top=new THREE.Mesh(new THREE.BoxGeometry(survivalState.blockSize*1.05,.16,survivalState.blockSize*1.05),matWorkbench); top.position.y=survivalState.blockSize*.42; top.castShadow=true; mesh.add(top);
+        for(const sx of [-1,1]) for(const sz of [-1,1]) { const leg=new THREE.Mesh(new THREE.BoxGeometry(.13,.75,.13),matWood); leg.position.set(sx*.42,-.1,sz*.42); leg.castShadow=true; mesh.add(leg); }
+      }
+      return mesh;
+    }
+    function blockKey(x,y,z){ return `${x}|${y}|${z}`; }
+    function worldToBlock(v){ return {x:Math.round(v.x/survivalState.blockSize),y:Math.round(v.y/survivalState.blockSize),z:Math.round(v.z/survivalState.blockSize)}; }
+    function blockToWorld(b){ return new THREE.Vector3(b.x*survivalState.blockSize,b.y*survivalState.blockSize,b.z*survivalState.blockSize); }
+    function addBuildBlock(type, b){
+      const key=blockKey(b.x,b.y,b.z); if(buildBlocks.has(key)) return false;
+      const mesh=makeBuildBlockMesh(type); mesh.position.copy(blockToWorld(b)); scene.add(mesh);
+      buildBlocks.set(key,{type,b:{...b},mesh}); survivalState.blocks.set(key,{type,b:{...b}}); saveSurvivalState(); return true;
+    }
+    function removeBuildBlock(key){
+      const d=buildBlocks.get(key); if(!d) return false; if(d.mesh.parent) d.mesh.parent.remove(d.mesh); d.mesh.geometry.dispose();
+      buildBlocks.delete(key); survivalState.blocks.delete(key); saveSurvivalState(); return true;
+    }
+    function rebuildBuildBlocks(){
+      for(const d of buildBlocks.values()){ if(d.mesh.parent) d.mesh.parent.remove(d.mesh); d.mesh.geometry.dispose(); }
+      buildBlocks.clear();
+      for(const [key,d] of survivalState.blocks.entries()){ const mesh=makeBuildBlockMesh(d.type); mesh.position.copy(blockToWorld(d.b)); scene.add(mesh); buildBlocks.set(key,{...d,mesh}); }
+    }
+
+    function applyTerrainDeltaAt(x,z,delta,radius=3.8){
+      const p=terrainGeometry.attributes.position;
+      let changed=0;
+      for(let i=0;i<p.count;i++){
+        const vx=p.getX(i), vz=p.getZ(i), dx=vx-x, dz=vz-z, d=Math.hypot(dx,dz);
+        if(d>radius) continue;
+        const fall=Math.pow(Math.max(0,1-d/radius),1.7);
+        p.setY(i,p.getY(i)+delta*fall); terrainModifiedIndices.add(i); changed++;
+      }
+      if(changed){ p.needsUpdate=true; terrainGeometry.computeVertexNormals(); ground.geometry=terrainGeometry; saveSurvivalState(); return true; }
+      return false;
+    }
+    function addGroundEditTool(tool){
+      if(tool==='shovel') return {delta:-0.9,radius:3.5,amount:3};
+      if(tool==='pickaxe') return {delta:-1.35,radius:2.8,amount:2};
+      return {delta:-0.45,radius:2.6,amount:1};
+    }
+    function getRayFromScreen(clientX,clientY){
+      const ndc=new THREE.Vector2((clientX/window.innerWidth)*2-1,-(clientY/window.innerHeight)*2+1); const r=new THREE.Raycaster(); r.setFromCamera(ndc,camera); return r;
+    }
+    function objectDistance(o){ return o?.root?.position ? o.root.position.distanceTo(camera.position) : 9999; }
+    function findNearestActiveEntityHit(ray,map){
+      const roots=[]; for(const d of map.values()){ if(d?.activeObject?.root && !d.removed && !d.dead) roots.push(d.activeObject.root); }
+      if(!roots.length) return null; const hits=ray.intersectObjects(roots,true); if(!hits.length) return null;
+      let hit=hits[0], owner=null; for(const d of map.values()){ if(d?.activeObject?.root===hit.object || d?.activeObject?.root?.getObjectById(hit.object.id)) { owner=d; break; } }
+      return owner?{owner,hit}:null;
+    }
+    const resourceDrops = new Map();
+    let nextDropId = 1;
+    const logDropMaterial = new THREE.MeshStandardMaterial({color:0x8b5a2b, roughness:0.95});
+    function spawnResourceDrop(type,x,y,z){
+      const id=nextDropId++; const root=new THREE.Group(); root.position.set(x,y,z);
+      if(type==='log'){ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.16,.20,.95,10),logDropMaterial); mesh.rotation.z=Math.PI/2; mesh.castShadow=true; root.add(mesh); }
+      root.userData.resourceDrop=true; root.userData.resourceType=type; root.userData.dropId=id; scene.add(root); resourceDrops.set(id,{id,type,root}); return root;
+    }
+    function collectResourceDropAtScreen(clientX,clientY){
+      const ray=getRayFromScreen(clientX,clientY); const roots=[...resourceDrops.values()].map(d=>d.root); if(!roots.length) return false;
+      const hits=ray.intersectObjects(roots,true); if(!hits.length) return false;
+      const hit=hits[0]; let owner=null; for(const d of resourceDrops.values()){ if(d.root===hit.object || d.root.getObjectById(hit.object.id)){ owner=d; break; } }
+      if(!owner) return false; if(owner.type==='log'){ addInv('log',1); addInv('wood',1); }
+      if(owner.root.parent) owner.root.parent.remove(owner.root); owner.root.traverse(o=>{if(o.geometry) o.geometry.dispose();}); resourceDrops.delete(owner.id); showToast('落ちている資源を拾った'); return true;
+    }
+    function updateResourceDrops(){
+      for(const d of resourceDrops.values()){ const r=d.root; const target=getTerrainHeight(r.position.x,r.position.z)+0.22; r.position.y += (target-r.position.y)*0.18; r.rotation.y += 0.003; }
+    }
+
+    function findBuildBlockHit(ray){
+      const arr=[...buildBlocks.values()].map(d=>d.mesh); if(!arr.length) return null; const hits=ray.intersectObjects(arr,true); return hits.length?hits[0]:null;
+    }
+    function findGroundHit(ray){
+      const hits=ray.intersectObject(ground,false); return hits.length?hits[0]:null;
+    }
+    function getSelectedPlaceType(){
+      if(['dirt','wood','stone','workbench'].includes(survivalState.selected)) return survivalState.selected==='wood'?'wood':survivalState.selected==='stone'?'stone':survivalState.selected==='workbench'?'workbench':'dirt';
+      if(survivalState.selected==='log') return 'wood';
+      return null;
+    }
+    function buildAt(clientX,clientY){
+      const ray=getRayFromScreen(clientX,clientY); const type=getSelectedPlaceType(); if(!type){ showToast('ブロック系アイテムを選択してね'); return; }
+      if((survivalState.inv[type]||0)<=0){ showToast('その素材が足りない'); return; }
+      const hit=findBuildBlockHit(ray); let pos=null;
+      if(hit){ const normal=hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld).normalize() || new THREE.Vector3(0,1,0); pos=hit.object.getWorldPosition(new THREE.Vector3()).add(normal.multiplyScalar(survivalState.blockSize*1.02)); }
+      else { const gh=findGroundHit(ray); if(!gh) return; pos=gh.point.clone(); pos.y=getTerrainHeight(pos.x,pos.z)+survivalState.blockSize*.5; }
+      const b=worldToBlock(pos); if(addBuildBlock(type,b)){ takeInv(type,1); showToast(`${type==='dirt'?'土':type==='wood'?'木材':type==='stone'?'石':'作業台'}を設置`); }
+    }
+    function breakAt(clientX,clientY){
+      const ray=getRayFromScreen(clientX,clientY);
+      const bh=findBuildBlockHit(ray); if(bh){ let targetKey=null; for(const [k,d] of buildBlocks.entries()){ if(d.mesh===bh.object || d.mesh.getObjectById(bh.object.id)) { targetKey=k; break; } } if(targetKey){ const d=buildBlocks.get(targetKey); removeBuildBlock(targetKey); addInv(d.type==='workbench'?'workbench':d.type==='wood'?'wood':d.type==='stone'?'stone':'dirt',1); showToast('ブロックを回収'); return true; }}
+      if(collectResourceDropAtScreen(clientX,clientY)) return true;
+      const treeHit=findNearestActiveEntityHit(ray,activeTrees); if(treeHit){ const d=treeHit.owner; const tx=d.activeObject?.root?.position?.x ?? d.x; const tz=d.activeObject?.root?.position?.z ?? d.z; d.removed=true; if(d.activeObject?.root?.parent) d.activeObject.root.parent.remove(d.activeObject.root); disposeObject3D(d.activeObject.root); d.activeObject=null; activeTrees.delete(d.id); refreshCollisionCircles(); const n=3+Math.floor(Math.random()*6); for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, rr=.8+Math.random()*2.2; spawnResourceDrop('log',tx+Math.cos(a)*rr,getTerrainHeight(tx,tz)+.4,tz+Math.sin(a)*rr); } addInv('wood',Math.max(1,Math.floor(n/2))); showToast(`木を伐採：丸太 ${n} 本が落ちた`); return true; }
+      const rockHit=findNearestActiveEntityHit(ray,activeRocks); if(rockHit){ const d=rockHit.owner; d.removed=true; if(d.activeObject?.root?.parent) d.activeObject.root.parent.remove(d.activeObject.root); disposeObject3D(d.activeObject.root); d.activeObject=null; activeRocks.delete(d.id); refreshCollisionCircles(); addInv('stone',2); showToast('石を拾った'); return true; }
+      const gh=findGroundHit(ray); if(gh){ const tool=survivalState.selected==='shovel'&&survivalState.inv.shovel>0?'shovel':survivalState.selected==='pickaxe'&&survivalState.inv.pickaxe>0?'pickaxe':'hand'; const spec=addGroundEditTool(tool); if(applyTerrainDeltaAt(gh.point.x,gh.point.z,spec.delta,spec.radius)){ addInv('dirt',spec.amount); showToast(`土を掘った +${spec.amount}`); return true; } }
+      return false;
+    }
+    function placeFromClick(clientX,clientY){ buildAt(clientX,clientY); }
+    function interactCanvas(clientX,clientY,button){
+      if(performance.now()-survivalState.lastInteract<120) return; survivalState.lastInteract=performance.now();
+      if(button===2 || survivalState.mode==='place') placeFromClick(clientX,clientY); else breakAt(clientX,clientY);
+    }
+
+    const recipes=[
+      {key:'workbench',name:'作業台',req:{log:4},desc:'丸太4 → 自由建築の基点になる作業台'},
+      {key:'axe',name:'木の斧',req:{wood:3,stone:2},desc:'木を素早く切る'},
+      {key:'shovel',name:'木のシャベル',req:{wood:2,stone:1},desc:'広い範囲の土を掘る'},
+      {key:'pickaxe',name:'木のツルハシ',req:{wood:2,stone:3},desc:'硬い地面を深く掘る'}
+    ];
+    function openCraft(){
+      const modal=document.getElementById('craftModal'); modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+      const grid=document.getElementById('recipeGrid'); grid.innerHTML='';
+      for(const r of recipes){ const b=document.createElement('button'); b.className='recipe'; b.disabled=!hasInv(r.req); b.innerHTML=`<strong>${r.name}</strong><span>${Object.entries(r.req).map(([k,v])=>`${k}:${v}`).join(' / ')}</span><span>${r.desc}</span>`; b.addEventListener('click',()=>{ if(craftItem(r.key,r.req)){ renderCraft(); }}); grid.appendChild(b); }
+      document.getElementById('craftInventorySummary').textContent=`土 ${survivalState.inv.dirt||0} / 木材 ${survivalState.inv.wood||0} / 石 ${survivalState.inv.stone||0} / 丸太 ${survivalState.inv.log||0}`;
+    }
+    function renderCraft(){ openCraft(); }
+    function closeCraft(){ const modal=document.getElementById('craftModal'); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
+    function saveSurvivalState(){
+      try{
+        const terrain=[]; for(const i of terrainModifiedIndices) terrain.push([i,terrainGeometry.attributes.position.getY(i)]);
+        const blocks=[...survivalState.blocks.values()]; localStorage.setItem(SURVIVAL_SAVE_KEY,JSON.stringify({inv:survivalState.inv,selected:survivalState.selected,blocks,terrain}));
+      }catch(e){ console.warn('save survival failed',e); }
+    }
+    function loadSurvivalState(){
+      try{
+        const raw=localStorage.getItem(SURVIVAL_SAVE_KEY); if(!raw) return; const d=JSON.parse(raw); if(d.inv) Object.assign(survivalState.inv,d.inv); if(d.selected) survivalState.selected=d.selected;
+        if(Array.isArray(d.terrain)){ const p=terrainGeometry.attributes.position; for(const [i,y] of d.terrain){ if(i>=0&&i<p.count){ p.setY(i,y); terrainModifiedIndices.add(i); } } p.needsUpdate=true; terrainGeometry.computeVertexNormals(); }
+        survivalState.blocks=new Map(Array.isArray(d.blocks)?d.blocks.map(v=>[blockKey(v.b.x,v.b.y,v.b.z),v]):[]); rebuildBuildBlocks();
+      }catch(e){ console.warn('load survival failed',e); }
+    }
+    function bindSurvivalSystem(){
+      ensureSurvivalUI();
+      document.getElementById('modeDigBtn')?.addEventListener('click',()=>{survivalState.mode='dig';updateSurvivalUI();});
+      document.getElementById('modePlaceBtn')?.addEventListener('click',()=>{survivalState.mode='place';updateSurvivalUI();});
+      document.getElementById('craftBtn')?.addEventListener('click',openCraft);
+      document.getElementById('closeCraft')?.addEventListener('click',closeCraft);
+      document.getElementById('craftModal')?.addEventListener('click',e=>{if(e.target.id==='craftModal') closeCraft();});
+      window.addEventListener('contextmenu',e=>e.preventDefault());
+      window.addEventListener('keydown',e=>{
+        if(e.code>='Digit1'&&e.code<='Digit8'){ const defs=survivalSlotDefs(); const k=defs[Number(e.code.slice(5))-1]?.[0]; if(k) selectSurvivalSlot(k); }
+        if(e.code==='KeyB'){ survivalState.mode=survivalState.mode==='dig'?'place':'dig'; updateSurvivalUI(); }
+        if(e.code==='KeyC'){ openCraft(); }
+      });
+      renderer.domElement.addEventListener('click',e=>{
+        if(shouldIgnoreCameraDragTarget(e.target)) return;
+        interactCanvas(e.clientX,e.clientY,0);
+      });
+      renderer.domElement.addEventListener('contextmenu',e=>{e.preventDefault(); if(shouldIgnoreCameraDragTarget(e.target)) return; interactCanvas(e.clientX,e.clientY,2);});
+    }
+
+    document.getElementById('upgradePanel')?.style.setProperty('display','none');
     bindUI();
+    bindSurvivalSystem();
+    loadSurvivalState();
+    updateSurvivalUI();
     bindKeyboardControls();
     bindCameraControls();
     updateJoystickBindings();
